@@ -489,7 +489,7 @@ async function sendToGoogleAppsScript() {
   if (
     !GOOGLE_APPS_SCRIPT_URL ||
     GOOGLE_APPS_SCRIPT_URL.includes(
-      "YOUR_GOOGLE_APPS_SCRIPT"
+      "https://script.google.com/macros/s/AKfycbx2m2LxgDZfEjaHf3RJLF7MU6004tA_6vP_dFp3aDSuefSgbq5k__nUpfPPp2Y-Lj2Pig/exec"
     )
   ) {
 
