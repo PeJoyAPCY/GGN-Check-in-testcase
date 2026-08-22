@@ -486,19 +486,14 @@ async function sendToGoogleAppsScript() {
   // CHECK API URL
   // -----------------------------------------------
 
-  if (
-    !GOOGLE_APPS_SCRIPT_URL ||
-    GOOGLE_APPS_SCRIPT_URL.includes(
-      "https://script.google.com/macros/s/AKfycbx2m2LxgDZfEjaHf3RJLF7MU6004tA_6vP_dFp3aDSuefSgbq5k__nUpfPPp2Y-Lj2Pig/exec"
-    )
-  ) {
+  if (!GOOGLE_APPS_SCRIPT_URL) {
 
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ: ยังไม่ได้ตั้งค่า Google Apps Script URL";
+  status.textContent =
+    "❌ ส่งไม่สำเร็จ: ยังไม่ได้ตั้งค่า Google Apps Script URL";
 
-    return;
+  return;
 
-  }
+}
 
 
   // -----------------------------------------------
