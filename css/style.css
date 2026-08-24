@@ -1405,21 +1405,106 @@ canvas {
 }
 
 /* ==================================================
+   GGN CHECK-IN
    DASHBOARD FULL WIDTH
    ================================================== */
 
 body.dashboard-page {
 
-  width:
-    100%;
+  width: 100%;
 
-  max-width:
-    none;
+  max-width: none;
 
-  margin:
-    0;
+  margin: 0;
 
-  box-sizing:
-    border-box;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+}
+
+
+/* ==================================================
+   DASHBOARD CONTAINER
+   ================================================== */
+
+.dashboard-status,
+.dashboard-summary,
+.dashboard-zones,
+.dashboard-refresh {
+
+  width: 100%;
+
+  max-width: none;
+
+  margin-left: 0;
+
+  margin-right: 0;
+
+  box-sizing: border-box;
+
+}
+
+
+/* ==================================================
+   SUMMARY
+   ================================================== */
+
+.dashboard-summary {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 18px;
+
+}
+
+
+/* ==================================================
+   ZONES
+   ================================================== */
+
+.dashboard-zone {
+
+  width: 100%;
+
+  margin-bottom: 20px;
+
+}
+
+
+/* ==================================================
+   POINT GRID
+   ================================================== */
+
+.dashboard-points-grid {
+
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(10, minmax(0, 1fr));
+
+  gap: 7px;
+
+}
+
+
+/* ==================================================
+   REFRESH
+   ================================================== */
+
+.dashboard-refresh {
+
+  margin-top: 10px;
+
+  margin-bottom: 25px;
+
+  text-align: right;
 
 }
