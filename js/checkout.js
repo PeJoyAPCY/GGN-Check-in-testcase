@@ -93,7 +93,9 @@ function initializeCheckout() {
 
       `👤 ชื่อ: ${name}\n` +
 
-      `📌 งาน: ${action}\n` +
+      `📌 งาน: ${job}\n` +
+
+      `🔄 รายการ: ${action}` +
 
       (
         extra
@@ -149,6 +151,11 @@ function initializeCheckout() {
     const name =
       fullname.value.trim();
 
+
+    const job =
+      getSelectedJob();
+
+
     const extraMsg =
       extraText
         ? extraText.value.trim()
@@ -177,6 +184,20 @@ function initializeCheckout() {
         "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
 
       fullname.focus();
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // JOB
+    // -----------------------------------------------
+
+    if (!job) {
+
+      status.textContent =
+        "❌ กรุณาเลือกประเภทงาน";
 
       return;
 
