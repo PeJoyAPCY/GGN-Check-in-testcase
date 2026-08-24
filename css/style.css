@@ -1403,3 +1403,23 @@ canvas {
   }
 
 }
+
+/* ==================================================
+   DASHBOARD FULL WIDTH
+   ================================================== */
+
+body.dashboard-page {
+
+  width:
+    100%;
+
+  max-width:
+    none;
+
+  margin:
+    0;
+
+  box-sizing:
+    border-box;
+
+}
