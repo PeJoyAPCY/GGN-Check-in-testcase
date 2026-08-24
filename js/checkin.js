@@ -73,10 +73,6 @@ function initializeCheckin() {
 
   function updatePreviewText() {
 
-    const job =
-      getSelectedJob() ||
-      "-";
-
 
     const extra =
       extraText
@@ -111,9 +107,7 @@ function initializeCheckin() {
 
       `👤 ชื่อ: ${name}\n` +
 
-      `📌 งาน: ${job}\n` +
-
-      `🔄 รายการ: ${action}` +
+      `📌 งาน: ${action}\n` +
 
       (
         extra
@@ -410,10 +404,6 @@ function initializeCheckin() {
       fullname.value.trim();
 
 
-    const job =
-      getSelectedJob();
-
-
     const extraMsg =
       extraText
         ? extraText.value.trim()
@@ -442,20 +432,6 @@ function initializeCheckin() {
         "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
 
       fullname.focus();
-
-      return;
-
-    }
-
-
-    // -----------------------------------------------
-    // JOB
-    // -----------------------------------------------
-
-    if (!job) {
-
-      status.textContent =
-        "❌ กรุณาเลือกประเภทงาน";
 
       return;
 
