@@ -1,13 +1,19 @@
 /* =================================================
    GGN CHECK-IN
-   STYLE
-   Version 3
+   STYLE.CSS
+   Version 3.0
 
-   รองรับ:
-   - index.html
-   - checkin.html
-   - checkout.html
-   - dashboard.html
+   หน้าที่:
+   - Global UI
+   - Index
+   - Check-in
+   - Check-out
+   - Dashboard
+
+   IMPORTANT:
+   - ไม่กระทบ JavaScript
+   - ไม่กระทบ API
+   - ไม่กระทบฐานข้อมูล
    ================================================= */
 
 
@@ -22,14 +28,20 @@ body {
     Tahoma,
     sans-serif;
 
+  width:
+    100%;
+
   max-width:
-    500px;
+    none;
 
   margin:
-    auto;
+    0;
 
   padding:
     20px;
+
+  box-sizing:
+    border-box;
 
   background-color:
     #fdf5f7;
@@ -91,13 +103,16 @@ body {
 .zone-title {
 
   margin:
-    0 0 5px;
+    0;
 
   font-size:
     22px;
 
   color:
     #800000;
+
+  margin-bottom:
+    5px;
 
   text-align:
     center;
@@ -108,13 +123,16 @@ body {
 .system-title {
 
   margin:
-    0 0 20px;
+    0;
 
   font-size:
     18px;
 
   color:
     #800000;
+
+  margin-bottom:
+    20px;
 
   text-align:
     center;
@@ -128,6 +146,15 @@ body {
 
 .menu-container {
 
+  width:
+    100%;
+
+  max-width:
+    500px;
+
+  margin:
+    25px auto 0;
+
   display:
     flex;
 
@@ -136,9 +163,6 @@ body {
 
   gap:
     15px;
-
-  margin-top:
-    25px;
 
 }
 
@@ -219,16 +243,22 @@ body {
   width:
     100%;
 
+  max-width:
+    500px;
+
+  margin:
+    0 auto;
+
 }
 
 
 .job-type {
 
-  margin-top:
-    15px;
-
   margin-bottom:
     5px;
+
+  margin-top:
+    15px;
 
 }
 
@@ -440,6 +470,10 @@ button:disabled {
 }
 
 
+/* =================================================
+   CANVAS
+   ================================================= */
+
 canvas {
 
   display:
@@ -449,36 +483,10 @@ canvas {
 
 
 /* =================================================
+   =================================================
    DASHBOARD
    =================================================
-   สำคัญ:
-   Dashboard จะยกเลิกข้อจำกัด max-width 500px
    ================================================= */
-
-.dashboard-container {
-
-  width:
-    100%;
-
-  max-width:
-    1800px;
-
-  margin:
-    0 auto;
-
-}
-
-
-/* =================================================
-   DASHBOARD HEADER
-   ================================================= */
-
-.dashboard-header {
-
-  width:
-    100%;
-
-}
 
 
 /* =================================================
@@ -490,20 +498,20 @@ canvas {
   width:
     100%;
 
+  max-width:
+    1600px;
+
   margin:
-    0 auto 10px;
+    0 auto 12px;
 
   text-align:
     center;
 
   font-size:
-    13px;
+    16px;
 
   line-height:
     1.4;
-
-  min-height:
-    18px;
 
 }
 
@@ -517,8 +525,11 @@ canvas {
   width:
     100%;
 
+  max-width:
+    1600px;
+
   margin:
-    0 auto 16px;
+    0 auto 20px;
 
   display:
     grid;
@@ -527,7 +538,7 @@ canvas {
     repeat(4, minmax(0, 1fr));
 
   gap:
-    8px;
+    12px;
 
 }
 
@@ -539,10 +550,10 @@ canvas {
 .summary-card {
 
   min-height:
-    50px;
+    70px;
 
   padding:
-    6px 10px;
+    10px 14px;
 
   display:
     flex;
@@ -551,19 +562,19 @@ canvas {
     center;
 
   gap:
-    8px;
-
-  box-sizing:
-    border-box;
+    12px;
 
   background:
     #ffffff;
 
   border:
-    1px solid #dddddd;
+    1px solid #d5d5d5;
 
   border-radius:
-    7px;
+    8px;
+
+  box-sizing:
+    border-box;
 
 }
 
@@ -575,10 +586,22 @@ canvas {
 .summary-icon {
 
   font-size:
-    20px;
+    28px;
 
   line-height:
     1;
+
+}
+
+
+/* =================================================
+   SUMMARY CONTENT
+   ================================================= */
+
+.summary-content {
+
+  min-width:
+    0;
 
 }
 
@@ -590,13 +613,13 @@ canvas {
 .summary-value {
 
   font-size:
-    20px;
+    26px;
 
   font-weight:
     700;
 
   line-height:
-    1;
+    1.1;
 
 }
 
@@ -607,14 +630,14 @@ canvas {
 
 .summary-label {
 
+  margin-top:
+    3px;
+
   font-size:
-    11px;
+    14px;
 
   color:
-    #666666;
-
-  white-space:
-    nowrap;
+    #555555;
 
 }
 
@@ -627,6 +650,9 @@ canvas {
 
   width:
     100%;
+
+  max-width:
+    1600px;
 
   margin:
     0 auto;
@@ -643,8 +669,8 @@ canvas {
   width:
     100%;
 
-  margin:
-    0 0 18px;
+  margin-bottom:
+    24px;
 
 }
 
@@ -665,22 +691,25 @@ canvas {
     space-between;
 
   gap:
+    12px;
+
+  margin-bottom:
     10px;
 
-  margin:
-    0 0 7px;
-
   padding:
-    6px 10px;
+    9px 12px;
 
   background:
-    #f0f0f0;
+    #f1f1f1;
 
   border-left:
-    4px solid #800000;
+    5px solid #333333;
 
   border-radius:
-    5px;
+    6px;
+
+  box-sizing:
+    border-box;
 
 }
 
@@ -695,13 +724,10 @@ canvas {
     0;
 
   font-size:
-    15px;
+    19px;
 
   font-weight:
     700;
-
-  color:
-    #400000;
 
 }
 
@@ -712,20 +738,11 @@ canvas {
 
 .dashboard-zone-summary {
 
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    10px;
-
   font-size:
-    11px;
+    14px;
 
   color:
-    #666666;
+    #555555;
 
   white-space:
     nowrap;
@@ -733,232 +750,270 @@ canvas {
 }
 
 
-/* ==================================================
-   DASHBOARD GRID
-   ================================================== */
+/* =================================================
+   POINT GRID
+   ================================================= */
 
-/* Desktop */
+/*
+   Desktop:
+   8 จุด / แถว
+
+   เหมาะกับ:
+   - หน้าจอคอมพิวเตอร์
+   - จุดประมาณ 40 จุด / เขต
+   - ประมาณ 5 แถว / เขต
+*/
 
 .dashboard-points-grid {
 
-  display: grid;
+  width:
+    100%;
+
+  display:
+    grid;
 
   grid-template-columns:
     repeat(8, minmax(0, 1fr));
 
-  gap: 10px;
+  gap:
+    10px;
 
 }
 
 
-/* ==================================================
-   TABLET
-   ================================================== */
-
-@media (max-width: 900px) {
-
-  .dashboard-points-grid {
-
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-
-  }
-
-}
-
-
-/* ==================================================
-   MOBILE
-   ================================================== */
-
-@media (max-width: 600px) {
-
-  .dashboard-points-grid {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-    gap: 8px;
-
-  }
-
-}
-
-
-/* ==================================================
+/* =================================================
    POINT CARD
-   ================================================== */
+   ================================================= */
 
 .dashboard-point-card {
 
-  min-width: 0;
+  min-width:
+    0;
 
-  min-height: 135px;
+  min-height:
+    145px;
 
-  padding: 10px;
+  padding:
+    11px;
 
-  box-sizing: border-box;
+  box-sizing:
+    border-box;
 
-  background: #ffffff;
+  background:
+    #ffffff;
 
-  border: 1px solid #d9d9d9;
+  border:
+    1px solid #d2d2d2;
 
-  border-radius: 8px;
+  border-radius:
+    8px;
 
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.08);
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
 }
 
 
-/* ==================================================
-   POINT HEADER
-   ================================================== */
+/* =================================================
+   POINT CARD HEADER
+   ================================================= */
 
 .point-card-header {
 
-  display: flex;
+  display:
+    flex;
 
-  align-items: center;
+  align-items:
+    center;
 
-  gap: 6px;
+  gap:
+    6px;
 
-  margin-bottom: 5px;
+  margin-bottom:
+    6px;
 
 }
 
+
+/* =================================================
+   STATUS ICON
+   ================================================= */
 
 .point-status-icon {
 
-  flex-shrink: 0;
+  flex-shrink:
+    0;
 
-  font-size: 18px;
+  font-size:
+    18px;
 
-  line-height: 1;
+  line-height:
+    1;
 
 }
 
+
+/* =================================================
+   POINT ID
+   ================================================= */
 
 .point-id {
 
-  min-width: 0;
+  min-width:
+    0;
 
-  font-size: 15px;
+  font-size:
+    15px;
 
-  font-weight: 700;
+  font-weight:
+    700;
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
-  text-overflow: ellipsis;
+  text-overflow:
+    ellipsis;
 
-  white-space: nowrap;
+  white-space:
+    nowrap;
 
 }
 
 
-/* ==================================================
+/* =================================================
    LOCATION
-   ================================================== */
+   ================================================= */
 
 .point-location {
 
-  margin-bottom: 5px;
+  margin-bottom:
+    6px;
 
-  font-size: 14px;
+  font-size:
+    15px;
 
-  font-weight: 600;
+  font-weight:
+    600;
 
-  line-height: 1.3;
+  line-height:
+    1.35;
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
-  display: -webkit-box;
+  display:
+    -webkit-box;
 
-  -webkit-box-orient: vertical;
+  -webkit-box-orient:
+    vertical;
 
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp:
+    2;
 
 }
 
 
-/* ==================================================
-   STATUS
-   ================================================== */
+/* =================================================
+   STATUS TEXT
+   ================================================= */
 
 .point-status-text {
 
-  margin-bottom: 7px;
+  margin-bottom:
+    7px;
 
-  font-size: 14px;
+  font-size:
+    14px;
 
-  font-weight: 700;
+  font-weight:
+    700;
 
-  line-height: 1.25;
+  line-height:
+    1.3;
 
 }
 
 
-/* ==================================================
+/* =================================================
    PERSON
-   ================================================== */
+   ================================================= */
 
 .point-person {
 
-  font-size: 12px;
+  font-size:
+    13px;
 
-  line-height: 1.35;
+  line-height:
+    1.35;
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
-  text-overflow: ellipsis;
+  text-overflow:
+    ellipsis;
 
-  white-space: nowrap;
+  white-space:
+    nowrap;
 
 }
 
 
-/* ==================================================
+/* =================================================
    JOB
-   ================================================== */
+   ================================================= */
 
 .point-job {
 
-  margin-top: 3px;
+  margin-top:
+    3px;
 
-  font-size: 12px;
+  font-size:
+    13px;
 
-  line-height: 1.35;
+  line-height:
+    1.35;
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
-  text-overflow: ellipsis;
+  text-overflow:
+    ellipsis;
 
-  white-space: nowrap;
+  white-space:
+    nowrap;
 
 }
 
 
-/* ==================================================
+/* =================================================
    TIMESTAMP
-   ================================================== */
+   ================================================= */
 
 .point-timestamp {
 
-  margin-top: 3px;
+  margin-top:
+    4px;
 
-  font-size: 11px;
+  font-size:
+    12px;
 
-  line-height: 1.35;
+  line-height:
+    1.35;
 
-  color: #666666;
+  color:
+    #555555;
 
-  overflow: hidden;
+  overflow:
+    hidden;
 
-  text-overflow: ellipsis;
+  text-overflow:
+    ellipsis;
 
-  white-space: nowrap;
+  white-space:
+    nowrap;
 
 }
 
@@ -973,19 +1028,16 @@ canvas {
     100%;
 
   padding:
-    25px;
-
-  box-sizing:
-    border-box;
+    30px;
 
   text-align:
     center;
 
   font-size:
-    14px;
+    16px;
 
   color:
-    #666666;
+    #555555;
 
   background:
     #ffffff;
@@ -994,7 +1046,10 @@ canvas {
     1px solid #dddddd;
 
   border-radius:
-    7px;
+    8px;
+
+  box-sizing:
+    border-box;
 
 }
 
@@ -1008,8 +1063,11 @@ canvas {
   width:
     100%;
 
+  max-width:
+    1600px;
+
   margin:
-    8px auto 20px;
+    12px auto 25px;
 
   text-align:
     right;
@@ -1023,9 +1081,9 @@ canvas {
     auto;
 
   padding:
-    7px 14px;
+    9px 16px;
 
-  margin:
+  margin-top:
     0;
 
   border:
@@ -1044,7 +1102,7 @@ canvas {
     pointer;
 
   font-size:
-    12px;
+    14px;
 
 }
 
@@ -1058,61 +1116,47 @@ canvas {
 
 
 /* =================================================
-   DASHBOARD DESKTOP
+   DASHBOARD STATUS COLORS
    ================================================= */
 
-@media (min-width: 601px) {
+.point-status-check_in
+.point-status-checkout
+.point-status-no_data
+.point-status-unknown {
 
-  /*
-   * เมื่ออยู่ Dashboard
-   * body ใช้พื้นที่เต็มหน้าจอ
-   */
-
-  body:has(.dashboard-container) {
-
-    max-width:
-      none;
-
-    width:
-      100%;
-
-    box-sizing:
-      border-box;
-
-    padding:
-      12px 18px;
-
-  }
+  transition:
+    0.2s;
 
 }
 
 
 /* =================================================
-   LARGE SCREEN
+   DESKTOP
+   1600px ขึ้นไป
    ================================================= */
 
 @media (min-width: 1600px) {
-
-  .dashboard-container {
-
-    max-width:
-      1800px;
-
-  }
-
-}
-
-
-/* =================================================
-   MEDIUM DESKTOP
-   ================================================= */
-
-@media (max-width: 1200px) and (min-width: 901px) {
 
   .dashboard-points-grid {
 
     grid-template-columns:
       repeat(8, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   LAPTOP
+   ================================================= */
+
+@media (max-width: 1200px) {
+
+  .dashboard-points-grid {
+
+    grid-template-columns:
+      repeat(6, minmax(0, 1fr));
 
   }
 
@@ -1136,7 +1180,7 @@ canvas {
   .dashboard-points-grid {
 
     grid-template-columns:
-      repeat(5, minmax(0, 1fr));
+      repeat(4, minmax(0, 1fr));
 
   }
 
@@ -1214,9 +1258,9 @@ canvas {
   }
 
 
-  /* -----------------------------------------------
-     DASHBOARD SUMMARY
-     ----------------------------------------------- */
+  /* ===============================
+     SUMMARY
+     =============================== */
 
   .dashboard-summary {
 
@@ -1224,7 +1268,7 @@ canvas {
       repeat(2, minmax(0, 1fr));
 
     gap:
-      6px;
+      8px;
 
   }
 
@@ -1232,10 +1276,10 @@ canvas {
   .summary-card {
 
     min-height:
-      48px;
+      62px;
 
     padding:
-      6px;
+      8px;
 
   }
 
@@ -1243,7 +1287,7 @@ canvas {
   .summary-icon {
 
     font-size:
-      18px;
+      22px;
 
   }
 
@@ -1251,7 +1295,7 @@ canvas {
   .summary-value {
 
     font-size:
-      18px;
+      21px;
 
   }
 
@@ -1259,14 +1303,34 @@ canvas {
   .summary-label {
 
     font-size:
-      10px;
+      13px;
 
   }
 
 
-  /* -----------------------------------------------
-     DASHBOARD POINTS
-     ----------------------------------------------- */
+  /* ===============================
+     ZONE
+     =============================== */
+
+  .dashboard-zone-title {
+
+    font-size:
+      17px;
+
+  }
+
+
+  .dashboard-zone-summary {
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* ===============================
+     POINT GRID
+     =============================== */
 
   .dashboard-points-grid {
 
@@ -1274,43 +1338,85 @@ canvas {
       repeat(2, minmax(0, 1fr));
 
     gap:
-      6px;
+      8px;
 
   }
 
+
+  /* ===============================
+     POINT CARD
+     =============================== */
 
   .dashboard-point-card {
 
-    height:
-      108px;
+    min-height:
+      135px;
 
     padding:
-      7px;
+      9px;
 
   }
 
 
-  .dashboard-zone-title {
+  .point-status-icon {
 
     font-size:
-      15px;
+      17px;
 
   }
 
 
-  .dashboard-zone-summary {
+  .point-id {
 
-    display:
-      flex;
-
-    flex-wrap:
-      wrap;
-
-    gap:
-      6px;
+    font-size:
+      14px;
 
   }
 
+
+  .point-location {
+
+    font-size:
+      14px;
+
+  }
+
+
+  .point-status-text {
+
+    font-size:
+      13px;
+
+  }
+
+
+  .point-person {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .point-job {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .point-timestamp {
+
+    font-size:
+      11px;
+
+  }
+
+
+  /* ===============================
+     REFRESH
+     =============================== */
 
   .dashboard-refresh {
 
@@ -1326,110 +1432,5 @@ canvas {
       100%;
 
   }
-
-}
-
-/* ==================================================
-   GGN CHECK-IN
-   DASHBOARD FULL WIDTH
-   ================================================== */
-
-body.dashboard-page {
-
-  width: 100%;
-
-  max-width: none;
-
-  margin: 0;
-
-  padding: 20px;
-
-  box-sizing: border-box;
-
-}
-
-
-/* ==================================================
-   DASHBOARD CONTAINER
-   ================================================== */
-
-.dashboard-status,
-.dashboard-summary,
-.dashboard-zones,
-.dashboard-refresh {
-
-  width: 100%;
-
-  max-width: none;
-
-  margin-left: 0;
-
-  margin-right: 0;
-
-  box-sizing: border-box;
-
-}
-
-
-/* ==================================================
-   SUMMARY
-   ================================================== */
-
-.dashboard-summary {
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 10px;
-
-  margin-bottom: 18px;
-
-}
-
-
-/* ==================================================
-   ZONES
-   ================================================== */
-
-.dashboard-zone {
-
-  width: 100%;
-
-  margin-bottom: 20px;
-
-}
-
-
-/* ==================================================
-   POINT GRID
-   ================================================== */
-
-.dashboard-points-grid {
-
-  width: 100%;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(10, minmax(0, 1fr));
-
-  gap: 7px;
-
-}
-
-
-/* ==================================================
-   REFRESH
-   ================================================== */
-
-.dashboard-refresh {
-
-  margin-top: 10px;
-
-  margin-bottom: 25px;
-
-  text-align: right;
 
 }
