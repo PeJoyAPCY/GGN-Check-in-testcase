@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 2
+// Version 3
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -16,6 +16,7 @@
 // - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
+// - ปรับเฉพาะการแสดงผล UI
 // ==================================================
 
 
@@ -170,7 +171,7 @@ function renderSummary(summary) {
         "🟢",
 
       label:
-        "เข้างาน",
+        "เข้างานแล้ว",
 
       value:
         summary.checkIn || 0
@@ -185,7 +186,7 @@ function renderSummary(summary) {
         "🔴",
 
       label:
-        "ออกงาน",
+        "ออกงานแล้ว",
 
       value:
         summary.checkOut || 0
@@ -225,21 +226,17 @@ function renderSummary(summary) {
 
       card.innerHTML =
 
-        `<div class="summary-icon">
+        `<span class="summary-icon">
           ${item.icon}
-        </div>
+        </span>
 
-        <div class="summary-content">
+        <span class="summary-value">
+          ${item.value}
+        </span>
 
-          <div class="summary-value">
-            ${item.value}
-          </div>
-
-          <div class="summary-label">
-            ${item.label}
-          </div>
-
-        </div>`;
+        <span class="summary-label">
+          ${item.label}
+        </span>`;
 
 
       dashboardSummary.appendChild(
@@ -333,15 +330,12 @@ function renderZones(zones) {
         "dashboard-zone-summary";
 
 
-      zoneSummary.textContent =
+      zoneSummary.innerHTML =
 
-        `ทั้งหมด ${zone.total || 0} จุด` +
-
-        `  |  🟢 ${zone.checkIn || 0}` +
-
-        `  |  🔴 ${zone.checkOut || 0}` +
-
-        `  |  ⚪ ${zone.noData || 0}`;
+        `<span>ทั้งหมด ${zone.total || 0} จุด</span>
+         <span>🟢 ${zone.checkIn || 0}</span>
+         <span>🔴 ${zone.checkOut || 0}</span>
+         <span>⚪ ${zone.noData || 0}</span>`;
 
 
       zoneHeader.appendChild(
@@ -418,7 +412,7 @@ function createPointCard(point) {
 
 
   // =================================================
-  // STATUS CLASS
+  // STATUS
   // =================================================
 
   const status =
@@ -445,17 +439,17 @@ function createPointCard(point) {
     "point-card-header";
 
 
-  const icon =
+  const statusIcon =
     document.createElement(
       "span"
     );
 
 
-  icon.className =
+  statusIcon.className =
     "point-status-icon";
 
 
-  icon.textContent =
+  statusIcon.textContent =
     point.statusIcon ||
     "⚪";
 
@@ -476,7 +470,7 @@ function createPointCard(point) {
 
 
   header.appendChild(
-    icon
+    statusIcon
   );
 
 

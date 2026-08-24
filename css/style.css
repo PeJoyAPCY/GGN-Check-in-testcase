@@ -1,13 +1,19 @@
 /* =================================================
    GGN CHECK-IN
    STYLE
-   Version 2
+   Version 3
+
+   รองรับ:
+   - index.html
+   - checkin.html
+   - checkout.html
+   - dashboard.html
    ================================================= */
 
 
-/* =========================================
+/* =================================================
    BODY
-   ========================================= */
+   ================================================= */
 
 body {
 
@@ -34,9 +40,9 @@ body {
 }
 
 
-/* =========================================
+/* =================================================
    LOGO
-   ========================================= */
+   ================================================= */
 
 .logo {
 
@@ -78,23 +84,20 @@ body {
 }
 
 
-/* =========================================
+/* =================================================
    TITLE
-   ========================================= */
+   ================================================= */
 
 .zone-title {
 
   margin:
-    0;
+    0 0 5px;
 
   font-size:
     22px;
 
   color:
     #800000;
-
-  margin-bottom:
-    5px;
 
   text-align:
     center;
@@ -105,7 +108,7 @@ body {
 .system-title {
 
   margin:
-    0;
+    0 0 20px;
 
   font-size:
     18px;
@@ -113,18 +116,15 @@ body {
   color:
     #800000;
 
-  margin-bottom:
-    20px;
-
   text-align:
     center;
 
 }
 
 
-/* =========================================
+/* =================================================
    MAIN MENU
-   ========================================= */
+   ================================================= */
 
 .menu-container {
 
@@ -210,9 +210,9 @@ body {
 }
 
 
-/* =========================================
+/* =================================================
    FORM
-   ========================================= */
+   ================================================= */
 
 .form-container {
 
@@ -224,11 +224,11 @@ body {
 
 .job-type {
 
-  margin-bottom:
-    5px;
-
   margin-top:
     15px;
+
+  margin-bottom:
+    5px;
 
 }
 
@@ -252,9 +252,9 @@ input[type="radio"] {
 }
 
 
-/* =========================================
+/* =================================================
    INPUT
-   ========================================= */
+   ================================================= */
 
 input[type="file"],
 textarea,
@@ -293,9 +293,9 @@ textarea {
 }
 
 
-/* =========================================
+/* =================================================
    BUTTON
-   ========================================= */
+   ================================================= */
 
 button {
 
@@ -339,9 +339,9 @@ button:disabled {
 }
 
 
-/* =========================================
+/* =================================================
    PREVIEW TEXT
-   ========================================= */
+   ================================================= */
 
 #previewText {
 
@@ -369,9 +369,9 @@ button:disabled {
 }
 
 
-/* =========================================
+/* =================================================
    IMAGE PREVIEW
-   ========================================= */
+   ================================================= */
 
 #previewContainer {
 
@@ -413,9 +413,9 @@ button:disabled {
 }
 
 
-/* =========================================
+/* =================================================
    STATUS
-   ========================================= */
+   ================================================= */
 
 #status {
 
@@ -440,10 +440,6 @@ button:disabled {
 }
 
 
-/* =========================================
-   CANVAS
-   ========================================= */
-
 canvas {
 
   display:
@@ -452,9 +448,798 @@ canvas {
 }
 
 
-/* =========================================
+/* =================================================
+   DASHBOARD
+   =================================================
+   สำคัญ:
+   Dashboard จะยกเลิกข้อจำกัด max-width 500px
+   ================================================= */
+
+.dashboard-container {
+
+  width:
+    100%;
+
+  max-width:
+    1800px;
+
+  margin:
+    0 auto;
+
+}
+
+
+/* =================================================
+   DASHBOARD HEADER
+   ================================================= */
+
+.dashboard-header {
+
+  width:
+    100%;
+
+}
+
+
+/* =================================================
+   DASHBOARD STATUS
+   ================================================= */
+
+.dashboard-status {
+
+  width:
+    100%;
+
+  margin:
+    0 auto 10px;
+
+  text-align:
+    center;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.4;
+
+  min-height:
+    18px;
+
+}
+
+
+/* =================================================
+   DASHBOARD SUMMARY
+   ================================================= */
+
+.dashboard-summary {
+
+  width:
+    100%;
+
+  margin:
+    0 auto 16px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap:
+    8px;
+
+}
+
+
+/* =================================================
+   SUMMARY CARD
+   ================================================= */
+
+.summary-card {
+
+  min-height:
+    50px;
+
+  padding:
+    6px 10px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    7px;
+
+}
+
+
+/* =================================================
+   SUMMARY ICON
+   ================================================= */
+
+.summary-icon {
+
+  font-size:
+    20px;
+
+  line-height:
+    1;
+
+}
+
+
+/* =================================================
+   SUMMARY VALUE
+   ================================================= */
+
+.summary-value {
+
+  font-size:
+    20px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1;
+
+}
+
+
+/* =================================================
+   SUMMARY LABEL
+   ================================================= */
+
+.summary-label {
+
+  font-size:
+    11px;
+
+  color:
+    #666666;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   DASHBOARD ZONES
+   ================================================= */
+
+.dashboard-zones {
+
+  width:
+    100%;
+
+  margin:
+    0 auto;
+
+}
+
+
+/* =================================================
+   ZONE
+   ================================================= */
+
+.dashboard-zone {
+
+  width:
+    100%;
+
+  margin:
+    0 0 18px;
+
+}
+
+
+/* =================================================
+   ZONE HEADER
+   ================================================= */
+
+.dashboard-zone-header {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    10px;
+
+  margin:
+    0 0 7px;
+
+  padding:
+    6px 10px;
+
+  background:
+    #f0f0f0;
+
+  border-left:
+    4px solid #800000;
+
+  border-radius:
+    5px;
+
+}
+
+
+/* =================================================
+   ZONE TITLE
+   ================================================= */
+
+.dashboard-zone-title {
+
+  margin:
+    0;
+
+  font-size:
+    15px;
+
+  font-weight:
+    700;
+
+  color:
+    #400000;
+
+}
+
+
+/* =================================================
+   ZONE SUMMARY
+   ================================================= */
+
+.dashboard-zone-summary {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  font-size:
+    11px;
+
+  color:
+    #666666;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   POINT GRID
+   ================================================= */
+
+.dashboard-points-grid {
+
+  display:
+    grid;
+
+  /*
+   * Desktop:
+   * 10 จุดต่อแถว
+   */
+
+  grid-template-columns:
+    repeat(10, minmax(0, 1fr));
+
+  gap:
+    6px;
+
+}
+
+
+/* =================================================
+   POINT CARD
+   ================================================= */
+
+.dashboard-point-card {
+
+  min-width:
+    0;
+
+  height:
+    108px;
+
+  padding:
+    7px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #d8d8d8;
+
+  border-radius:
+    6px;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06);
+
+  overflow:
+    hidden;
+
+}
+
+
+/* =================================================
+   POINT CARD STATUS
+   ================================================= */
+
+.point-status-check_in {
+
+  border-top:
+    3px solid #198754;
+
+}
+
+
+.point-status-check_out {
+
+  border-top:
+    3px solid #b00020;
+
+}
+
+
+.point-status-no_data {
+
+  border-top:
+    3px solid #bdbdbd;
+
+}
+
+
+.point-status-unknown {
+
+  border-top:
+    3px solid #999999;
+
+}
+
+
+/* =================================================
+   POINT HEADER
+   ================================================= */
+
+.point-card-header {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    4px;
+
+  margin:
+    0 0 3px;
+
+}
+
+
+/* =================================================
+   STATUS ICON
+   ================================================= */
+
+.point-status-icon {
+
+  flex-shrink:
+    0;
+
+  font-size:
+    14px;
+
+  line-height:
+    1;
+
+}
+
+
+/* =================================================
+   POINT ID
+   ================================================= */
+
+.point-id {
+
+  min-width:
+    0;
+
+  font-size:
+    12px;
+
+  font-weight:
+    700;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   LOCATION
+   ================================================= */
+
+.point-location {
+
+  margin:
+    0 0 3px;
+
+  font-size:
+    11px;
+
+  font-weight:
+    600;
+
+  line-height:
+    1.2;
+
+  overflow:
+    hidden;
+
+  display:
+    -webkit-box;
+
+  -webkit-box-orient:
+    vertical;
+
+  -webkit-line-clamp:
+    2;
+
+}
+
+
+/* =================================================
+   STATUS TEXT
+   ================================================= */
+
+.point-status-text {
+
+  margin:
+    0 0 4px;
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1.2;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   PERSON
+   ================================================= */
+
+.point-person {
+
+  font-size:
+    9px;
+
+  line-height:
+    1.2;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   JOB
+   ================================================= */
+
+.point-job {
+
+  margin-top:
+    2px;
+
+  font-size:
+    9px;
+
+  line-height:
+    1.2;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   TIMESTAMP
+   ================================================= */
+
+.point-timestamp {
+
+  margin-top:
+    2px;
+
+  font-size:
+    9px;
+
+  line-height:
+    1.2;
+
+  color:
+    #666666;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   EMPTY
+   ================================================= */
+
+.dashboard-empty {
+
+  width:
+    100%;
+
+  padding:
+    25px;
+
+  box-sizing:
+    border-box;
+
+  text-align:
+    center;
+
+  font-size:
+    14px;
+
+  color:
+    #666666;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    7px;
+
+}
+
+
+/* =================================================
+   REFRESH
+   ================================================= */
+
+.dashboard-refresh {
+
+  width:
+    100%;
+
+  margin:
+    8px auto 20px;
+
+  text-align:
+    right;
+
+}
+
+
+.dashboard-refresh-button {
+
+  width:
+    auto;
+
+  padding:
+    7px 14px;
+
+  margin:
+    0;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    6px;
+
+  background:
+    #ffffff;
+
+  color:
+    #400000;
+
+  cursor:
+    pointer;
+
+  font-size:
+    12px;
+
+}
+
+
+.dashboard-refresh-button:hover {
+
+  background:
+    #f3f3f3;
+
+}
+
+
+/* =================================================
+   DASHBOARD DESKTOP
+   ================================================= */
+
+@media (min-width: 601px) {
+
+  /*
+   * เมื่ออยู่ Dashboard
+   * body ใช้พื้นที่เต็มหน้าจอ
+   */
+
+  body:has(.dashboard-container) {
+
+    max-width:
+      none;
+
+    width:
+      100%;
+
+    box-sizing:
+      border-box;
+
+    padding:
+      12px 18px;
+
+  }
+
+}
+
+
+/* =================================================
+   LARGE SCREEN
+   ================================================= */
+
+@media (min-width: 1600px) {
+
+  .dashboard-container {
+
+    max-width:
+      1800px;
+
+  }
+
+}
+
+
+/* =================================================
+   MEDIUM DESKTOP
+   ================================================= */
+
+@media (max-width: 1200px) and (min-width: 901px) {
+
+  .dashboard-points-grid {
+
+    grid-template-columns:
+      repeat(8, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   TABLET
+   ================================================= */
+
+@media (max-width: 900px) {
+
+  .dashboard-summary {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .dashboard-points-grid {
+
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+
+  }
+
+
+  .dashboard-zone-header {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .dashboard-zone-summary {
+
+    white-space:
+      normal;
+
+  }
+
+}
+
+
+/* =================================================
    MOBILE
-   ========================================= */
+   ================================================= */
 
 @media (max-width: 600px) {
 
@@ -503,592 +1288,117 @@ canvas {
 
   }
 
-}
 
-/* ==================================================
-   GGN CHECK-IN
-   DASHBOARD UI
-   Version 1
-   ================================================== */
-
-
-/* ==================================================
-   DASHBOARD STATUS
-   ================================================== */
-
-.dashboard-status {
-
-  width: 100%;
-
-  max-width: 1400px;
-
-  margin: 0 auto 10px;
-
-  text-align: center;
-
-  font-size: 14px;
-
-  line-height: 1.4;
-
-}
-
-
-/* ==================================================
-   SUMMARY
-   ================================================== */
-
-.dashboard-summary {
-
-  width: 100%;
-
-  max-width: 1400px;
-
-  margin: 0 auto 18px;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 10px;
-
-}
-
-
-/* ==================================================
-   SUMMARY CARD
-   ================================================== */
-
-.summary-card {
-
-  min-height: 62px;
-
-  padding: 8px 12px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  background: #ffffff;
-
-  border: 1px solid #dddddd;
-
-  border-radius: 8px;
-
-  box-sizing: border-box;
-
-}
-
-
-/* ==================================================
-   SUMMARY ICON
-   ================================================== */
-
-.summary-icon {
-
-  font-size: 24px;
-
-  line-height: 1;
-
-}
-
-
-/* ==================================================
-   SUMMARY VALUE
-   ================================================== */
-
-.summary-value {
-
-  font-size: 22px;
-
-  font-weight: 700;
-
-  line-height: 1.1;
-
-}
-
-
-/* ==================================================
-   SUMMARY LABEL
-   ================================================== */
-
-.summary-label {
-
-  margin-top: 2px;
-
-  font-size: 12px;
-
-  color: #666666;
-
-}
-
-
-/* ==================================================
-   ZONES
-   ================================================== */
-
-.dashboard-zones {
-
-  width: 100%;
-
-  max-width: 1400px;
-
-  margin: 0 auto;
-
-}
-
-
-/* ==================================================
-   ZONE
-   ================================================== */
-
-.dashboard-zone {
-
-  margin-bottom: 20px;
-
-}
-
-
-/* ==================================================
-   ZONE HEADER
-   ================================================== */
-
-.dashboard-zone-header {
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 10px;
-
-  margin-bottom: 8px;
-
-  padding: 7px 10px;
-
-  background: #f4f4f4;
-
-  border-left: 4px solid #333333;
-
-  border-radius: 5px;
-
-}
-
-
-/* ==================================================
-   ZONE TITLE
-   ================================================== */
-
-.dashboard-zone-title {
-
-  margin: 0;
-
-  font-size: 16px;
-
-  font-weight: 700;
-
-}
-
-
-/* ==================================================
-   ZONE SUMMARY
-   ================================================== */
-
-.dashboard-zone-summary {
-
-  font-size: 12px;
-
-  color: #666666;
-
-  white-space: nowrap;
-
-}
-
-
-/* ==================================================
-   POINT GRID
-   ================================================== */
-
-.dashboard-points-grid {
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(10, minmax(0, 1fr));
-
-  gap: 7px;
-
-}
-
-
-/* ==================================================
-   POINT CARD
-   ================================================== */
-
-.dashboard-point-card {
-
-  min-width: 0;
-
-  min-height: 112px;
-
-  padding: 8px;
-
-  box-sizing: border-box;
-
-  background: #ffffff;
-
-  border: 1px solid #d9d9d9;
-
-  border-radius: 7px;
-
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08);
-
-  overflow: hidden;
-
-}
-
-
-/* ==================================================
-   POINT HEADER
-   ================================================== */
-
-.point-card-header {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 5px;
-
-  margin-bottom: 4px;
-
-}
-
-
-/* ==================================================
-   STATUS ICON
-   ================================================== */
-
-.point-status-icon {
-
-  flex-shrink: 0;
-
-  font-size: 15px;
-
-  line-height: 1;
-
-}
-
-
-/* ==================================================
-   POINT ID
-   ================================================== */
-
-.point-id {
-
-  min-width: 0;
-
-  font-size: 13px;
-
-  font-weight: 700;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-}
-
-
-/* ==================================================
-   LOCATION
-   ================================================== */
-
-.point-location {
-
-  margin-bottom: 4px;
-
-  font-size: 12px;
-
-  font-weight: 600;
-
-  line-height: 1.25;
-
-  overflow: hidden;
-
-  display: -webkit-box;
-
-  -webkit-box-orient: vertical;
-
-  -webkit-line-clamp: 2;
-
-}
-
-
-/* ==================================================
-   STATUS TEXT
-   ================================================== */
-
-.point-status-text {
-
-  margin-bottom: 5px;
-
-  font-size: 11px;
-
-  font-weight: 700;
-
-  line-height: 1.2;
-
-}
-
-
-/* ==================================================
-   PERSON
-   ================================================== */
-
-.point-person {
-
-  font-size: 10px;
-
-  line-height: 1.25;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-}
-
-
-/* ==================================================
-   JOB
-   ================================================== */
-
-.point-job {
-
-  margin-top: 2px;
-
-  font-size: 10px;
-
-  line-height: 1.25;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-}
-
-
-/* ==================================================
-   TIMESTAMP
-   ================================================== */
-
-.point-timestamp {
-
-  margin-top: 2px;
-
-  font-size: 10px;
-
-  line-height: 1.25;
-
-  color: #666666;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-}
-
-
-/* ==================================================
-   EMPTY
-   ================================================== */
-
-.dashboard-empty {
-
-  padding: 30px;
-
-  text-align: center;
-
-  font-size: 14px;
-
-  color: #666666;
-
-  background: #ffffff;
-
-  border: 1px solid #dddddd;
-
-  border-radius: 8px;
-
-}
-
-
-/* ==================================================
-   REFRESH
-   ================================================== */
-
-.dashboard-refresh {
-
-  width: 100%;
-
-  max-width: 1400px;
-
-  margin: 10px auto 25px;
-
-  text-align: right;
-
-}
-
-
-.dashboard-refresh-button {
-
-  padding: 7px 14px;
-
-  border: 1px solid #cccccc;
-
-  border-radius: 6px;
-
-  background: #ffffff;
-
-  cursor: pointer;
-
-  font-size: 13px;
-
-}
-
-
-.dashboard-refresh-button:hover {
-
-  background: #f3f3f3;
-
-}
-
-
-/* ==================================================
-   RESPONSIVE
-   ================================================== */
-
-/* Desktop ขนาดกลาง */
-
-@media (max-width: 1200px) {
-
-  .dashboard-points-grid {
-
-    grid-template-columns:
-      repeat(8, minmax(0, 1fr));
-
-  }
-
-}
-
-
-/* Tablet */
-
-@media (max-width: 900px) {
+  /* -----------------------------------------------
+     DASHBOARD SUMMARY
+     ----------------------------------------------- */
 
   .dashboard-summary {
 
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
 
-  }
-
-
-  .dashboard-points-grid {
-
-    grid-template-columns:
-      repeat(5, minmax(0, 1fr));
-
-  }
-
-
-  .dashboard-zone-header {
-
-    align-items: flex-start;
-
-    flex-direction: column;
-
-  }
-
-
-  .dashboard-zone-summary {
-
-    white-space: normal;
-
-  }
-
-}
-
-
-/* Mobile */
-
-@media (max-width: 600px) {
-
-  .dashboard-summary {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-    gap: 6px;
+    gap:
+      6px;
 
   }
 
 
   .summary-card {
 
-    min-height: 55px;
+    min-height:
+      48px;
 
-    padding: 7px;
+    padding:
+      6px;
 
   }
 
 
   .summary-icon {
 
-    font-size: 20px;
+    font-size:
+      18px;
 
   }
 
 
   .summary-value {
 
-    font-size: 19px;
+    font-size:
+      18px;
 
   }
 
+
+  .summary-label {
+
+    font-size:
+      10px;
+
+  }
+
+
+  /* -----------------------------------------------
+     DASHBOARD POINTS
+     ----------------------------------------------- */
 
   .dashboard-points-grid {
 
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
 
-    gap: 6px;
+    gap:
+      6px;
 
   }
 
 
   .dashboard-point-card {
 
-    min-height: 108px;
+    height:
+      108px;
 
-    padding: 7px;
+    padding:
+      7px;
 
   }
 
 
   .dashboard-zone-title {
 
-    font-size: 15px;
+    font-size:
+      15px;
+
+  }
+
+
+  .dashboard-zone-summary {
+
+    display:
+      flex;
+
+    flex-wrap:
+      wrap;
+
+    gap:
+      6px;
+
+  }
+
+
+  .dashboard-refresh {
+
+    text-align:
+      center;
+
+  }
+
+
+  .dashboard-refresh-button {
+
+    width:
+      100%;
 
   }
 
