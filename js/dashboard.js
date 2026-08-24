@@ -1,20 +1,21 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 1
+// Version 2
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
 // - แสดง Summary
-// - แสดงข้อมูลแยกตามเขต
+// - แสดงทุกจุดตรวจ
+// - แบ่งกลุ่มตาม Zone
 // - แสดงสถานะของแต่ละจุด
 // - รีเฟรชข้อมูล
 //
 // IMPORTANT:
-// - ใช้ API ที่ทดสอบผ่านแล้ว
-// - ไม่แก้ไข Backend
+// - ไม่แก้ Backend
+// - ไม่แก้ API
+// - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - ใช้ ZONE จาก app.js
 // ==================================================
 
 
@@ -52,7 +53,7 @@ async function loadDashboard() {
 
 
   dashboardStatus.textContent =
-    "⏳ กำลังโหลดข้อมูล Dashboard...";
+    "⏳ กำลังโหลดข้อมูล...";
 
 
   try {
@@ -103,7 +104,7 @@ async function loadDashboard() {
 
 
     dashboardStatus.textContent =
-      "✅ โหลดข้อมูลสำเร็จ";
+      "✅ อัปเดตข้อมูลล่าสุดแล้ว";
 
 
   } catch (error) {
@@ -147,35 +148,63 @@ function renderSummary(summary) {
   const items = [
 
     {
+      className:
+        "total",
+
+      icon:
+        "📍",
+
       label:
         "จุดทั้งหมด",
 
       value:
         summary.total || 0
+
     },
 
     {
+      className:
+        "checkin",
+
+      icon:
+        "🟢",
+
       label:
-        "เข้างานแล้ว",
+        "เข้างาน",
 
       value:
         summary.checkIn || 0
+
     },
 
     {
+      className:
+        "checkout",
+
+      icon:
+        "🔴",
+
       label:
-        "ออกงานแล้ว",
+        "ออกงาน",
 
       value:
         summary.checkOut || 0
+
     },
 
     {
+      className:
+        "nodata",
+
+      icon:
+        "⚪",
+
       label:
         "ยังไม่มีข้อมูล",
 
       value:
         summary.noData || 0
+
     }
 
   ];
@@ -191,45 +220,26 @@ function renderSummary(summary) {
 
 
       card.className =
-        "dashboard-summary-card";
+        `summary-card summary-${item.className}`;
 
 
-      const value =
-        document.createElement(
-          "div"
-        );
+      card.innerHTML =
 
+        `<div class="summary-icon">
+          ${item.icon}
+        </div>
 
-      value.className =
-        "dashboard-summary-value";
+        <div class="summary-content">
 
+          <div class="summary-value">
+            ${item.value}
+          </div>
 
-      value.textContent =
-        item.value;
+          <div class="summary-label">
+            ${item.label}
+          </div>
 
-
-      const label =
-        document.createElement(
-          "div"
-        );
-
-
-      label.className =
-        "dashboard-summary-label";
-
-
-      label.textContent =
-        item.label;
-
-
-      card.appendChild(
-        value
-      );
-
-
-      card.appendChild(
-        label
-      );
+        </div>`;
 
 
       dashboardSummary.appendChild(
@@ -275,13 +285,13 @@ function renderZones(zones) {
   zones.forEach(
     zone => {
 
-      const zoneCard =
+      const zoneSection =
         document.createElement(
           "section"
         );
 
 
-      zoneCard.className =
+      zoneSection.className =
         "dashboard-zone";
 
 
@@ -299,13 +309,17 @@ function renderZones(zones) {
         "dashboard-zone-header";
 
 
-      const zoneName =
+      const zoneTitle =
         document.createElement(
           "h3"
         );
 
 
-      zoneName.textContent =
+      zoneTitle.className =
+        "dashboard-zone-title";
+
+
+      zoneTitle.textContent =
         zone.zone || "-";
 
 
@@ -323,15 +337,15 @@ function renderZones(zones) {
 
         `ทั้งหมด ${zone.total || 0} จุด` +
 
-        ` | 🟢 ${zone.checkIn || 0}` +
+        `  |  🟢 ${zone.checkIn || 0}` +
 
-        ` | 🔴 ${zone.checkOut || 0}` +
+        `  |  🔴 ${zone.checkOut || 0}` +
 
-        ` | ⚪ ${zone.noData || 0}`;
+        `  |  ⚪ ${zone.noData || 0}`;
 
 
       zoneHeader.appendChild(
-        zoneName
+        zoneTitle
       );
 
 
@@ -340,49 +354,45 @@ function renderZones(zones) {
       );
 
 
-      zoneCard.appendChild(
+      zoneSection.appendChild(
         zoneHeader
       );
 
 
       // =================================================
-      // POINTS
+      // POINT GRID
       // =================================================
 
-      const pointsContainer =
+      const pointsGrid =
         document.createElement(
           "div"
         );
 
 
-      pointsContainer.className =
-        "dashboard-points";
+      pointsGrid.className =
+        "dashboard-points-grid";
 
 
       (zone.points || []).forEach(
         point => {
 
-          const pointCard =
+          pointsGrid.appendChild(
             createPointCard(
               point
-            );
-
-
-          pointsContainer.appendChild(
-            pointCard
+            )
           );
 
         }
       );
 
 
-      zoneCard.appendChild(
-        pointsContainer
+      zoneSection.appendChild(
+        pointsGrid
       );
 
 
       dashboardZones.appendChild(
-        zoneCard
+        zoneSection
       );
 
     }
@@ -399,16 +409,16 @@ function createPointCard(point) {
 
   const card =
     document.createElement(
-      "div"
+      "article"
     );
 
 
   card.className =
-    "dashboard-point";
+    "dashboard-point-card";
 
 
   // =================================================
-  // STATUS
+  // STATUS CLASS
   // =================================================
 
   const status =
@@ -417,7 +427,7 @@ function createPointCard(point) {
 
 
   card.classList.add(
-    `status-${status.toLowerCase()}`
+    `point-status-${status.toLowerCase()}`
   );
 
 
@@ -432,7 +442,7 @@ function createPointCard(point) {
 
 
   header.className =
-    "dashboard-point-header";
+    "point-card-header";
 
 
   const icon =
@@ -442,7 +452,7 @@ function createPointCard(point) {
 
 
   icon.className =
-    "dashboard-point-icon";
+    "point-status-icon";
 
 
   icon.textContent =
@@ -450,21 +460,19 @@ function createPointCard(point) {
     "⚪";
 
 
-  const title =
+  const pointId =
     document.createElement(
-      "div"
+      "span"
     );
 
 
-  title.className =
-    "dashboard-point-title";
+  pointId.className =
+    "point-id";
 
 
-  title.textContent =
-
-    `${point.pointId || "-"}` +
-
-    ` ${point.location || ""}`;
+  pointId.textContent =
+    point.pointId ||
+    "-";
 
 
   header.appendChild(
@@ -473,12 +481,36 @@ function createPointCard(point) {
 
 
   header.appendChild(
-    title
+    pointId
   );
 
 
   card.appendChild(
     header
+  );
+
+
+  // =================================================
+  // LOCATION
+  // =================================================
+
+  const location =
+    document.createElement(
+      "div"
+    );
+
+
+  location.className =
+    "point-location";
+
+
+  location.textContent =
+    point.location ||
+    "-";
+
+
+  card.appendChild(
+    location
   );
 
 
@@ -493,7 +525,7 @@ function createPointCard(point) {
 
 
   statusText.className =
-    "dashboard-point-status";
+    "point-status-text";
 
 
   statusText.textContent =
@@ -507,86 +539,81 @@ function createPointCard(point) {
 
 
   // =================================================
-  // RECORD
+  // PERSON
   // =================================================
 
-  if (
-    point.fullname ||
-    point.timestamp
-  ) {
-
-    const record =
-      document.createElement(
-        "div"
-      );
-
-
-    record.className =
-      "dashboard-point-record";
-
-
-    if (point.fullname) {
-
-      const name =
-        document.createElement(
-          "div"
-        );
-
-
-      name.textContent =
-        `👤 ${point.fullname}`;
-
-
-      record.appendChild(
-        name
-      );
-
-    }
-
-
-    if (point.jobType) {
-
-      const job =
-        document.createElement(
-          "div"
-        );
-
-
-      job.textContent =
-        `📌 ${point.jobType}`;
-
-
-      record.appendChild(
-        job
-      );
-
-    }
-
-
-    if (point.timestamp) {
-
-      const time =
-        document.createElement(
-          "div"
-        );
-
-
-      time.textContent =
-        `🕐 ${point.timestamp}`;
-
-
-      record.appendChild(
-        time
-      );
-
-    }
-
-
-    card.appendChild(
-      record
+  const person =
+    document.createElement(
+      "div"
     );
 
-  }
+
+  person.className =
+    "point-person";
+
+
+  person.textContent =
+
+    point.fullname
+      ? `👤 ${point.fullname}`
+      : "👤 —";
+
+
+  card.appendChild(
+    person
+  );
+
+
+  // =================================================
+  // JOB TYPE
+  // =================================================
+
+  const job =
+    document.createElement(
+      "div"
+    );
+
+
+  job.className =
+    "point-job";
+
+
+  job.textContent =
+
+    point.jobType
+      ? `📌 ${point.jobType}`
+      : "📌 —";
+
+
+  card.appendChild(
+    job
+  );
+
+
+  // =================================================
+  // TIMESTAMP
+  // =================================================
+
+  const timestamp =
+    document.createElement(
+      "div"
+    );
+
+
+  timestamp.className =
+    "point-timestamp";
+
+
+  timestamp.textContent =
+
+    point.timestamp
+      ? `🕐 ${point.timestamp}`
+      : "🕐 —";
+
+
+  card.appendChild(
+    timestamp
+  );
 
 
   return card;
@@ -595,7 +622,7 @@ function createPointCard(point) {
 
 
 // ==================================================
-// REFRESH
+// REFRESH BUTTON
 // ==================================================
 
 if (refreshDashboardBtn) {
@@ -609,7 +636,7 @@ if (refreshDashboardBtn) {
 
 
 // ==================================================
-// START DASHBOARD
+// START
 // ==================================================
 
 if (
