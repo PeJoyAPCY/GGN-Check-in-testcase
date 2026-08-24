@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 1.0
+// Version 2.0
 //
 // หน้าที่:
 // - QR Management
@@ -9,15 +9,21 @@
 // - แสดงรายการจุดตรวจ
 // - เลือกจุด
 // - เลือกทั้งหมด / ยกเลิกทั้งหมด
-// - เตรียมระบบสร้าง QR
+// - สร้าง QR Code จริงจาก pointId
+// - แสดง QR Preview
 // - เตรียมระบบพิมพ์ QR
+//
+// STRUCTURE:
+// - zone     = เขต
+// - location = จุดตรวจ
+// - pointId  = ลำดับ / ตัวสร้าง QR
 //
 // IMPORTANT:
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
 // - ไม่แก้ Backend
 // - ไม่แก้ API
 // - ไม่แก้ Dashboard
-// - ยังไม่สร้าง QR จริงใน Version นี้
+// - QR Version 2.0 ใช้ pointId เป็นข้อมูลภายใน QR
 // ==================================================
 
 
@@ -31,10 +37,6 @@ const qrStatus =
 
 const qrLocationList =
   getElement("qrLocationList");
-
-
-const qrLoading =
-  getElement("qrLoading");
 
 
 const qrTotalCount =
@@ -159,8 +161,6 @@ async function loadQRManagement() {
     /*
      * ---------------------------------------------
      * ล้างรายการที่เลือก
-     *
-     * เพราะข้อมูลถูกโหลดใหม่
      * ---------------------------------------------
      */
 
@@ -212,6 +212,9 @@ async function loadQRManagement() {
     updateQRSummary();
 
 
+    clearQRPreview();
+
+
     setQRStatus(
       "❌ โหลดข้อมูลไม่สำเร็จ" +
       (
@@ -242,7 +245,6 @@ function showQRLoading() {
   qrLocationList.innerHTML =
 
     `<div
-      id="qrLoading"
       class="qr-empty-state"
     >
       ⏳ กำลังโหลดรายการจุดตรวจ...
@@ -290,7 +292,7 @@ function renderQRLocations(
 
   /*
    * ---------------------------------------------
-   * สร้าง Header
+   * HEADER
    * ---------------------------------------------
    */
 
@@ -345,7 +347,7 @@ function renderQRLocations(
 
   /*
    * ---------------------------------------------
-   * Location Grid
+   * LOCATION GRID
    * ---------------------------------------------
    */
 
@@ -399,7 +401,7 @@ function createQRLocationCard(
 
   /*
    * ---------------------------------------------
-   * Active / Inactive
+   * ACTIVE / INACTIVE
    * ---------------------------------------------
    */
 
@@ -445,17 +447,20 @@ function createQRLocationCard(
 
 
   checkbox.value =
-    location.pointId || "";
+    String(
+      location.pointId || ""
+    ).trim();
 
 
   checkbox.checked =
     selectedPointIds.has(
-      location.pointId
+      checkbox.value
     );
 
 
   checkbox.disabled =
-    !isActive;
+    !isActive ||
+    !checkbox.value;
 
 
   checkbox.addEventListener(
@@ -598,7 +603,7 @@ function createQRLocationCard(
 
   /*
    * ---------------------------------------------
-   * QR STATUS
+   * QR INFO
    * ---------------------------------------------
    */
 
@@ -625,10 +630,7 @@ function createQRLocationCard(
 
   /*
    * ---------------------------------------------
-   * CLICK CARD
-   *
-   * คลิกบริเวณ Card เพื่อเลือกได้
-   * แต่ไม่ทำงานถ้าคลิก checkbox โดยตรง
+   * CARD CLICK
    * ---------------------------------------------
    */
 
@@ -808,7 +810,7 @@ function updateQRSummary() {
 
   /*
    * ---------------------------------------------
-   * ปรับสถานะปุ่ม
+   * BUTTON STATE
    * ---------------------------------------------
    */
 
@@ -847,15 +849,20 @@ function selectAllQR() {
   qrLocations.forEach(
     function(location) {
 
+      const pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
+
+
       if (
         location.active === true &&
-        location.pointId
+        pointId
       ) {
 
         selectedPointIds.add(
-          String(
-            location.pointId
-          ).trim()
+          pointId
         );
 
       }
@@ -903,10 +910,8 @@ function clearAllQR() {
 // ==================================================
 // CREATE QR
 //
-// Version 1:
-// ยังไม่สร้าง QR จริง
-// ---------------------------------------------
-// ฟังก์ชันนี้เตรียมไว้สำหรับ QR Generator
+// Version 2:
+// สร้าง QR จริงจาก pointId
 // ==================================================
 
 function createSelectedQR() {
@@ -928,42 +933,48 @@ function createSelectedQR() {
   }
 
 
+  /*
+   * ---------------------------------------------
+   * ตรวจสอบ QR Generator
+   * ---------------------------------------------
+   */
+
+  if (
+    typeof QRCode === "undefined"
+  ) {
+
+    setQRStatus(
+      "❌ ไม่พบ QR Generator กรุณาตรวจสอบ qrcodejs"
+    );
+
+    console.error(
+      "QRCode library is not loaded."
+    );
+
+    return;
+
+  }
+
+
   console.log(
-    "Selected QR Locations:",
+    "Creating QR:",
     selectedLocations
   );
 
 
   /*
    * ---------------------------------------------
-   * Version 1
-   * ---------------------------------------------
-   *
-   * ยังไม่สร้าง QR จริง
-   *
-   * ขั้นต่อไปจะนำ:
-   *
-   * pointId
-   * zone
-   * location
-   *
-   * ไปสร้าง QR URL
-   *
-   * เช่น:
-   *
-   * https://.../index.html?pointId=P001
-   *
+   * สร้าง QR จริง
    * ---------------------------------------------
    */
 
-
-  renderQRPreviewPlaceholder(
+  renderQRPreview(
     selectedLocations
   );
 
 
   setQRStatus(
-    `📱 เตรียมสร้าง QR สำหรับ ${selectedLocations.length} จุดแล้ว`
+    `✅ สร้าง QR สำเร็จ ${selectedLocations.length} จุด`
   );
 
 }
@@ -978,11 +989,19 @@ function getSelectedLocations() {
   return qrLocations.filter(
     function(location) {
 
-      return selectedPointIds.has(
+      const pointId =
         String(
           location.pointId ||
           ""
-        ).trim()
+        ).trim();
+
+
+      return (
+        pointId &&
+        selectedPointIds.has(
+          pointId
+        ) &&
+        location.active === true
       );
 
     }
@@ -992,12 +1011,16 @@ function getSelectedLocations() {
 
 
 // ==================================================
-// RENDER QR PREVIEW PLACEHOLDER
+// RENDER QR PREVIEW
 //
-// ยังไม่ใช่ QR จริง
+// QR DATA:
+// pointId
+//
+// ตัวอย่าง:
+// P001
 // ==================================================
 
-function renderQRPreviewPlaceholder(
+function renderQRPreview(
   locations
 ) {
 
@@ -1015,6 +1038,12 @@ function renderQRPreviewPlaceholder(
   locations.forEach(
     function(location) {
 
+      /*
+       * -------------------------------------------
+       * CARD
+       * -------------------------------------------
+       */
+
       const card =
         document.createElement(
           "article"
@@ -1026,7 +1055,9 @@ function renderQRPreviewPlaceholder(
 
 
       /*
-       * QR PLACEHOLDER
+       * -------------------------------------------
+       * QR CONTAINER
+       * -------------------------------------------
        */
 
       const qrBox =
@@ -1036,34 +1067,75 @@ function renderQRPreviewPlaceholder(
 
 
       qrBox.className =
-        "qr-placeholder";
-
-
-      qrBox.textContent =
-        "QR";
+        "qr-preview-code";
 
 
       /*
-       * POINT ID
+       * -------------------------------------------
+       * CREATE QR
+       *
+       * QR DATA = pointId
+       * -------------------------------------------
        */
 
       const pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
+
+
+      try {
+
+        new QRCode(
+          qrBox,
+          {
+            text: pointId,
+            width: 180,
+            height: 180,
+            correctLevel:
+              QRCode.CorrectLevel.H
+          }
+        );
+
+      } catch (error) {
+
+        console.error(
+          "QR creation error:",
+          error
+        );
+
+
+        qrBox.textContent =
+          "สร้าง QR ไม่สำเร็จ";
+
+      }
+
+
+      /*
+       * -------------------------------------------
+       * POINT ID
+       * -------------------------------------------
+       */
+
+      const pointIdElement =
         document.createElement(
           "div"
         );
 
 
-      pointId.className =
+      pointIdElement.className =
         "qr-preview-point-id";
 
 
-      pointId.textContent =
-        location.pointId ||
-        "-";
+      pointIdElement.textContent =
+        pointId;
 
 
       /*
+       * -------------------------------------------
        * LOCATION
+       * -------------------------------------------
        */
 
       const locationName =
@@ -1082,7 +1154,9 @@ function renderQRPreviewPlaceholder(
 
 
       /*
+       * -------------------------------------------
        * ZONE
+       * -------------------------------------------
        */
 
       const zone =
@@ -1100,13 +1174,19 @@ function renderQRPreviewPlaceholder(
         "-";
 
 
+      /*
+       * -------------------------------------------
+       * APPEND
+       * -------------------------------------------
+       */
+
       card.appendChild(
         qrBox
       );
 
 
       card.appendChild(
-        pointId
+        pointIdElement
       );
 
 
@@ -1126,6 +1206,14 @@ function renderQRPreviewPlaceholder(
 
     }
   );
+
+
+  if (qrPreviewCount) {
+
+    qrPreviewCount.textContent =
+      `${locations.length} จุด`;
+
+  }
 
 }
 
@@ -1163,8 +1251,8 @@ function clearQRPreview() {
 // ==================================================
 // PRINT SELECTED
 //
-// Version 1:
-// ยังไม่สั่งพิมพ์จริง
+// Version 2:
+// เตรียมใช้ QR Preview
 // ==================================================
 
 function printSelectedQR() {
@@ -1186,8 +1274,11 @@ function printSelectedQR() {
   }
 
 
-  console.log(
-    "Print Selected QR:",
+  /*
+   * สร้าง QR ก่อนพิมพ์
+   */
+
+  renderQRPreview(
     selectedLocations
   );
 
@@ -1196,14 +1287,20 @@ function printSelectedQR() {
     `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด`
   );
 
+
+  console.log(
+    "Print Selected QR:",
+    selectedLocations
+  );
+
 }
 
 
 // ==================================================
 // PRINT ALL
 //
-// Version 1:
-// พิมพ์เฉพาะ Active
+// Version 2:
+// เลือก Active ทั้งหมด
 // ==================================================
 
 function printAllQR() {
@@ -1213,7 +1310,11 @@ function printAllQR() {
       function(location) {
 
         return (
-          location.active === true
+          location.active === true &&
+          String(
+            location.pointId ||
+            ""
+          ).trim()
         );
 
       }
@@ -1234,7 +1335,9 @@ function printAllQR() {
 
 
   /*
+   * ---------------------------------------------
    * เลือก Active ทั้งหมด
+   * ---------------------------------------------
    */
 
   selectedPointIds.clear();
@@ -1243,14 +1346,17 @@ function printAllQR() {
   activeLocations.forEach(
     function(location) {
 
-      if (
-        location.pointId
-      ) {
+      const pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
+
+
+      if (pointId) {
 
         selectedPointIds.add(
-          String(
-            location.pointId
-          ).trim()
+          pointId
         );
 
       }
@@ -1264,7 +1370,13 @@ function printAllQR() {
   updateQRSummary();
 
 
-  renderQRPreviewPlaceholder(
+  /*
+   * ---------------------------------------------
+   * สร้าง QR Preview
+   * ---------------------------------------------
+   */
+
+  renderQRPreview(
     activeLocations
   );
 
