@@ -1,8 +1,7 @@
-
 /* =================================================
    GGN CHECK-IN
    STYLE
-   Version 1 - Base
+   Version 2
    ================================================= */
 
 
@@ -115,7 +114,7 @@ body {
     #800000;
 
   margin-bottom:
-    15px;
+    20px;
 
   text-align:
     center;
@@ -124,13 +123,112 @@ body {
 
 
 /* =========================================
-   JOB TYPE
+   MAIN MENU
    ========================================= */
+
+.menu-container {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    15px;
+
+  margin-top:
+    25px;
+
+}
+
+
+.menu-button {
+
+  width:
+    100%;
+
+  min-height:
+    65px;
+
+  font-size:
+    20px;
+
+  font-weight:
+    bold;
+
+  border:
+    none;
+
+  border-radius:
+    10px;
+
+  cursor:
+    pointer;
+
+  transition:
+    0.2s;
+
+}
+
+
+.checkin-button {
+
+  background-color:
+    #198754;
+
+  color:
+    white;
+
+}
+
+
+.checkin-button:hover {
+
+  background-color:
+    #157347;
+
+}
+
+
+.checkout-button {
+
+  background-color:
+    #b00020;
+
+  color:
+    white;
+
+}
+
+
+.checkout-button:hover {
+
+  background-color:
+    #8d001a;
+
+}
+
+
+/* =========================================
+   FORM
+   ========================================= */
+
+.form-container {
+
+  width:
+    100%;
+
+}
+
 
 .job-type {
 
   margin-bottom:
     5px;
+
+  margin-top:
+    15px;
 
 }
 
@@ -155,7 +253,7 @@ input[type="radio"] {
 
 
 /* =========================================
-   FORM
+   INPUT
    ========================================= */
 
 input[type="file"],
@@ -183,6 +281,14 @@ button {
 
   box-sizing:
     border-box;
+
+}
+
+
+textarea {
+
+  resize:
+    vertical;
 
 }
 
@@ -234,7 +340,7 @@ button:disabled {
 
 
 /* =========================================
-   TEXT PREVIEW
+   PREVIEW TEXT
    ========================================= */
 
 #previewText {
@@ -256,6 +362,9 @@ button:disabled {
 
   margin-top:
     10px;
+
+  border-radius:
+    6px;
 
 }
 
@@ -339,5 +448,59 @@ canvas {
 
   display:
     none;
+
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 600px) {
+
+  body {
+
+    padding:
+      15px;
+
+  }
+
+
+  .logo {
+
+    width:
+      85px;
+
+    height:
+      85px;
+
+  }
+
+
+  .zone-title {
+
+    font-size:
+      21px;
+
+  }
+
+
+  .system-title {
+
+    font-size:
+      17px;
+
+  }
+
+
+  .menu-button {
+
+    min-height:
+      70px;
+
+    font-size:
+      19px;
+
+  }
 
 }

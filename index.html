@@ -12,7 +12,6 @@
 
   <title>GGN Check-in / Check-out</title>
 
-  <!-- CSS -->
   <link
     rel="stylesheet"
     href="./css/style.css"
@@ -22,10 +21,6 @@
 
 
 <body>
-
-  <!-- ========================================
-       LOGO
-       ======================================== -->
 
   <div class="logo">
 
@@ -37,132 +32,41 @@
   </div>
 
 
-  <!-- ========================================
-       ZONE
-       ======================================== -->
-
-  <h2 class="zone-title">
+  <h2 class="zone-title" id="zoneTitle">
     ทดสอบ
   </h2>
 
 
-  <!-- ========================================
-       SYSTEM TITLE
-       ======================================== -->
-
   <h2 class="system-title">
-    📷 ระบบ Check in / Check out
+    📷 ระบบ Check-in / Check-out
   </h2>
 
 
-  <!-- ========================================
-       JOB TYPE
-       ======================================== -->
+  <div class="menu-container">
 
-  <div class="job-type">
-
-    <label>
-
-      <input
-        type="radio"
-        name="jobType"
-        value="Check in (เข้างาน)"
-      >
-
-      Check in (เข้างาน)
-
-    </label>
+    <button
+      class="menu-button checkin-button"
+      id="checkinBtn"
+    >
+      🟢 เข้างาน
+    </button>
 
 
-    <label>
-
-      <input
-        type="radio"
-        name="jobType"
-        value="Check out (ออกงาน)"
-      >
-
-      Check out (ออกงาน)
-
-    </label>
+    <button
+      class="menu-button checkout-button"
+      id="checkoutBtn"
+    >
+      🔴 ออกงาน
+    </button>
 
   </div>
 
 
-  <!-- ========================================
-       NAME
-       ======================================== -->
+  <div
+    id="status"
+    class="status"
+  ></div>
 
-  <input
-    type="text"
-    id="fullname"
-    placeholder="ชื่อ-นามสกุล (บังคับกรอก)"
-  >
-
-
-  <!-- ========================================
-       EXTRA TEXT
-       ======================================== -->
-
-  <textarea
-    id="text"
-    rows="2"
-    placeholder="จุดรักษาการณ์"
-  ></textarea>
-
-
-  <!-- ========================================
-       PREVIEW TEXT
-       ======================================== -->
-
-  <div id="previewText"></div>
-
-
-  <!-- ========================================
-       IMAGE
-       ======================================== -->
-
-  <input
-    type="file"
-    id="imageInput"
-    accept="image/jpeg,image/png"
-    multiple
-  >
-
-
-  <!-- ========================================
-       SEND BUTTON
-       ======================================== -->
-
-  <button id="sendBtn">
-
-    ส่งข้อมูล Check-in / Check-out
-
-  </button>
-
-
-  <!-- ========================================
-       IMAGE PREVIEW
-       ======================================== -->
-
-  <div id="previewContainer"></div>
-
-
-  <!-- ========================================
-       STATUS
-       ======================================== -->
-
-  <div id="status"></div>
-
-
-  <!-- ========================================
-       CANVAS
-       ======================================== -->
-
-  <canvas id="canvas"></canvas>
-
-
-  <!-- JavaScript -->
 
   <script src="./js/app.js"></script>
 

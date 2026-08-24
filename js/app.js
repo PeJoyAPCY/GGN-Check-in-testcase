@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // APP.JS
-// Version 1 - Base
+// Version 2
 // ==================================================
 
 
@@ -22,73 +22,25 @@ const ZONE =
 
 
 // ==================================================
-// ELEMENTS
+// PAGE
 // ==================================================
 
-const imageInput =
-  document.getElementById(
-    "imageInput"
-  );
-
-
-const previewContainer =
-  document.getElementById(
-    "previewContainer"
-  );
-
-
-const previewText =
-  document.getElementById(
-    "previewText"
-  );
-
-
-const extraText =
-  document.getElementById(
-    "text"
-  );
-
-
-const fullname =
-  document.getElementById(
-    "fullname"
-  );
-
-
-const status =
-  document.getElementById(
-    "status"
-  );
-
-
-const sendBtn =
-  document.getElementById(
-    "sendBtn"
-  );
-
-
-const canvas =
-  document.getElementById(
-    "canvas"
-  );
-
-
-const ctx =
-  canvas.getContext(
-    "2d"
-  );
+const currentPage =
+  window.location.pathname
+    .split("/")
+    .pop();
 
 
 // ==================================================
-// PHOTOS
+// COMMON
 // ==================================================
 
-let photos = [];
+function getElement(id) {
 
+  return document.getElementById(id);
 
-// ==================================================
-// GET JOB TYPE
-// ==================================================
+}
+
 
 function getSelectedJob() {
 
@@ -105,575 +57,762 @@ function getSelectedJob() {
 
 
 // ==================================================
-// IMAGE SELECT
+// ZONE DISPLAY
 // ==================================================
 
-imageInput.addEventListener(
-  "change",
-  (e) => {
+const zoneTitle =
+  getElement("zoneTitle");
 
-    photos =
-      Array.from(
-        e.target.files
-      ).filter(
-        file => {
 
-          if (
-            file.type === "image/heic" ||
-            file.name
-              .toLowerCase()
-              .endsWith(".heic")
-          ) {
+if (zoneTitle) {
 
-            status.textContent =
-              "❌ ส่งไม่สำเร็จ: ไม่รองรับไฟล์ .heic กรุณาใช้ .jpg หรือ .png";
+  zoneTitle.textContent =
+    ZONE;
 
-            return false;
+}
 
-          }
 
-          return true;
+// ==================================================
+// INDEX PAGE
+// ==================================================
+
+function initializeIndex() {
+
+  const checkinBtn =
+    getElement("checkinBtn");
+
+
+  const checkoutBtn =
+    getElement("checkoutBtn");
+
+
+  if (checkinBtn) {
+
+    checkinBtn.addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          `./checkin.html?zone=${encodeURIComponent(ZONE)}`;
+
+      }
+    );
+
+  }
+
+
+  if (checkoutBtn) {
+
+    checkoutBtn.addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          `./checkout.html?zone=${encodeURIComponent(ZONE)}`;
+
+      }
+    );
+
+  }
+
+}
+
+
+// ==================================================
+// CHECK-IN / CHECK-OUT INITIALIZE
+// ==================================================
+
+function initializeForm() {
+
+  const imageInput =
+    getElement("imageInput");
+
+
+  const previewContainer =
+    getElement("previewContainer");
+
+
+  const previewText =
+    getElement("previewText");
+
+
+  const extraText =
+    getElement("text");
+
+
+  const fullname =
+    getElement("fullname");
+
+
+  const status =
+    getElement("status");
+
+
+  const sendBtn =
+    getElement("sendBtn");
+
+
+  const canvas =
+    getElement("canvas");
+
+
+  if (
+    !fullname ||
+    !sendBtn ||
+    !status
+  ) {
+
+    return;
+
+  }
+
+
+  let photos = [];
+
+
+  // =================================================
+  // PREVIEW TEXT
+  // =================================================
+
+  function updatePreviewText() {
+
+    const job =
+      getSelectedJob() ||
+      "-";
+
+
+    const extra =
+      extraText
+        ? extraText.value.trim()
+        : "";
+
+
+    const name =
+      fullname.value.trim() ||
+      "-";
+
+
+    const now =
+      new Date();
+
+
+    const nowStr =
+      now.toLocaleString(
+        "th-TH"
+      );
+
+
+    const action =
+      currentPage === "checkin.html"
+        ? "เข้างาน"
+        : "ออกงาน";
+
+
+    previewText.textContent =
+
+      `📅 ${nowStr}\n` +
+
+      `📍 จุด: ${ZONE}\n` +
+
+      `👤 ชื่อ: ${name}\n` +
+
+      `📌 งาน: ${job}\n` +
+
+      `🔄 รายการ: ${action}` +
+
+      (
+        extra
+          ? `\n📝 ${extra}`
+          : ""
+      );
+
+  }
+
+
+  // =================================================
+  // IMAGE PREVIEW
+  // =================================================
+
+  function updatePreview() {
+
+    if (!previewContainer) {
+
+      return;
+
+    }
+
+
+    previewContainer.innerHTML =
+      "";
+
+
+    photos.forEach(
+      file => {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        img.src =
+          URL.createObjectURL(
+            file
+          );
+
+
+        previewContainer.appendChild(
+          img
+        );
+
+      }
+    );
+
+  }
+
+
+  // =================================================
+  // IMAGE SELECT
+  // =================================================
+
+  if (imageInput) {
+
+    imageInput.addEventListener(
+      "change",
+      e => {
+
+        photos =
+          Array.from(
+            e.target.files
+          ).filter(
+            file => {
+
+              if (
+                file.type === "image/heic" ||
+                file.name
+                  .toLowerCase()
+                  .endsWith(".heic")
+              ) {
+
+                status.textContent =
+                  "❌ ไม่รองรับไฟล์ .heic กรุณาใช้ .jpg หรือ .png";
+
+                return false;
+
+              }
+
+
+              return true;
+
+            }
+          );
+
+
+        updatePreview();
+
+        updatePreviewText();
+
+      }
+    );
+
+  }
+
+
+  // =================================================
+  // INPUT EVENTS
+  // =================================================
+
+  fullname.addEventListener(
+    "input",
+    updatePreviewText
+  );
+
+
+  if (extraText) {
+
+    extraText.addEventListener(
+      "input",
+      updatePreviewText
+    );
+
+  }
+
+
+  document
+    .querySelectorAll(
+      'input[name="jobType"]'
+    )
+    .forEach(
+      radio => {
+
+        radio.addEventListener(
+          "change",
+          updatePreviewText
+        );
+
+      }
+    );
+
+
+  // =================================================
+  // PROCESS IMAGE
+  // =================================================
+
+  async function processImage(file) {
+
+    return new Promise(
+      (resolve, reject) => {
+
+        const img =
+          new Image();
+
+
+        img.onload =
+          () => {
+
+            try {
+
+              canvas.width =
+                img.naturalWidth;
+
+              canvas.height =
+                img.naturalHeight;
+
+
+              const ctx =
+                canvas.getContext(
+                  "2d"
+                );
+
+
+              ctx.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+              );
+
+
+              ctx.drawImage(
+                img,
+                0,
+                0
+              );
+
+
+              canvas.toBlob(
+                blob => {
+
+                  if (!blob) {
+
+                    reject(
+                      new Error(
+                        "ไม่สามารถประมวลผลรูปภาพได้"
+                      )
+                    );
+
+                    return;
+
+                  }
+
+
+                  resolve(
+                    blob
+                  );
+
+                },
+                "image/jpeg",
+                0.9
+              );
+
+
+            } catch (error) {
+
+              reject(
+                error
+              );
+
+            }
+
+          };
+
+
+        img.onerror =
+          () => {
+
+            reject(
+              new Error(
+                "ไม่สามารถเปิดรูปภาพได้"
+              )
+            );
+
+          };
+
+
+        img.src =
+          URL.createObjectURL(
+            file
+          );
+
+      }
+    );
+
+  }
+
+
+  // =================================================
+  // BLOB → BASE64
+  // =================================================
+
+  function blobToBase64(blob) {
+
+    return new Promise(
+      (resolve, reject) => {
+
+        const reader =
+          new FileReader();
+
+
+        reader.onload =
+          () => {
+
+            resolve(
+              reader.result
+            );
+
+          };
+
+
+        reader.onerror =
+          () => {
+
+            reject(
+              new Error(
+                "ไม่สามารถอ่านรูปภาพได้"
+              )
+            );
+
+          };
+
+
+        reader.readAsDataURL(
+          blob
+        );
+
+      }
+    );
+
+  }
+
+
+  // =================================================
+  // SEND
+  // =================================================
+
+  async function sendData() {
+
+    const name =
+      fullname.value.trim();
+
+
+    const job =
+      getSelectedJob();
+
+
+    const extraMsg =
+      extraText
+        ? extraText.value.trim()
+        : "";
+
+
+    const isCheckin =
+      currentPage === "checkin.html";
+
+
+    // -----------------------------------------------
+    // NAME
+    // -----------------------------------------------
+
+    if (!name) {
+
+      status.textContent =
+        "❌ กรุณากรอกชื่อ-นามสกุล";
+
+      fullname.focus();
+
+      return;
+
+    }
+
+
+    if (/\d/.test(name)) {
+
+      status.textContent =
+        "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
+
+      fullname.focus();
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // JOB
+    // -----------------------------------------------
+
+    if (!job) {
+
+      status.textContent =
+        "❌ กรุณาเลือกประเภทงาน";
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // CHECK-IN IMAGE
+    // -----------------------------------------------
+
+    if (
+      isCheckin &&
+      photos.length === 0
+    ) {
+
+      status.textContent =
+        "❌ กรุณาเลือกรูปภาพ";
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // API
+    // -----------------------------------------------
+
+    if (!GOOGLE_APPS_SCRIPT_URL) {
+
+      status.textContent =
+        "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
+
+      return;
+
+    }
+
+
+    sendBtn.disabled =
+      true;
+
+
+    try {
+
+      // =================================================
+      // CHECK-IN
+      // =================================================
+
+      if (isCheckin) {
+
+        for (
+          let i = 0;
+          i < photos.length;
+          i++
+        ) {
+
+          status.textContent =
+            `⏳ กำลังส่งรูป ${i + 1}/${photos.length}...`;
+
+
+          const blob =
+            await processImage(
+              photos[i]
+            );
+
+
+          const imageBase64 =
+            await blobToBase64(
+              blob
+            );
+
+
+          const payload = {
+
+            zone:
+              ZONE,
+
+            fullname:
+              name,
+
+            jobType:
+              "Check in (เข้างาน) - " + job,
+
+            extraText:
+              extraMsg,
+
+            imageBase64:
+              imageBase64,
+
+            imageName:
+              `checkin-${Date.now()}-${i + 1}.jpg`
+
+          };
+
+
+          await sendRequest(
+            payload
+          );
+
+        }
+
+      }
+
+
+      // =================================================
+      // CHECK-OUT
+      // =================================================
+
+      else {
+
+        status.textContent =
+          "⏳ กำลังส่งข้อมูล...";
+
+
+        const payload = {
+
+          zone:
+            ZONE,
+
+          fullname:
+            name,
+
+          jobType:
+            "Check out (ออกงาน) - " + job,
+
+          extraText:
+            extraMsg
+
+        };
+
+
+        await sendRequest(
+          payload
+        );
+
+      }
+
+
+      // =================================================
+      // SUCCESS
+      // =================================================
+
+      status.textContent =
+        isCheckin
+          ? "✅ Check-in สำเร็จ"
+          : "✅ Check-out สำเร็จ";
+
+
+      resetForm();
+
+
+    } catch (error) {
+
+      console.error(
+        "GGN Check Error:",
+        error
+      );
+
+
+      status.textContent =
+        "❌ ส่งไม่สำเร็จ" +
+        (
+          error.message
+            ? `: ${error.message}`
+            : ""
+        );
+
+
+    } finally {
+
+      sendBtn.disabled =
+        false;
+
+    }
+
+  }
+
+
+  // =================================================
+  // REQUEST
+  // =================================================
+
+  async function sendRequest(payload) {
+
+    const response =
+      await fetch(
+        GOOGLE_APPS_SCRIPT_URL,
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "text/plain;charset=utf-8"
+
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
 
         }
       );
 
 
-    updatePreview();
-
-    updatePreviewText();
-
-  }
-);
+    const result =
+      await response.json();
 
 
-// ==================================================
-// IMAGE PREVIEW
-// ==================================================
-
-function updatePreview() {
-
-  previewContainer.innerHTML =
-    "";
-
-
-  photos.forEach(
-    file => {
-
-      const img =
-        document.createElement(
-          "img"
-        );
-
-
-      img.src =
-        URL.createObjectURL(
-          file
-        );
-
-
-      previewContainer.appendChild(
-        img
-      );
-
-    }
-  );
-
-}
-
-
-// ==================================================
-// TEXT PREVIEW
-// ==================================================
-
-function updatePreviewText() {
-
-  const job =
-    getSelectedJob() ||
-    "-";
-
-
-  const extra =
-    extraText.value.trim();
-
-
-  const name =
-    fullname.value.trim() ||
-    "-";
-
-
-  const now =
-    new Date();
-
-
-  const nowStr =
-    now.toLocaleString(
-      "th-TH"
+    console.log(
+      "Apps Script:",
+      result
     );
 
 
-  previewText.textContent =
+    if (!result.success) {
 
-    `📅 ${nowStr}\n` +
-
-    `👤 ชื่อ: ${name}\n` +
-
-    `📌 งาน: ${job}` +
-
-    (
-      extra
-        ? `\n📝 จุดรักษาการณ์ ${extra}`
-        : ""
-    );
-
-}
-
-
-// ==================================================
-// EVENTS
-// ==================================================
-
-extraText.addEventListener(
-  "input",
-  updatePreviewText
-);
-
-
-fullname.addEventListener(
-  "input",
-  updatePreviewText
-);
-
-
-document
-  .querySelectorAll(
-    'input[name="jobType"]'
-  )
-  .forEach(
-    el => {
-
-      el.addEventListener(
-        "change",
-        updatePreviewText
+      throw new Error(
+        result.message ||
+        "Apps Script ส่งข้อมูลไม่สำเร็จ"
       );
 
     }
-  );
 
 
-// ==================================================
-// PROCESS IMAGE
-// ==================================================
-
-async function processImage(file) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const img =
-        new Image();
-
-
-      img.onload =
-        () => {
-
-          try {
-
-            canvas.width =
-              img.naturalWidth;
-
-            canvas.height =
-              img.naturalHeight;
-
-
-            ctx.clearRect(
-              0,
-              0,
-              canvas.width,
-              canvas.height
-            );
-
-
-            ctx.drawImage(
-              img,
-              0,
-              0
-            );
-
-
-            canvas.toBlob(
-              blob => {
-
-                if (!blob) {
-
-                  reject(
-                    new Error(
-                      "ไม่สามารถประมวลผลรูปภาพได้"
-                    )
-                  );
-
-                  return;
-
-                }
-
-
-                resolve(
-                  blob
-                );
-
-              },
-              "image/jpeg",
-              0.9
-            );
-
-
-          } catch (error) {
-
-            reject(
-              error
-            );
-
-          }
-
-        };
-
-
-      img.onerror =
-        () => {
-
-          reject(
-            new Error(
-              "ไม่สามารถเปิดรูปภาพได้"
-            )
-          );
-
-        };
-
-
-      img.src =
-        URL.createObjectURL(
-          file
-        );
-
-    }
-  );
-
-}
-
-
-// ==================================================
-// BLOB → BASE64
-// ==================================================
-
-function blobToBase64(blob) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const reader =
-        new FileReader();
-
-
-      reader.onload =
-        () => {
-
-          resolve(
-            reader.result
-          );
-
-        };
-
-
-      reader.onerror =
-        () => {
-
-          reject(
-            new Error(
-              "ไม่สามารถอ่านรูปภาพได้"
-            )
-          );
-
-        };
-
-
-      reader.readAsDataURL(
-        blob
-      );
-
-    }
-  );
-
-}
-
-
-// ==================================================
-// SEND TO GOOGLE APPS SCRIPT
-// ==================================================
-
-async function sendToGoogleAppsScript() {
-
-
-  const name =
-    fullname.value.trim();
-
-
-  const job =
-    getSelectedJob();
-
-
-  const extraMsg =
-    extraText.value.trim();
-
-
-  // -----------------------------------------------
-  // VALIDATE NAME
-  // -----------------------------------------------
-
-  if (!name) {
-
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ: กรุณากรอกชื่อ-นามสกุล";
-
-    fullname.focus();
-
-    return;
+    return result;
 
   }
 
 
-  if (/\d/.test(name)) {
-
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ: ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
-
-    fullname.focus();
-
-    return;
-
-  }
-
-
-  // -----------------------------------------------
-  // VALIDATE JOB
-  // -----------------------------------------------
-
-  if (!job) {
-
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ: กรุณาเลือกประเภทงาน";
-
-    return;
-
-  }
-
-
-  // -----------------------------------------------
-  // VALIDATE IMAGE
-  // -----------------------------------------------
-
-  if (
-    photos.length === 0
-  ) {
-
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ: กรุณาเลือกรูปภาพ";
-
-    return;
-
-  }
-
-
-  // -----------------------------------------------
-  // CHECK API URL
-  // -----------------------------------------------
-
-  if (!GOOGLE_APPS_SCRIPT_URL) {
-
-  status.textContent =
-    "❌ ส่งไม่สำเร็จ: ยังไม่ได้ตั้งค่า Google Apps Script URL";
-
-  return;
-
-}
-
-
-  // -----------------------------------------------
-  // UI
-  // -----------------------------------------------
-
-  sendBtn.disabled =
-    true;
-
-
-  status.textContent =
-    `⏳ กำลังส่งรูป 1/${photos.length}...`;
-
-
-  updatePreviewText();
-
-
-  try {
-
-
-    // -------------------------------------------
-    // SEND EACH PHOTO
-    // -------------------------------------------
-
-    for (
-      let i = 0;
-      i < photos.length;
-      i++
-    ) {
-
-
-      status.textContent =
-        `⏳ กำลังส่งรูป ${i + 1}/${photos.length}...`;
-
-
-      // -----------------------------------------
-      // PROCESS IMAGE
-      // -----------------------------------------
-
-      const blob =
-        await processImage(
-          photos[i]
-        );
-
-
-      // -----------------------------------------
-      // BASE64
-      // -----------------------------------------
-
-      const imageBase64 =
-        await blobToBase64(
-          blob
-        );
-
-
-      // -----------------------------------------
-      // DATA
-      // -----------------------------------------
-
-      const payload = {
-
-        zone:
-          ZONE,
-
-        fullname:
-          name,
-
-        jobType:
-          job,
-
-        extraText:
-          extraMsg,
-
-        imageBase64:
-          imageBase64,
-
-        imageName:
-          `checkin-${Date.now()}-${i + 1}.jpg`
-
-      };
-
-
-      console.log(
-        "กำลังส่งข้อมูลไป Apps Script",
-        payload
-      );
-
-
-      // -----------------------------------------
-      // API REQUEST
-      // -----------------------------------------
-
-      const response =
-        await fetch(
-          GOOGLE_APPS_SCRIPT_URL,
-          {
-
-            method:
-              "POST",
-
-            headers: {
-
-              "Content-Type":
-                "text/plain;charset=utf-8"
-
-            },
-
-            body:
-              JSON.stringify(
-                payload
-              )
-
-          }
-        );
-
-
-      // -----------------------------------------
-      // RESPONSE
-      // -----------------------------------------
-
-      const result =
-        await response.json();
-
-
-      console.log(
-        "Apps Script response:",
-        result
-      );
-
-
-      // -----------------------------------------
-      // CHECK RESULT
-      // -----------------------------------------
-
-      if (
-        !result.success
-      ) {
-
-        throw new Error(
-          result.message ||
-          "Apps Script ส่งข้อมูลไม่สำเร็จ"
-        );
-
-      }
-
-    }
-
-
-    // =========================================
-    // SUCCESS
-    // =========================================
-
-    status.textContent =
-      "✅ ส่งสำเร็จ";
-
-
-    // =========================================
-    // RESET FORM
-    // =========================================
-
-    photos = [];
-
-
-    updatePreview();
-
-
-    previewText.textContent =
-      "";
-
-
-    extraText.value =
-      "";
-
+  // =================================================
+  // RESET
+  // =================================================
+
+  function resetForm() {
 
     fullname.value =
       "";
 
 
-    imageInput.value =
-      "";
+    if (extraText) {
+
+      extraText.value =
+        "";
+
+    }
 
 
     document
@@ -681,59 +820,73 @@ async function sendToGoogleAppsScript() {
         'input[name="jobType"]'
       )
       .forEach(
-        el => {
+        radio => {
 
-          el.checked =
+          radio.checked =
             false;
 
         }
       );
 
 
-  } catch (error) {
+    photos =
+      [];
 
 
-    // =========================================
-    // ERROR
-    // =========================================
+    if (imageInput) {
 
-    console.error(
-      "GGN Check-in Error:",
-      error
-    );
+      imageInput.value =
+        "";
+
+    }
 
 
-    status.textContent =
-      "❌ ส่งไม่สำเร็จ" +
-      (
-        error.message
-          ? `: ${error.message}`
-          : ""
-      );
+    updatePreview();
 
 
-  } finally {
-
-    sendBtn.disabled =
-      false;
+    updatePreviewText();
 
   }
+
+
+  // =================================================
+  // BUTTON
+  // =================================================
+
+  sendBtn.addEventListener(
+    "click",
+    sendData
+  );
+
+
+  // =================================================
+  // INITIAL
+  // =================================================
+
+  updatePreviewText();
 
 }
 
 
 // ==================================================
-// BUTTON
+// START APPLICATION
 // ==================================================
 
-sendBtn.addEventListener(
-  "click",
-  sendToGoogleAppsScript
-);
+if (
+  currentPage === "" ||
+  currentPage === "index.html"
+) {
+
+  initializeIndex();
+
+}
 
 
-// ==================================================
-// INITIAL PREVIEW
-// ==================================================
+if (
+  currentPage === "checkin.html" ||
+  currentPage === "checkout.html"
+) {
 
-updatePreviewText();
+  initializeForm();
+
+}
