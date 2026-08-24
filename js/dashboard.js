@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 3
+// Version 4
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -10,18 +10,19 @@
 // - แบ่งกลุ่มตาม Zone
 // - แสดงสถานะของแต่ละจุด
 // - รีเฟรชข้อมูล
+// - QR Management
+// - โหลดรายการจุดสำหรับจัดการ QR
 //
 // IMPORTANT:
 // - ไม่แก้ Backend
-// - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - ปรับเฉพาะการแสดงผล UI
+// - QR จริงและระบบพิมพ์จะพัฒนาขั้นถัดไป
 // ==================================================
 
 
 // ==================================================
-// ELEMENTS
+// DASHBOARD ELEMENTS
 // ==================================================
 
 const dashboardStatus =
@@ -38,6 +39,59 @@ const dashboardZones =
 
 const refreshDashboardBtn =
   getElement("refreshDashboardBtn");
+
+
+const dashboardView =
+  getElement("dashboardView");
+
+
+const qrManagementView =
+  getElement("qrManagementView");
+
+
+const dashboardMenuBtn =
+  getElement("dashboardMenuBtn");
+
+
+const qrManagementMenuBtn =
+  getElement("qrManagementMenuBtn");
+
+
+// ==================================================
+// QR MANAGEMENT ELEMENTS
+// ==================================================
+
+const qrManagementSummary =
+  getElement("qrManagementSummary");
+
+
+const qrLocations =
+  getElement("qrLocations");
+
+
+const qrSelectionInfo =
+  getElement("qrSelectionInfo");
+
+
+const qrSelectAllBtn =
+  getElement("qrSelectAllBtn");
+
+
+const qrClearSelectionBtn =
+  getElement("qrClearSelectionBtn");
+
+
+const qrRefreshBtn =
+  getElement("qrRefreshBtn");
+
+
+// ==================================================
+// QR DATA
+// ==================================================
+
+let qrLocationsData = [];
+
+let qrSelectedPoints = new Set();
 
 
 // ==================================================
@@ -292,10 +346,6 @@ function renderZones(zones) {
         "dashboard-zone";
 
 
-      // =================================================
-      // ZONE HEADER
-      // =================================================
-
       const zoneHeader =
         document.createElement(
           "div"
@@ -353,10 +403,6 @@ function renderZones(zones) {
       );
 
 
-      // =================================================
-      // POINT GRID
-      // =================================================
-
       const pointsGrid =
         document.createElement(
           "div"
@@ -411,10 +457,6 @@ function createPointCard(point) {
     "dashboard-point-card";
 
 
-  // =================================================
-  // STATUS
-  // =================================================
-
   const status =
     point.status ||
     "UNKNOWN";
@@ -424,10 +466,6 @@ function createPointCard(point) {
     `point-status-${status.toLowerCase()}`
   );
 
-
-  // =================================================
-  // HEADER
-  // =================================================
 
   const header =
     document.createElement(
@@ -484,10 +522,6 @@ function createPointCard(point) {
   );
 
 
-  // =================================================
-  // LOCATION
-  // =================================================
-
   const location =
     document.createElement(
       "div"
@@ -508,10 +542,6 @@ function createPointCard(point) {
   );
 
 
-  // =================================================
-  // STATUS TEXT
-  // =================================================
-
   const statusText =
     document.createElement(
       "div"
@@ -531,10 +561,6 @@ function createPointCard(point) {
     statusText
   );
 
-
-  // =================================================
-  // PERSON
-  // =================================================
 
   const person =
     document.createElement(
@@ -558,10 +584,6 @@ function createPointCard(point) {
   );
 
 
-  // =================================================
-  // JOB TYPE
-  // =================================================
-
   const job =
     document.createElement(
       "div"
@@ -583,10 +605,6 @@ function createPointCard(point) {
     job
   );
 
-
-  // =================================================
-  // TIMESTAMP
-  // =================================================
 
   const timestamp =
     document.createElement(
@@ -616,7 +634,592 @@ function createPointCard(point) {
 
 
 // ==================================================
-// REFRESH BUTTON
+// SHOW DASHBOARD
+// ==================================================
+
+function showDashboardView() {
+
+  if (dashboardView) {
+
+    dashboardView.hidden =
+      false;
+
+  }
+
+
+  if (qrManagementView) {
+
+    qrManagementView.hidden =
+      true;
+
+  }
+
+
+  dashboardMenuBtn?.classList.add(
+    "dashboard-menu-active"
+  );
+
+
+  qrManagementMenuBtn?.classList.remove(
+    "dashboard-menu-active"
+  );
+
+
+  loadDashboard();
+
+}
+
+
+// ==================================================
+// SHOW QR MANAGEMENT
+// ==================================================
+
+function showQRManagementView() {
+
+  if (dashboardView) {
+
+    dashboardView.hidden =
+      true;
+
+  }
+
+
+  if (qrManagementView) {
+
+    qrManagementView.hidden =
+      false;
+
+  }
+
+
+  dashboardMenuBtn?.classList.remove(
+    "dashboard-menu-active"
+  );
+
+
+  qrManagementMenuBtn?.classList.add(
+    "dashboard-menu-active"
+  );
+
+
+  loadQRManagement();
+
+}
+
+
+// ==================================================
+// LOAD QR MANAGEMENT
+//
+// Backend:
+// action=qrManagement
+// ==================================================
+
+async function loadQRManagement() {
+
+  if (!qrLocations) {
+
+    return;
+
+  }
+
+
+  qrLocations.innerHTML =
+
+    `<div class="qr-loading">
+      ⏳ กำลังโหลดรายการจุดตรวจ...
+    </div>`;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${GOOGLE_APPS_SCRIPT_URL}?action=qrManagement`
+      );
+
+
+    const result =
+      await response.json();
+
+
+    console.log(
+      "GGN QR Management API:",
+      result
+    );
+
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+
+      throw new Error(
+        result &&
+        result.message
+          ? result.message
+          : "ไม่สามารถโหลด QR Management ได้"
+      );
+
+    }
+
+
+    const data =
+      result.data || {};
+
+
+    qrLocationsData =
+      data.locations || [];
+
+
+    qrSelectedPoints =
+      new Set();
+
+
+    renderQRManagementSummary(
+      data
+    );
+
+
+    renderQRLocations(
+      qrLocationsData
+    );
+
+
+    updateQRSelectionInfo();
+
+
+  } catch (error) {
+
+    console.error(
+      "GGN QR Management Error:",
+      error
+    );
+
+
+    qrLocations.innerHTML =
+
+      `<div class="qr-error">
+        ❌ โหลดข้อมูลไม่สำเร็จ
+        <br>
+        ${escapeHTML(error.message || "")}
+      </div>`;
+
+  }
+
+}
+
+
+// ==================================================
+// RENDER QR SUMMARY
+// ==================================================
+
+function renderQRManagementSummary(data) {
+
+  if (!qrManagementSummary) {
+
+    return;
+
+  }
+
+
+  qrManagementSummary.innerHTML =
+
+    `<div class="qr-summary-card">
+
+      <span class="qr-summary-icon">
+        📍
+      </span>
+
+      <span class="qr-summary-value">
+        ${data.count || 0}
+      </span>
+
+      <span class="qr-summary-label">
+        จุดทั้งหมด
+      </span>
+
+    </div>
+
+
+    <div class="qr-summary-card">
+
+      <span class="qr-summary-icon">
+        🟢
+      </span>
+
+      <span class="qr-summary-value">
+        ${data.activeCount || 0}
+      </span>
+
+      <span class="qr-summary-label">
+        จุด Active
+      </span>
+
+    </div>
+
+
+    <div class="qr-summary-card">
+
+      <span class="qr-summary-icon">
+        ⚪
+      </span>
+
+      <span class="qr-summary-value">
+        ${(data.count || 0) -
+        (data.activeCount || 0)}
+      </span>
+
+      <span class="qr-summary-label">
+        จุดปิดใช้งาน
+      </span>
+
+    </div>`;
+
+}
+
+
+// ==================================================
+// RENDER QR LOCATIONS
+// ==================================================
+
+function renderQRLocations(locations) {
+
+  if (!qrLocations) {
+
+    return;
+
+  }
+
+
+  qrLocations.innerHTML =
+    "";
+
+
+  if (!locations.length) {
+
+    qrLocations.innerHTML =
+
+      `<div class="dashboard-empty">
+        ⚪ ไม่พบข้อมูลจุดตรวจ
+      </div>`;
+
+    return;
+
+  }
+
+
+  locations.forEach(
+    location => {
+
+      const card =
+        document.createElement(
+          "article"
+        );
+
+
+      card.className =
+        "qr-location-card";
+
+
+      if (
+        !location.active
+      ) {
+
+        card.classList.add(
+          "qr-location-inactive"
+        );
+
+      }
+
+
+      const checkbox =
+        document.createElement(
+          "input"
+        );
+
+
+      checkbox.type =
+        "checkbox";
+
+
+      checkbox.className =
+        "qr-location-checkbox";
+
+
+      checkbox.value =
+        location.pointId;
+
+
+      checkbox.checked =
+        qrSelectedPoints.has(
+          location.pointId
+        );
+
+
+      checkbox.addEventListener(
+        "change",
+        function() {
+
+          if (this.checked) {
+
+            qrSelectedPoints.add(
+              location.pointId
+            );
+
+            card.classList.add(
+              "qr-location-selected"
+            );
+
+          } else {
+
+            qrSelectedPoints.delete(
+              location.pointId
+            );
+
+            card.classList.remove(
+              "qr-location-selected"
+            );
+
+          }
+
+
+          updateQRSelectionInfo();
+
+        }
+      );
+
+
+      const content =
+        document.createElement(
+          "div"
+        );
+
+
+      content.className =
+        "qr-location-content";
+
+
+      const pointId =
+        document.createElement(
+          "div"
+        );
+
+
+      pointId.className =
+        "qr-location-point-id";
+
+
+      pointId.textContent =
+        location.pointId || "-";
+
+
+      const locationName =
+        document.createElement(
+          "div"
+        );
+
+
+      locationName.className =
+        "qr-location-name";
+
+
+      locationName.textContent =
+        location.location || "-";
+
+
+      const zone =
+        document.createElement(
+          "div"
+        );
+
+
+      zone.className =
+        "qr-location-zone";
+
+
+      zone.textContent =
+        location.zone || "-";
+
+
+      const active =
+        document.createElement(
+          "span"
+        );
+
+
+      active.className =
+        location.active
+          ? "qr-active"
+          : "qr-inactive";
+
+
+      active.textContent =
+        location.active
+          ? "● Active"
+          : "● ปิดใช้งาน";
+
+
+      content.appendChild(
+        pointId
+      );
+
+
+      content.appendChild(
+        locationName
+      );
+
+
+      content.appendChild(
+        zone
+      );
+
+
+      content.appendChild(
+        active
+      );
+
+
+      card.appendChild(
+        checkbox
+      );
+
+
+      card.appendChild(
+        content
+      );
+
+
+      qrLocations.appendChild(
+        card
+      );
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// SELECT ALL
+// ==================================================
+
+function selectAllQRLocations() {
+
+  qrSelectedPoints =
+    new Set(
+
+      qrLocationsData
+        .filter(
+          location =>
+            location.active === true
+        )
+        .map(
+          location =>
+            location.pointId
+        )
+
+    );
+
+
+  renderQRLocations(
+    qrLocationsData
+  );
+
+
+  updateQRSelectionInfo();
+
+}
+
+
+// ==================================================
+// CLEAR SELECTION
+// ==================================================
+
+function clearQRSelection() {
+
+  qrSelectedPoints =
+    new Set();
+
+
+  renderQRLocations(
+    qrLocationsData
+  );
+
+
+  updateQRSelectionInfo();
+
+}
+
+
+// ==================================================
+// UPDATE SELECTION INFO
+// ==================================================
+
+function updateQRSelectionInfo() {
+
+  if (!qrSelectionInfo) {
+
+    return;
+
+  }
+
+
+  const count =
+    qrSelectedPoints.size;
+
+
+  if (!count) {
+
+    qrSelectionInfo.innerHTML =
+      "📌 ยังไม่ได้เลือกจุดตรวจ";
+
+    return;
+
+  }
+
+
+  qrSelectionInfo.innerHTML =
+
+    `📌 เลือกแล้ว
+     <strong>${count}</strong>
+     จุด`;
+
+}
+
+
+// ==================================================
+// ESCAPE HTML
+// ==================================================
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+// ==================================================
+// EVENTS
 // ==================================================
 
 if (refreshDashboardBtn) {
@@ -624,6 +1227,56 @@ if (refreshDashboardBtn) {
   refreshDashboardBtn.addEventListener(
     "click",
     loadDashboard
+  );
+
+}
+
+
+if (dashboardMenuBtn) {
+
+  dashboardMenuBtn.addEventListener(
+    "click",
+    showDashboardView
+  );
+
+}
+
+
+if (qrManagementMenuBtn) {
+
+  qrManagementMenuBtn.addEventListener(
+    "click",
+    showQRManagementView
+  );
+
+}
+
+
+if (qrSelectAllBtn) {
+
+  qrSelectAllBtn.addEventListener(
+    "click",
+    selectAllQRLocations
+  );
+
+}
+
+
+if (qrClearSelectionBtn) {
+
+  qrClearSelectionBtn.addEventListener(
+    "click",
+    clearQRSelection
+  );
+
+}
+
+
+if (qrRefreshBtn) {
+
+  qrRefreshBtn.addEventListener(
+    "click",
+    loadQRManagement
   );
 
 }

@@ -62,7 +62,7 @@
       <!-- TITLE -->
 
       <h2 class="system-title">
-        📊 Dashboard
+        📊 GGN Check-in
       </h2>
 
 
@@ -80,40 +80,220 @@
 
 
     <!-- ==================================================
-         SUMMARY
+         MAIN MENU
          ================================================== -->
 
-    <section
-      id="dashboardSummary"
-      class="dashboard-summary"
-    ></section>
+    <nav class="dashboard-menu">
 
-
-    <!-- ==================================================
-         ZONES
-         ================================================== -->
-
-    <main
-      id="dashboardZones"
-      class="dashboard-zones"
-    ></main>
-
-
-    <!-- ==================================================
-         REFRESH
-         ================================================== -->
-
-    <div class="dashboard-refresh">
 
       <button
         type="button"
-        id="refreshDashboardBtn"
-        class="dashboard-refresh-button"
+        id="dashboardMenuBtn"
+        class="dashboard-menu-button dashboard-menu-active"
       >
-        🔄 รีเฟรชข้อมูล
+        📊 Dashboard
       </button>
 
-    </div>
+
+      <button
+        type="button"
+        id="qrManagementMenuBtn"
+        class="dashboard-menu-button"
+      >
+        📱 QR Management
+      </button>
+
+
+    </nav>
+
+
+    <!-- ==================================================
+         DASHBOARD VIEW
+         ================================================== -->
+
+    <main
+      id="dashboardView"
+      class="dashboard-view"
+    >
+
+
+      <!-- ==================================================
+           SUMMARY
+           ================================================== -->
+
+      <section
+        id="dashboardSummary"
+        class="dashboard-summary"
+      ></section>
+
+
+      <!-- ==================================================
+           ZONES
+           ================================================== -->
+
+      <section
+        id="dashboardZones"
+        class="dashboard-zones"
+      ></section>
+
+
+      <!-- ==================================================
+           REFRESH
+           ================================================== -->
+
+      <div class="dashboard-refresh">
+
+        <button
+          type="button"
+          id="refreshDashboardBtn"
+          class="dashboard-refresh-button"
+        >
+          🔄 รีเฟรชข้อมูล
+        </button>
+
+      </div>
+
+
+    </main>
+
+
+    <!-- ==================================================
+         QR MANAGEMENT VIEW
+         ================================================== -->
+
+    <main
+      id="qrManagementView"
+      class="qr-management-view"
+      hidden
+    >
+
+
+      <!-- ==================================================
+           QR HEADER
+           ================================================== -->
+
+      <section class="qr-management-header">
+
+        <div>
+
+          <h2>
+            📱 QR Management
+          </h2>
+
+          <p>
+            จัดการ QR Code สำหรับแต่ละจุดตรวจ
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==================================================
+           QR SUMMARY
+           ================================================== -->
+
+      <section
+        id="qrManagementSummary"
+        class="qr-management-summary"
+      ></section>
+
+
+      <!-- ==================================================
+           QR ACTION BAR
+           ================================================== -->
+
+      <section class="qr-management-actions">
+
+
+        <button
+          type="button"
+          id="qrSelectAllBtn"
+          class="qr-action-button"
+        >
+          ☑️ เลือกทั้งหมด
+        </button>
+
+
+        <button
+          type="button"
+          id="qrClearSelectionBtn"
+          class="qr-action-button secondary"
+        >
+          ◻️ ยกเลิกการเลือก
+        </button>
+
+
+        <button
+          type="button"
+          id="qrRefreshBtn"
+          class="qr-action-button"
+        >
+          🔄 โหลดรายการใหม่
+        </button>
+
+
+      </section>
+
+
+      <!-- ==================================================
+           QR LOCATIONS
+           ================================================== -->
+
+      <section
+        id="qrLocations"
+        class="qr-locations"
+      ></section>
+
+
+      <!-- ==================================================
+           QR SELECTION INFO
+           ================================================== -->
+
+      <section
+        id="qrSelectionInfo"
+        class="qr-selection-info"
+      >
+
+        เลือกจุดตรวจที่ต้องการจัดการ
+
+      </section>
+
+
+      <!-- ==================================================
+           QR FUTURE ACTION
+           ================================================== -->
+
+      <section class="qr-generation-panel">
+
+
+        <div class="qr-generation-icon">
+          📱
+        </div>
+
+
+        <h3>
+          สร้าง QR Code
+        </h3>
+
+
+        <p>
+          ส่วนสร้าง QR Code และระบบพิมพ์
+          จะพัฒนาต่อในขั้นถัดไป
+        </p>
+
+
+        <div class="qr-generation-status">
+
+          🔒 รอการพัฒนาส่วนสร้าง QR
+
+        </div>
+
+
+      </section>
+
+
+    </main>
 
 
   </div>
