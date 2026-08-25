@@ -1,14 +1,13 @@
 // ==================================================
 // GGN CHECK-IN
 // APP.JS
-// Version 3
+// Version 2
 //
 // หน้าที่:
 // - Common Function
 // - Google Apps Script URL
 // - Zone
 // - Current Page
-// - Page Navigation
 // - Index Page
 // ==================================================
 
@@ -76,26 +75,6 @@ if (zoneTitle) {
 
   zoneTitle.textContent =
     ZONE;
-
-}
-
-
-// ==================================================
-// PAGE NAVIGATION
-// ==================================================
-
-function goToDashboard() {
-
-  window.location.href =
-    "./dashboard.html";
-
-}
-
-
-function goToQRManagement() {
-
-  window.location.href =
-    "./qr.html";
 
 }
 

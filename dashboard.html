@@ -37,9 +37,7 @@
     <header class="dashboard-header">
 
 
-      <!-- ==================================================
-           LOGO
-           ================================================== -->
+      <!-- LOGO -->
 
       <div class="logo">
 
@@ -51,9 +49,7 @@
       </div>
 
 
-      <!-- ==================================================
-           ZONE
-           ================================================== -->
+      <!-- ZONE -->
 
       <h2
         class="zone-title"
@@ -63,18 +59,14 @@
       </h2>
 
 
-      <!-- ==================================================
-           SYSTEM TITLE
-           ================================================== -->
+      <!-- TITLE -->
 
       <h2 class="system-title">
-        📊 GGN Check-in
+        📊 Dashboard
       </h2>
 
 
-      <!-- ==================================================
-           STATUS
-           ================================================== -->
+      <!-- STATUS -->
 
       <div
         id="dashboardStatus"
@@ -88,92 +80,40 @@
 
 
     <!-- ==================================================
-         STICKY MAIN MENU
+         SUMMARY
          ================================================== -->
 
-    <nav
-      class="dashboard-menu dashboard-menu-sticky"
-      aria-label="เมนูหลัก"
-    >
-
-
-      <!-- ==================================================
-           DASHBOARD
-           ================================================== -->
-
-      <button
-        type="button"
-        id="dashboardMenuBtn"
-        class="dashboard-menu-button dashboard-menu-active"
-      >
-        📊 Dashboard
-      </button>
-
-
-      <!-- ==================================================
-           QR MANAGEMENT
-           ================================================== -->
-
-      <button
-        type="button"
-        id="qrManagementMenuBtn"
-        class="dashboard-menu-button"
-      >
-        📱 QR Management
-      </button>
-
-
-    </nav>
+    <section
+      id="dashboardSummary"
+      class="dashboard-summary"
+    ></section>
 
 
     <!-- ==================================================
-         DASHBOARD VIEW
+         ZONES
          ================================================== -->
 
     <main
-      id="dashboardView"
-      class="dashboard-view"
-    >
+      id="dashboardZones"
+      class="dashboard-zones"
+    ></main>
 
 
-      <!-- ==================================================
-           SUMMARY
-           ================================================== -->
+    <!-- ==================================================
+         REFRESH
+         ================================================== -->
 
-      <section
-        id="dashboardSummary"
-        class="dashboard-summary"
-      ></section>
+    <div class="dashboard-refresh">
 
+      <button
+        type="button"
+        id="refreshDashboardBtn"
+        class="dashboard-refresh-button"
+      >
+        🔄 รีเฟรชข้อมูล
+      </button>
 
-      <!-- ==================================================
-           ZONES
-           ================================================== -->
-
-      <section
-        id="dashboardZones"
-        class="dashboard-zones"
-      ></section>
-
-
-      <!-- ==================================================
-           REFRESH
-           ================================================== -->
-
-      <div class="dashboard-refresh">
-
-        <button
-          type="button"
-          id="refreshDashboardBtn"
-          class="dashboard-refresh-button"
-        >
-          🔄 รีเฟรชข้อมูล
-        </button>
-
-      </div>
-
-
-    </main>
+    </div>
 
 
   </div>

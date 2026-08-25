@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.0
+// Version 3
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -10,19 +10,18 @@
 // - แบ่งกลุ่มตาม Zone
 // - แสดงสถานะของแต่ละจุด
 // - รีเฟรชข้อมูล
-// - จัดการเมนู Dashboard / QR Management
 //
 // IMPORTANT:
-// - QR Management แยกไปอยู่ที่ qr.html + qr.js แล้ว
-// - ไม่จัดการ QR ภายในไฟล์นี้
 // - ไม่แก้ Backend
+// - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
+// - ปรับเฉพาะการแสดงผล UI
 // ==================================================
 
 
 // ==================================================
-// DASHBOARD ELEMENTS
+// ELEMENTS
 // ==================================================
 
 const dashboardStatus =
@@ -39,18 +38,6 @@ const dashboardZones =
 
 const refreshDashboardBtn =
   getElement("refreshDashboardBtn");
-
-
-// ==================================================
-// MENU ELEMENTS
-// ==================================================
-
-const dashboardMenuBtn =
-  getElement("dashboardMenuBtn");
-
-
-const qrManagementMenuBtn =
-  getElement("qrManagementMenuBtn");
 
 
 // ==================================================
@@ -305,6 +292,10 @@ function renderZones(zones) {
         "dashboard-zone";
 
 
+      // =================================================
+      // ZONE HEADER
+      // =================================================
+
       const zoneHeader =
         document.createElement(
           "div"
@@ -341,21 +332,10 @@ function renderZones(zones) {
 
       zoneSummary.innerHTML =
 
-        `<span>
-          ทั้งหมด ${zone.total || 0} จุด
-        </span>
-
-        <span>
-          🟢 ${zone.checkIn || 0}
-        </span>
-
-        <span>
-          🔴 ${zone.checkOut || 0}
-        </span>
-
-        <span>
-          ⚪ ${zone.noData || 0}
-        </span>`;
+        `<span>ทั้งหมด ${zone.total || 0} จุด</span>
+         <span>🟢 ${zone.checkIn || 0}</span>
+         <span>🔴 ${zone.checkOut || 0}</span>
+         <span>⚪ ${zone.noData || 0}</span>`;
 
 
       zoneHeader.appendChild(
@@ -372,6 +352,10 @@ function renderZones(zones) {
         zoneHeader
       );
 
+
+      // =================================================
+      // POINT GRID
+      // =================================================
 
       const pointsGrid =
         document.createElement(
@@ -427,6 +411,10 @@ function createPointCard(point) {
     "dashboard-point-card";
 
 
+  // =================================================
+  // STATUS
+  // =================================================
+
   const status =
     point.status ||
     "UNKNOWN";
@@ -437,9 +425,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
+  // =================================================
   // HEADER
-  // ==================================================
+  // =================================================
 
   const header =
     document.createElement(
@@ -496,9 +484,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
+  // =================================================
   // LOCATION
-  // ==================================================
+  // =================================================
 
   const location =
     document.createElement(
@@ -520,9 +508,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
+  // =================================================
   // STATUS TEXT
-  // ==================================================
+  // =================================================
 
   const statusText =
     document.createElement(
@@ -544,9 +532,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
+  // =================================================
   // PERSON
-  // ==================================================
+  // =================================================
 
   const person =
     document.createElement(
@@ -570,9 +558,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
-  // JOB
-  // ==================================================
+  // =================================================
+  // JOB TYPE
+  // =================================================
 
   const job =
     document.createElement(
@@ -596,9 +584,9 @@ function createPointCard(point) {
   );
 
 
-  // ==================================================
+  // =================================================
   // TIMESTAMP
-  // ==================================================
+  // =================================================
 
   const timestamp =
     document.createElement(
@@ -628,93 +616,7 @@ function createPointCard(point) {
 
 
 // ==================================================
-// GO TO DASHBOARD
-// ==================================================
-
-function goToDashboard() {
-
-  /*
-   * ถ้าอยู่หน้า Dashboard อยู่แล้ว
-   * ไม่ต้องโหลดหน้าใหม่
-   */
-
-  if (
-    currentPage === "dashboard.html"
-  ) {
-
-    loadDashboard();
-
-    return;
-
-  }
-
-
-  window.location.href =
-    "./dashboard.html";
-
-}
-
-
-// ==================================================
-// GO TO QR MANAGEMENT
-// ==================================================
-
-function goToQRManagement() {
-
-  /*
-   * QR Management แยกเป็นหน้า qr.html
-   */
-
-  if (
-    currentPage === "qr.html"
-  ) {
-
-    return;
-
-  }
-
-
-  window.location.href =
-    "./qr.html";
-
-}
-
-
-// ==================================================
-// UPDATE MENU ACTIVE STATE
-// ==================================================
-
-function updateDashboardMenu() {
-
-  if (dashboardMenuBtn) {
-
-    dashboardMenuBtn.classList.toggle(
-      "dashboard-menu-active",
-      currentPage === "dashboard.html"
-    );
-
-  }
-
-
-  if (qrManagementMenuBtn) {
-
-    qrManagementMenuBtn.classList.toggle(
-      "dashboard-menu-active",
-      currentPage === "qr.html"
-    );
-
-  }
-
-}
-
-
-// ==================================================
-// EVENTS
-// ==================================================
-
-
-// ==================================================
-// REFRESH DASHBOARD
+// REFRESH BUTTON
 // ==================================================
 
 if (refreshDashboardBtn) {
@@ -728,39 +630,8 @@ if (refreshDashboardBtn) {
 
 
 // ==================================================
-// DASHBOARD MENU
-// ==================================================
-
-if (dashboardMenuBtn) {
-
-  dashboardMenuBtn.addEventListener(
-    "click",
-    goToDashboard
-  );
-
-}
-
-
-// ==================================================
-// QR MANAGEMENT MENU
-// ==================================================
-
-if (qrManagementMenuBtn) {
-
-  qrManagementMenuBtn.addEventListener(
-    "click",
-    goToQRManagement
-  );
-
-}
-
-
-// ==================================================
 // START
 // ==================================================
-
-updateDashboardMenu();
-
 
 if (
   currentPage === "dashboard.html"
