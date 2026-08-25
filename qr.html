@@ -37,7 +37,9 @@
     <header class="dashboard-header">
 
 
-      <!-- LOGO -->
+      <!-- ==================================================
+           LOGO
+           ================================================== -->
 
       <div class="logo">
 
@@ -49,7 +51,9 @@
       </div>
 
 
-      <!-- ZONE -->
+      <!-- ==================================================
+           ZONE
+           ================================================== -->
 
       <h2
         class="zone-title"
@@ -59,14 +63,18 @@
       </h2>
 
 
-      <!-- TITLE -->
+      <!-- ==================================================
+           SYSTEM TITLE
+           ================================================== -->
 
       <h2 class="system-title">
         📱 QR Management
       </h2>
 
 
-      <!-- STATUS -->
+      <!-- ==================================================
+           STATUS
+           ================================================== -->
 
       <div
         id="qrStatus"
@@ -80,296 +88,366 @@
 
 
     <!-- ==================================================
-         QR MANAGEMENT TOOLBAR
+         STICKY MAIN MENU
          ================================================== -->
 
-    <section class="qr-management-toolbar">
-
-
-      <!-- ==================================================
-           TOOLBAR TITLE
-           ================================================== -->
-
-      <div class="qr-management-title">
-
-        <h3>
-          📱 จัดการ QR Code จุดตรวจ
-        </h3>
-
-        <p>
-          เลือกจุดตรวจที่ต้องการสร้างหรือพิมพ์ QR Code
-        </p>
-
-      </div>
-
-
-      <!-- ==================================================
-           ACTION BUTTONS
-           ================================================== -->
-
-      <div class="qr-management-actions">
-
-
-        <!-- SELECT ALL -->
-
-        <button
-          type="button"
-          id="selectAllQrBtn"
-          class="qr-action-button"
-        >
-          ☑️ เลือกทั้งหมด
-        </button>
-
-
-        <!-- CLEAR -->
-
-        <button
-          type="button"
-          id="clearAllQrBtn"
-          class="qr-action-button"
-        >
-          ⬜ ยกเลิกทั้งหมด
-        </button>
-
-
-        <!-- CREATE -->
-
-        <button
-          type="button"
-          id="createQrBtn"
-          class="qr-action-button qr-create-button"
-        >
-          📱 สร้าง QR
-        </button>
-
-
-        <!-- PRINT SELECTED -->
-
-        <button
-          type="button"
-          id="printSelectedQrBtn"
-          class="qr-action-button qr-print-button"
-        >
-          🖨️ พิมพ์จุดที่เลือก
-        </button>
-
-
-        <!-- PRINT ALL -->
-
-        <button
-          type="button"
-          id="printAllQrBtn"
-          class="qr-action-button qr-print-all-button"
-        >
-          🖨️ พิมพ์ทั้งหมด
-        </button>
-
-
-      </div>
-
-
-    </section>
-
-
-    <!-- ==================================================
-         SELECTION SUMMARY
-         ================================================== -->
-
-    <section
-      class="qr-selection-summary"
-      id="qrSelectionSummary"
+    <nav
+      class="dashboard-menu dashboard-menu-sticky"
+      aria-label="เมนูหลัก"
     >
 
 
-      <div class="qr-summary-item">
+      <!-- ==================================================
+           DASHBOARD
+           ================================================== -->
 
-        <span class="qr-summary-label">
-          จุดทั้งหมด
-        </span>
-
-        <strong
-          id="qrTotalCount"
-          class="qr-summary-value"
-        >
-          0
-        </strong>
-
-      </div>
+      <button
+        type="button"
+        id="dashboardMenuBtn"
+        class="dashboard-menu-button"
+      >
+        📊 Dashboard
+      </button>
 
 
-      <div class="qr-summary-item">
+      <!-- ==================================================
+           QR MANAGEMENT
+           ================================================== -->
 
-        <span class="qr-summary-label">
-          จุด Active
-        </span>
-
-        <strong
-          id="qrActiveCount"
-          class="qr-summary-value"
-        >
-          0
-        </strong>
-
-      </div>
+      <button
+        type="button"
+        id="qrManagementMenuBtn"
+        class="dashboard-menu-button dashboard-menu-active"
+      >
+        📱 QR Management
+      </button>
 
 
-      <div class="qr-summary-item">
-
-        <span class="qr-summary-label">
-          เลือกแล้ว
-        </span>
-
-        <strong
-          id="qrSelectedCount"
-          class="qr-summary-value"
-        >
-          0
-        </strong>
-
-      </div>
-
-
-    </section>
+    </nav>
 
 
     <!-- ==================================================
-         LOCATION LIST
+         QR MANAGEMENT CONTENT
          ================================================== -->
 
     <main
-      id="qrLocationList"
-      class="qr-location-list"
+      id="qrManagementPage"
+      class="qr-management-view"
     >
 
 
       <!-- ==================================================
-           LOADING
+           QR MANAGEMENT HEADER
            ================================================== -->
 
-      <div
-        id="qrLoading"
-        class="qr-empty-state"
-      >
-
-        ⏳ กำลังโหลดรายการจุดตรวจ...
-
-      </div>
-
-
-    </main>
-
-
-    <!-- ==================================================
-         QR PREVIEW SECTION
-         ================================================== -->
-
-    <section
-      id="qrPreviewSection"
-      class="qr-preview-section"
-    >
-
-
-      <!-- ==================================================
-           PREVIEW HEADER
-           ================================================== -->
-
-      <div class="qr-preview-header">
-
+      <section class="qr-management-header">
 
         <div>
 
+          <h2>
+            📱 QR Management
+          </h2>
+
+          <p>
+            จัดการ QR Code สำหรับแต่ละจุดตรวจ
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==================================================
+           QR MANAGEMENT TOOLBAR
+           ================================================== -->
+
+      <section class="qr-management-toolbar">
+
+
+        <!-- ==================================================
+             TITLE
+             ================================================== -->
+
+        <div class="qr-management-title">
+
           <h3>
-            📱 QR Code
+            📱 จัดการ QR Code จุดตรวจ
           </h3>
 
           <p>
-            ตัวอย่าง QR Code สำหรับนำไปติดตั้งที่จุดตรวจ
+            เลือกจุดตรวจที่ต้องการสร้างหรือพิมพ์ QR Code
           </p>
 
         </div>
 
 
-        <div
-          id="qrPreviewCount"
-          class="qr-preview-count"
-        >
-          0 จุด
+        <!-- ==================================================
+             ACTION BUTTONS
+             ================================================== -->
+
+        <div class="qr-management-actions">
+
+
+          <!-- SELECT ALL -->
+
+          <button
+            type="button"
+            id="selectAllQrBtn"
+            class="qr-action-button"
+          >
+            ☑️ เลือกทั้งหมด
+          </button>
+
+
+          <!-- CLEAR -->
+
+          <button
+            type="button"
+            id="clearAllQrBtn"
+            class="qr-action-button secondary"
+          >
+            ◻️ ยกเลิกทั้งหมด
+          </button>
+
+
+          <!-- CREATE -->
+
+          <button
+            type="button"
+            id="createQrBtn"
+            class="qr-action-button qr-create-button"
+          >
+            📱 สร้าง QR
+          </button>
+
+
+          <!-- PRINT SELECTED -->
+
+          <button
+            type="button"
+            id="printSelectedQrBtn"
+            class="qr-action-button qr-print-button"
+          >
+            🖨️ พิมพ์จุดที่เลือก
+          </button>
+
+
+          <!-- PRINT ALL -->
+
+          <button
+            type="button"
+            id="printAllQrBtn"
+            class="qr-action-button qr-print-all-button"
+          >
+            🖨️ พิมพ์ทั้งหมด
+          </button>
+
+
         </div>
 
 
-      </div>
+      </section>
 
 
       <!-- ==================================================
-           QR PREVIEW GRID
+           SELECTION SUMMARY
            ================================================== -->
 
-      <div
-        id="qrPreviewGrid"
-        class="qr-preview-grid"
+      <section
+        class="qr-selection-summary"
+        id="qrSelectionSummary"
       >
 
 
-        <div class="qr-empty-state">
+        <!-- TOTAL -->
 
-          ยังไม่มี QR Code
+        <div class="qr-summary-item">
+
+          <span class="qr-summary-label">
+            จุดทั้งหมด
+          </span>
+
+          <strong
+            id="qrTotalCount"
+            class="qr-summary-value"
+          >
+            0
+          </strong>
 
         </div>
 
 
+        <!-- ACTIVE -->
+
+        <div class="qr-summary-item">
+
+          <span class="qr-summary-label">
+            จุด Active
+          </span>
+
+          <strong
+            id="qrActiveCount"
+            class="qr-summary-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <!-- SELECTED -->
+
+        <div class="qr-summary-item">
+
+          <span class="qr-summary-label">
+            เลือกแล้ว
+          </span>
+
+          <strong
+            id="qrSelectedCount"
+            class="qr-summary-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- ==================================================
+           LOCATION LIST
+           ================================================== -->
+
+      <main
+        id="qrLocationList"
+        class="qr-location-list"
+      >
+
+
+        <!-- ==================================================
+             LOADING
+             ================================================== -->
+
+        <div
+          id="qrLoading"
+          class="qr-empty-state"
+        >
+          ⏳ กำลังโหลดรายการจุดตรวจ...
+        </div>
+
+
+      </main>
+
+
+      <!-- ==================================================
+           QR PREVIEW SECTION
+           ================================================== -->
+
+      <section
+        id="qrPreviewSection"
+        class="qr-preview-section"
+      >
+
+
+        <!-- ==================================================
+             PREVIEW HEADER
+             ================================================== -->
+
+        <div class="qr-preview-header">
+
+
+          <div>
+
+            <h3>
+              📱 QR Code
+            </h3>
+
+            <p>
+              ตัวอย่าง QR Code สำหรับนำไปติดตั้งที่จุดตรวจ
+            </p>
+
+          </div>
+
+
+          <div
+            id="qrPreviewCount"
+            class="qr-preview-count"
+          >
+            0 จุด
+          </div>
+
+
+        </div>
+
+
+        <!-- ==================================================
+             QR PREVIEW GRID
+             ================================================== -->
+
+        <div
+          id="qrPreviewGrid"
+          class="qr-preview-grid"
+        >
+
+          <div class="qr-empty-state">
+            ยังไม่มี QR Code
+          </div>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- ==================================================
+           PRINT AREA
+           ================================================== -->
+
+      <section
+        id="qrPrintArea"
+        class="qr-print-area"
+      >
+
+        <!--
+
+          พื้นที่สำหรับระบบพิมพ์ QR
+
+          เป้าหมาย:
+
+          1 แผ่น = 8 QR
+
+          ┌────────┬────────┬────────┬────────┐
+          │ QR 01  │ QR 02  │ QR 03  │ QR 04  │
+          ├────────┼────────┼────────┼────────┤
+          │ QR 05  │ QR 06  │ QR 07  │ QR 08  │
+          └────────┴────────┴────────┴────────┘
+
+        -->
+
+
+      </section>
+
+
+      <!-- ==================================================
+           REFRESH
+           ================================================== -->
+
+      <div class="dashboard-refresh">
+
+        <button
+          type="button"
+          id="refreshQrBtn"
+          class="dashboard-refresh-button"
+        >
+          🔄 รีเฟรชรายการจุด
+        </button>
+
       </div>
 
 
-    </section>
-
-
-    <!-- ==================================================
-         PRINT AREA
-         ================================================== -->
-
-    <section
-      id="qrPrintArea"
-      class="qr-print-area"
-    >
-
-
-      <!--
-        พื้นที่นี้เตรียมไว้สำหรับระบบพิมพ์
-        ในขั้นตอนถัดไป
-
-        รูปแบบเป้าหมาย:
-
-        1 แผ่น
-        ┌────────┬────────┬────────┬────────┐
-        │ QR 01  │ QR 02  │ QR 03  │ QR 04  │
-        ├────────┼────────┼────────┼────────┤
-        │ QR 05  │ QR 06  │ QR 07  │ QR 08  │
-        └────────┴────────┴────────┴────────┘
-
-        = 8 QR / 1 แผ่น
-      -->
-
-
-    </section>
-
-
-    <!-- ==================================================
-         REFRESH
-         ================================================== -->
-
-    <div class="dashboard-refresh">
-
-
-      <button
-        type="button"
-        id="refreshQrBtn"
-        class="dashboard-refresh-button"
-      >
-        🔄 รีเฟรชรายการจุด
-      </button>
-
-
-    </div>
+    </main>
 
 
   </div>
@@ -380,6 +458,14 @@
        ================================================== -->
 
   <script src="./js/app.js"></script>
+
+  <!-- QRCode Generator -->
+  <!--
+    ต้องมี Library นี้ก่อน qr.js
+    เพื่อให้ new QRCode(...) ทำงาน
+  -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script src="./js/qr.js"></script>
 

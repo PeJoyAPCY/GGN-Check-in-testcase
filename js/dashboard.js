@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5
+// Version 5.0
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -10,14 +10,14 @@
 // - แบ่งกลุ่มตาม Zone
 // - แสดงสถานะของแต่ละจุด
 // - รีเฟรชข้อมูล
-// - นำทางไปหน้า QR Management
+// - จัดการเมนู Dashboard / QR Management
 //
 // IMPORTANT:
+// - QR Management แยกไปอยู่ที่ qr.html + qr.js แล้ว
+// - ไม่จัดการ QR ภายในไฟล์นี้
 // - ไม่แก้ Backend
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - QR Management แยกเป็น qr.html
-// - QR Management ใช้ qr.js
 // ==================================================
 
 
@@ -40,6 +40,10 @@ const dashboardZones =
 const refreshDashboardBtn =
   getElement("refreshDashboardBtn");
 
+
+// ==================================================
+// MENU ELEMENTS
+// ==================================================
 
 const dashboardMenuBtn =
   getElement("dashboardMenuBtn");
@@ -337,10 +341,21 @@ function renderZones(zones) {
 
       zoneSummary.innerHTML =
 
-        `<span>ทั้งหมด ${zone.total || 0} จุด</span>
-         <span>🟢 ${zone.checkIn || 0}</span>
-         <span>🔴 ${zone.checkOut || 0}</span>
-         <span>⚪ ${zone.noData || 0}</span>`;
+        `<span>
+          ทั้งหมด ${zone.total || 0} จุด
+        </span>
+
+        <span>
+          🟢 ${zone.checkIn || 0}
+        </span>
+
+        <span>
+          🔴 ${zone.checkOut || 0}
+        </span>
+
+        <span>
+          ⚪ ${zone.noData || 0}
+        </span>`;
 
 
       zoneHeader.appendChild(
@@ -422,6 +437,10 @@ function createPointCard(point) {
   );
 
 
+  // ==================================================
+  // HEADER
+  // ==================================================
+
   const header =
     document.createElement(
       "div"
@@ -477,6 +496,10 @@ function createPointCard(point) {
   );
 
 
+  // ==================================================
+  // LOCATION
+  // ==================================================
+
   const location =
     document.createElement(
       "div"
@@ -497,6 +520,10 @@ function createPointCard(point) {
   );
 
 
+  // ==================================================
+  // STATUS TEXT
+  // ==================================================
+
   const statusText =
     document.createElement(
       "div"
@@ -516,6 +543,10 @@ function createPointCard(point) {
     statusText
   );
 
+
+  // ==================================================
+  // PERSON
+  // ==================================================
 
   const person =
     document.createElement(
@@ -539,6 +570,10 @@ function createPointCard(point) {
   );
 
 
+  // ==================================================
+  // JOB
+  // ==================================================
+
   const job =
     document.createElement(
       "div"
@@ -560,6 +595,10 @@ function createPointCard(point) {
     job
   );
 
+
+  // ==================================================
+  // TIMESTAMP
+  // ==================================================
 
   const timestamp =
     document.createElement(
@@ -589,10 +628,51 @@ function createPointCard(point) {
 
 
 // ==================================================
-// NAVIGATE TO QR MANAGEMENT
+// GO TO DASHBOARD
 // ==================================================
 
-function openQRManagement() {
+function goToDashboard() {
+
+  /*
+   * ถ้าอยู่หน้า Dashboard อยู่แล้ว
+   * ไม่ต้องโหลดหน้าใหม่
+   */
+
+  if (
+    currentPage === "dashboard.html"
+  ) {
+
+    loadDashboard();
+
+    return;
+
+  }
+
+
+  window.location.href =
+    "./dashboard.html";
+
+}
+
+
+// ==================================================
+// GO TO QR MANAGEMENT
+// ==================================================
+
+function goToQRManagement() {
+
+  /*
+   * QR Management แยกเป็นหน้า qr.html
+   */
+
+  if (
+    currentPage === "qr.html"
+  ) {
+
+    return;
+
+  }
+
 
   window.location.href =
     "./qr.html";
@@ -601,7 +681,40 @@ function openQRManagement() {
 
 
 // ==================================================
+// UPDATE MENU ACTIVE STATE
+// ==================================================
+
+function updateDashboardMenu() {
+
+  if (dashboardMenuBtn) {
+
+    dashboardMenuBtn.classList.toggle(
+      "dashboard-menu-active",
+      currentPage === "dashboard.html"
+    );
+
+  }
+
+
+  if (qrManagementMenuBtn) {
+
+    qrManagementMenuBtn.classList.toggle(
+      "dashboard-menu-active",
+      currentPage === "qr.html"
+    );
+
+  }
+
+}
+
+
+// ==================================================
 // EVENTS
+// ==================================================
+
+
+// ==================================================
+// REFRESH DASHBOARD
 // ==================================================
 
 if (refreshDashboardBtn) {
@@ -614,26 +727,29 @@ if (refreshDashboardBtn) {
 }
 
 
+// ==================================================
+// DASHBOARD MENU
+// ==================================================
+
 if (dashboardMenuBtn) {
 
   dashboardMenuBtn.addEventListener(
     "click",
-    function() {
-
-      window.location.href =
-        "./dashboard.html";
-
-    }
+    goToDashboard
   );
 
 }
 
 
+// ==================================================
+// QR MANAGEMENT MENU
+// ==================================================
+
 if (qrManagementMenuBtn) {
 
   qrManagementMenuBtn.addEventListener(
     "click",
-    openQRManagement
+    goToQRManagement
   );
 
 }
@@ -642,6 +758,9 @@ if (qrManagementMenuBtn) {
 // ==================================================
 // START
 // ==================================================
+
+updateDashboardMenu();
+
 
 if (
   currentPage === "dashboard.html"
