@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // APP.JS
-// Version 3.0
+// Version 3.1
 //
 // หน้าที่:
 // - Common Function
@@ -11,6 +11,7 @@
 // - Index Page
 // - QR Point ID
 // - ตรวจสอบจุดตรวจจาก Backend
+// - ส่ง Point ID ต่อระหว่างหน้า
 //
 // QR FLOW:
 // QR Code
@@ -21,14 +22,22 @@
 //   ↓
 // zone + location
 //   ↓
-// แสดงจุดตรวจบน Index
+// Index
+//   ↓
+// Check-in / Check-out
+//   ↓
+// ตรวจสอบ pointId ซ้ำ
+//   ↓
+// ใช้ zone + location เดิม
 //
 // IMPORTANT:
 // - ยังรักษา Logic เดิมของระบบ
 // - Check-in / Check-out เดิมยังทำงานได้
 // - ถ้าไม่มี pointId จะใช้ ZONE เดิม
-// - ยังไม่แก้ checkin.js
-// - ยังไม่แก้ checkout.js
+// - ไม่แก้ Backend
+// - ไม่แก้ฐานข้อมูล
+// - pointId จะถูกตรวจสอบใน index.html
+//   checkin.html และ checkout.html
 // ==================================================
 
 
@@ -67,7 +76,9 @@ const currentPage =
 // อ่าน pointId จาก URL
 //
 // ตัวอย่าง:
-// index.html?pointId=POINT-001
+// index.html?pointId=P001
+// checkin.html?pointId=P001
+// checkout.html?pointId=P001
 // ==================================================
 
 const urlParams =
@@ -228,7 +239,7 @@ function updateLocationDisplay() {
 // action=locationByPoint
 //
 // ตัวอย่าง:
-// ?action=locationByPoint&pointId=POINT-001
+// ?action=locationByPoint&pointId=P001
 // ==================================================
 
 async function loadLocationByPoint() {
@@ -412,6 +423,28 @@ async function loadLocationByPoint() {
 
     /*
      * ---------------------------------------------
+     * ตรวจ Active
+     *
+     * จุดที่ถูกปิดใช้งาน
+     * ไม่ควรนำมาใช้งาน
+     * ---------------------------------------------
+     */
+
+    const active =
+      data.active === true;
+
+
+    if (!active) {
+
+      throw new Error(
+        "จุดตรวจนี้ถูกปิดใช้งาน"
+      );
+
+    }
+
+
+    /*
+     * ---------------------------------------------
      * ต้องมี Zone
      * ---------------------------------------------
      */
@@ -420,6 +453,21 @@ async function loadLocationByPoint() {
 
       throw new Error(
         "Backend ไม่ส่งข้อมูล zone"
+      );
+
+    }
+
+
+    /*
+     * ---------------------------------------------
+     * ต้องมี Location
+     * ---------------------------------------------
+     */
+
+    if (!returnedLocation) {
+
+      throw new Error(
+        "Backend ไม่ส่งข้อมูล location"
       );
 
     }
@@ -465,7 +513,10 @@ async function loadLocationByPoint() {
           currentZone,
 
         location:
-          currentLocation
+          currentLocation,
+
+        active:
+          active
 
       }
     );
@@ -611,13 +662,17 @@ function initializeIndex() {
 
 // ==================================================
 // START APPLICATION
+//
+// Version 3.1
+//
+// ตรวจสอบ pointId ในทุกหน้าที่เกี่ยวข้อง
 // ==================================================
 
 async function startApplication() {
 
   /*
    * -----------------------------------------------
-   * INDEX PAGE
+   * หน้า Index
    * -----------------------------------------------
    */
 
@@ -652,6 +707,83 @@ async function startApplication() {
      */
 
     initializeIndex();
+
+    return;
+
+  }
+
+
+  /*
+   * -----------------------------------------------
+   * หน้า Check-in
+   * -----------------------------------------------
+   */
+
+  if (
+    currentPage === "checkin.html"
+  ) {
+
+    /*
+     * ถ้ามี pointId
+     * ต้องตรวจสอบจุดใหม่
+     *
+     * เพื่อให้ currentZone และ
+     * currentLocation ถูกต้อง
+     */
+
+    if (POINT_ID) {
+
+      await loadLocationByPoint();
+
+    } else {
+
+      /*
+       * ไม่มี QR
+       * ใช้ระบบเดิม
+       */
+
+      updateLocationDisplay();
+
+    }
+
+
+    return;
+
+  }
+
+
+  /*
+   * -----------------------------------------------
+   * หน้า Check-out
+   * -----------------------------------------------
+   */
+
+  if (
+    currentPage === "checkout.html"
+  ) {
+
+    /*
+     * ถ้ามี pointId
+     * ต้องตรวจสอบจุดใหม่
+     */
+
+    if (POINT_ID) {
+
+      await loadLocationByPoint();
+
+    } else {
+
+      /*
+       * ไม่มี QR
+       * ใช้ระบบเดิม
+       */
+
+      updateLocationDisplay();
+
+    }
+
+
+    return;
 
   }
 

@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKIN.JS
-// Version 1
+// Version 2.0
 //
 // หน้าที่:
 // - Check-in
@@ -12,6 +12,28 @@
 // - ประมวลผลรูป
 // - Base64
 // - ส่งข้อมูล
+// - รองรับ QR Point ID
+//
+// QR FLOW:
+// QR Code
+//   ↓
+// pointId
+//   ↓
+// app.js
+//   ↓
+// locationByPoint
+//   ↓
+// zone + location
+//   ↓
+// checkin.js
+//   ↓
+// ส่งข้อมูล Check-in
+//
+// IMPORTANT:
+// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
+// - ใช้ข้อมูลจุดจาก app.js
+// - ไม่แก้ Backend
+// - Logic การส่งข้อมูลเดิมยังคงอยู่
 // ==================================================
 
 
@@ -68,6 +90,60 @@ function initializeCheckin() {
 
 
   // =================================================
+  // CURRENT LOCATION
+  //
+  // อ่านข้อมูลจาก app.js
+  // =================================================
+
+  function getCheckinZone() {
+
+    if (
+      typeof getCurrentZone === "function"
+    ) {
+
+      return getCurrentZone();
+
+    }
+
+
+    return ZONE;
+
+  }
+
+
+  function getCheckinLocation() {
+
+    if (
+      typeof getCurrentLocation === "function"
+    ) {
+
+      return getCurrentLocation();
+
+    }
+
+
+    return "";
+
+  }
+
+
+  function getCheckinPointId() {
+
+    if (
+      typeof getCurrentPointId === "function"
+    ) {
+
+      return getCurrentPointId();
+
+    }
+
+
+    return "";
+
+  }
+
+
+  // =================================================
   // PREVIEW TEXT
   // =================================================
 
@@ -103,11 +179,43 @@ function initializeCheckin() {
       "เข้างาน";
 
 
+    const zone =
+      getCheckinZone();
+
+
+    const location =
+      getCheckinLocation();
+
+
+    const pointId =
+      getCheckinPointId();
+
+
+    let locationText =
+      `📍 เขต: ${zone}`;
+
+
+    if (location) {
+
+      locationText +=
+        `\n📌 จุดตรวจ: ${location}`;
+
+    }
+
+
+    if (pointId) {
+
+      locationText +=
+        `\n🔖 Point ID: ${pointId}`;
+
+    }
+
+
     previewText.textContent =
 
       `📅 ${nowStr}\n` +
 
-      `📍 จุด: ${ZONE}\n` +
+      locationText + `\n` +
 
       `👤 ชื่อ: ${name}\n` +
 
@@ -420,6 +528,18 @@ function initializeCheckin() {
         : "";
 
 
+    const zone =
+      getCheckinZone();
+
+
+    const location =
+      getCheckinLocation();
+
+
+    const pointId =
+      getCheckinPointId();
+
+
     // -----------------------------------------------
     // NAME
     // -----------------------------------------------
@@ -492,6 +612,34 @@ function initializeCheckin() {
     }
 
 
+    // -----------------------------------------------
+    // QR LOCATION CHECK
+    // -----------------------------------------------
+
+    if (pointId) {
+
+      if (!zone) {
+
+        status.textContent =
+          "❌ ไม่พบข้อมูลเขตจาก QR";
+
+        return;
+
+      }
+
+
+      if (!location) {
+
+        status.textContent =
+          "❌ ไม่พบข้อมูลจุดตรวจจาก QR";
+
+        return;
+
+      }
+
+    }
+
+
     sendBtn.disabled =
       true;
 
@@ -522,25 +670,87 @@ function initializeCheckin() {
 
         const payload = {
 
+          // -----------------------------------------
+          // ZONE
+          // -----------------------------------------
+
           zone:
-            ZONE,
+            zone,
+
+
+          // -----------------------------------------
+          // LOCATION
+          // -----------------------------------------
+
+          location:
+            location,
+
+
+          // -----------------------------------------
+          // POINT ID
+          // -----------------------------------------
+
+          pointId:
+            pointId,
+
+
+          // -----------------------------------------
+          // PERSON
+          // -----------------------------------------
 
           fullname:
             name,
 
+
+          // -----------------------------------------
+          // JOB
+          // -----------------------------------------
+
           jobType:
             "Check in (เข้างาน) - " + job,
+
+
+          // -----------------------------------------
+          // EXTRA TEXT
+          // -----------------------------------------
 
           extraText:
             extraMsg,
 
+
+          // -----------------------------------------
+          // IMAGE
+          // -----------------------------------------
+
           imageBase64:
             imageBase64,
+
 
           imageName:
             `checkin-${Date.now()}-${i + 1}.jpg`
 
         };
+
+
+        console.log(
+          "GGN Check-in Payload:",
+          {
+            zone:
+              payload.zone,
+
+            location:
+              payload.location,
+
+            pointId:
+              payload.pointId,
+
+            fullname:
+              payload.fullname,
+
+            jobType:
+              payload.jobType
+          }
+        );
 
 
         await sendRequest(
