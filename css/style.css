@@ -1434,3 +1434,2154 @@ canvas {
   }
 
 }
+
+/* =================================================
+   GGN CHECK-IN
+   QR MANAGEMENT UI
+   Version 3.1
+
+   หน้าที่:
+   - QR Management UI
+   - Search
+   - Filter
+   - Summary
+   - Location List
+   - Pagination
+   - QR Preview
+   - QR Action Buttons
+
+   IMPORTANT:
+   - CSS ชุดนี้ใช้เฉพาะ QR Management
+   - ไม่แก้ Dashboard
+   - ไม่แก้ Check-in
+   - ไม่แก้ Check-out
+   - ไม่กระทบ JavaScript
+   - ไม่กระทบ Backend
+   ================================================= */
+
+
+/* =================================================
+   QR MANAGEMENT VIEW
+   ================================================= */
+
+.qr-management-view {
+
+  width:
+    100%;
+
+  max-width:
+    1600px;
+
+  margin:
+    0 auto;
+
+}
+
+
+/* =================================================
+   QR MANAGEMENT HEADER
+   ================================================= */
+
+.qr-management-header {
+
+  width:
+    100%;
+
+  margin:
+    0 auto 16px;
+
+  padding:
+    16px 20px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    10px;
+
+}
+
+
+.qr-management-header h2 {
+
+  margin:
+    0;
+
+  font-size:
+    22px;
+
+  color:
+    #800000;
+
+}
+
+
+.qr-management-header p {
+
+  margin:
+    5px 0 0;
+
+  font-size:
+    14px;
+
+  color:
+    #666666;
+
+}
+
+
+/* =================================================
+   SEARCH & FILTER PANEL
+   ================================================= */
+
+.qr-filter-panel {
+
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(280px, 2fr)
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(150px, 1fr);
+
+  gap:
+    12px;
+
+  margin:
+    0 auto 14px;
+
+  padding:
+    15px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    10px;
+
+}
+
+
+/* =================================================
+   FILTER LABEL
+   ================================================= */
+
+.qr-filter-label {
+
+  display:
+    block;
+
+  margin:
+    0 0 6px;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  color:
+    #555555;
+
+}
+
+
+/* =================================================
+   SEARCH INPUT
+   ================================================= */
+
+.qr-search-input {
+
+  width:
+    100%;
+
+  height:
+    42px;
+
+  margin:
+    0;
+
+  padding:
+    8px 12px;
+
+  box-sizing:
+    border-box;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    7px;
+
+  background:
+    #ffffff;
+
+  color:
+    #333333;
+
+  font-size:
+    15px;
+
+  outline:
+    none;
+
+}
+
+
+.qr-search-input:focus {
+
+  border-color:
+    #800000;
+
+  box-shadow:
+    0 0 0 2px rgba(128, 0, 0, 0.08);
+
+}
+
+
+/* =================================================
+   FILTER SELECT
+   ================================================= */
+
+.qr-filter-select {
+
+  width:
+    100%;
+
+  height:
+    42px;
+
+  margin:
+    0;
+
+  padding:
+    8px 10px;
+
+  box-sizing:
+    border-box;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    7px;
+
+  background:
+    #ffffff;
+
+  color:
+    #333333;
+
+  font-size:
+    14px;
+
+  cursor:
+    pointer;
+
+}
+
+
+.qr-filter-select:focus {
+
+  outline:
+    none;
+
+  border-color:
+    #800000;
+
+}
+
+
+/* =================================================
+   QR SUMMARY
+   ================================================= */
+
+.qr-selection-summary {
+
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap:
+    10px;
+
+  margin:
+    0 auto 14px;
+
+}
+
+
+/* =================================================
+   SUMMARY ITEM
+   ================================================= */
+
+.qr-summary-item {
+
+  min-height:
+    72px;
+
+  padding:
+    10px 14px;
+
+  box-sizing:
+    border-box;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  justify-content:
+    center;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    9px;
+
+}
+
+
+/* =================================================
+   SUMMARY LABEL
+   ================================================= */
+
+.qr-summary-label {
+
+  font-size:
+    13px;
+
+  color:
+    #666666;
+
+}
+
+
+/* =================================================
+   SUMMARY VALUE
+   ================================================= */
+
+.qr-summary-value {
+
+  margin-top:
+    3px;
+
+  font-size:
+    24px;
+
+  line-height:
+    1.1;
+
+  color:
+    #800000;
+
+}
+
+
+/* =================================================
+   TOOLBAR
+   ================================================= */
+
+.qr-management-toolbar {
+
+  width:
+    100%;
+
+  margin:
+    0 auto 14px;
+
+  padding:
+    12px;
+
+  box-sizing:
+    border-box;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    9px;
+
+}
+
+
+/* =================================================
+   SELECTION TOOLS
+   ================================================= */
+
+.qr-selection-tools {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+}
+
+
+/* =================================================
+   ACTION AREA
+   ================================================= */
+
+.qr-management-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    8px;
+
+}
+
+
+/* =================================================
+   QR ACTION BUTTON
+   ================================================= */
+
+.qr-action-button {
+
+  width:
+    auto;
+
+  min-height:
+    40px;
+
+  margin:
+    0;
+
+  padding:
+    8px 13px;
+
+  border:
+    1px solid #800000;
+
+  border-radius:
+    7px;
+
+  background:
+    #800000;
+
+  color:
+    #ffffff;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  white-space:
+    nowrap;
+
+  cursor:
+    pointer;
+
+  transition:
+    0.2s;
+
+}
+
+
+.qr-action-button:hover {
+
+  background:
+    #a00000;
+
+}
+
+
+.qr-action-button:disabled {
+
+  background:
+    #dddddd;
+
+  border-color:
+    #cccccc;
+
+  color:
+    #888888;
+
+  cursor:
+    not-allowed;
+
+}
+
+
+/* =================================================
+   SECONDARY BUTTON
+   ================================================= */
+
+.qr-action-button.secondary {
+
+  background:
+    #ffffff;
+
+  border-color:
+    #cccccc;
+
+  color:
+    #555555;
+
+}
+
+
+.qr-action-button.secondary:hover {
+
+  background:
+    #f5f5f5;
+
+}
+
+
+/* =================================================
+   CREATE QR
+   ================================================= */
+
+.qr-create-button {
+
+  background:
+    #198754;
+
+  border-color:
+    #198754;
+
+}
+
+
+.qr-create-button:hover {
+
+  background:
+    #157347;
+
+}
+
+
+/* =================================================
+   PRINT SELECTED
+   ================================================= */
+
+.qr-print-button {
+
+  background:
+    #6c5ce7;
+
+  border-color:
+    #6c5ce7;
+
+}
+
+
+.qr-print-button:hover {
+
+  background:
+    #5849c7;
+
+}
+
+
+/* =================================================
+   PRINT ALL
+   ================================================= */
+
+.qr-print-all-button {
+
+  background:
+    #495057;
+
+  border-color:
+    #495057;
+
+}
+
+
+.qr-print-all-button:hover {
+
+  background:
+    #343a40;
+
+}
+
+
+/* =================================================
+   LIST CONTROL
+   ================================================= */
+
+.qr-list-control {
+
+  width:
+    100%;
+
+  margin:
+    0 auto 10px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+}
+
+
+/* =================================================
+   LIST INFO
+   ================================================= */
+
+.qr-list-info {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  min-width:
+    0;
+
+}
+
+
+.qr-list-info strong {
+
+  font-size:
+    17px;
+
+  color:
+    #400000;
+
+}
+
+
+.qr-list-info span {
+
+  font-size:
+    13px;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   PAGE SIZE
+   ================================================= */
+
+.qr-page-size {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  font-size:
+    13px;
+
+  color:
+    #555555;
+
+}
+
+
+.qr-page-size .qr-filter-select {
+
+  width:
+    auto;
+
+  min-width:
+    115px;
+
+  height:
+    36px;
+
+}
+
+
+/* =================================================
+   LOCATION LIST
+   ================================================= */
+
+.qr-location-list {
+
+  width:
+    100%;
+
+  margin:
+    0 auto;
+
+}
+
+
+/* =================================================
+   LIST HEADER
+   ================================================= */
+
+.qr-list-header {
+
+  display:
+    none;
+
+}
+
+
+/* =================================================
+   LOCATION GRID
+   ================================================= */
+
+/*
+   ใช้ grid เพื่อให้ข้อมูล 25 จุด
+   อยู่ในหน้าจอได้อย่างกระชับ
+
+   Desktop:
+   1 แถว = 5 จุด
+*/
+
+.qr-location-grid {
+
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap:
+    8px;
+
+}
+
+
+/* =================================================
+   LOCATION CARD
+   ================================================= */
+
+.qr-location-card {
+
+  position:
+    relative;
+
+  min-width:
+    0;
+
+  min-height:
+    130px;
+
+  padding:
+    11px 11px 10px 38px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #d6d6d6;
+
+  border-radius:
+    8px;
+
+  cursor:
+    pointer;
+
+  transition:
+    0.15s;
+
+}
+
+
+/* =================================================
+   CARD HOVER
+   ================================================= */
+
+.qr-location-card:hover {
+
+  border-color:
+    #a00000;
+
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.09);
+
+}
+
+
+/* =================================================
+   SELECTED CARD
+   ================================================= */
+
+.qr-location-card.qr-location-selected {
+
+  border:
+    2px solid #800000;
+
+  background:
+    #fff8f8;
+
+}
+
+
+/* =================================================
+   INACTIVE CARD
+   ================================================= */
+
+.qr-location-card.qr-location-inactive {
+
+  background:
+    #f5f5f5;
+
+  color:
+    #888888;
+
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.75;
+
+}
+
+
+.qr-location-card.qr-location-inactive:hover {
+
+  border-color:
+    #d6d6d6;
+
+  box-shadow:
+    none;
+
+}
+
+
+/* =================================================
+   CHECKBOX WRAPPER
+   ================================================= */
+
+.qr-checkbox-wrapper {
+
+  position:
+    absolute;
+
+  top:
+    11px;
+
+  left:
+    10px;
+
+  width:
+    22px;
+
+  height:
+    22px;
+
+  margin:
+    0;
+
+  padding:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  cursor:
+    pointer;
+
+}
+
+
+/* =================================================
+   CHECKBOX
+   ================================================= */
+
+.qr-location-checkbox {
+
+  width:
+    18px !important;
+
+  height:
+    18px;
+
+  margin:
+    0 !important;
+
+  padding:
+    0 !important;
+
+  cursor:
+    pointer;
+
+  accent-color:
+    #800000;
+
+}
+
+
+.qr-location-checkbox:disabled {
+
+  cursor:
+    not-allowed;
+
+}
+
+
+/* =================================================
+   LOCATION HEADER
+   ================================================= */
+
+.qr-location-header {
+
+  width:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    5px;
+
+  margin:
+    0 0 7px;
+
+}
+
+
+/* =================================================
+   POINT ID
+   ================================================= */
+
+.qr-location-point-id {
+
+  min-width:
+    0;
+
+  font-size:
+    16px;
+
+  font-weight:
+    800;
+
+  color:
+    #400000;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   ACTIVE STATUS
+   ================================================= */
+
+.qr-location-active-status {
+
+  flex-shrink:
+    0;
+
+  padding:
+    3px 6px;
+
+  border-radius:
+    5px;
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  line-height:
+    1;
+
+}
+
+
+/* =================================================
+   ACTIVE
+   ================================================= */
+
+.qr-location-active .qr-location-active-status {
+
+  background:
+    #d1e7dd;
+
+  color:
+    #146c43;
+
+}
+
+
+/* =================================================
+   INACTIVE
+   ================================================= */
+
+.qr-location-inactive .qr-location-active-status {
+
+  background:
+    #e9ecef;
+
+  color:
+    #6c757d;
+
+}
+
+
+/* =================================================
+   ZONE
+   ================================================= */
+
+.qr-location-zone {
+
+  margin:
+    0 0 5px;
+
+  font-size:
+    12px;
+
+  color:
+    #777777;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =================================================
+   LOCATION NAME
+   ================================================= */
+
+.qr-location-name {
+
+  min-height:
+    38px;
+
+  margin:
+    0 0 7px;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1.35;
+
+  color:
+    #333333;
+
+  overflow:
+    hidden;
+
+  display:
+    -webkit-box;
+
+  -webkit-box-orient:
+    vertical;
+
+  -webkit-line-clamp:
+    2;
+
+}
+
+
+/* =================================================
+   QR INFO
+   ================================================= */
+
+.qr-location-info {
+
+  margin-top:
+    auto;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.3;
+
+  color:
+    #198754;
+
+}
+
+
+.qr-location-inactive .qr-location-info {
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   EMPTY STATE
+   ================================================= */
+
+.qr-empty-state {
+
+  width:
+    100%;
+
+  min-height:
+    100px;
+
+  padding:
+    25px 15px;
+
+  box-sizing:
+    border-box;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  text-align:
+    center;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    9px;
+
+  color:
+    #777777;
+
+  font-size:
+    15px;
+
+}
+
+
+/* =================================================
+   PAGINATION
+   ================================================= */
+
+.qr-pagination {
+
+  width:
+    100%;
+
+  margin:
+    16px auto 20px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    5px;
+
+  flex-wrap:
+    wrap;
+
+}
+
+
+/* =================================================
+   PAGINATION BUTTON
+   ================================================= */
+
+.qr-pagination button {
+
+  width:
+    auto;
+
+  min-width:
+    36px;
+
+  height:
+    36px;
+
+  margin:
+    0;
+
+  padding:
+    5px 9px;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    6px;
+
+  background:
+    #ffffff;
+
+  color:
+    #555555;
+
+  font-size:
+    14px;
+
+  font-weight:
+    600;
+
+  cursor:
+    pointer;
+
+}
+
+
+.qr-pagination button:hover {
+
+  background:
+    #f5f5f5;
+
+}
+
+
+/* =================================================
+   ACTIVE PAGE
+   ================================================= */
+
+.qr-pagination button.active {
+
+  background:
+    #800000;
+
+  border-color:
+    #800000;
+
+  color:
+    #ffffff;
+
+}
+
+
+/* =================================================
+   DISABLED PAGE
+   ================================================= */
+
+.qr-pagination button:disabled {
+
+  background:
+    #eeeeee;
+
+  border-color:
+    #dddddd;
+
+  color:
+    #aaaaaa;
+
+  cursor:
+    not-allowed;
+
+}
+
+
+/* =================================================
+   PAGINATION ELLIPSIS
+   ================================================= */
+
+.qr-pagination span {
+
+  padding:
+    0 4px;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   QR PREVIEW SECTION
+   ================================================= */
+
+.qr-preview-section {
+
+  width:
+    100%;
+
+  margin:
+    25px auto 0;
+
+  padding:
+    16px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    10px;
+
+}
+
+
+/* =================================================
+   QR PREVIEW HEADER
+   ================================================= */
+
+.qr-preview-header {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  margin:
+    0 0 15px;
+
+}
+
+
+.qr-preview-header h3 {
+
+  margin:
+    0;
+
+  font-size:
+    18px;
+
+  color:
+    #400000;
+
+}
+
+
+.qr-preview-header p {
+
+  margin:
+    4px 0 0;
+
+  font-size:
+    13px;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   PREVIEW COUNT
+   ================================================= */
+
+.qr-preview-count {
+
+  flex-shrink:
+    0;
+
+  padding:
+    6px 10px;
+
+  background:
+    #f5f5f5;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    6px;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  color:
+    #555555;
+
+}
+
+
+/* =================================================
+   QR PREVIEW GRID
+   ================================================= */
+
+.qr-preview-grid {
+
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap:
+    12px;
+
+}
+
+
+/* =================================================
+   QR PREVIEW CARD
+   ================================================= */
+
+.qr-preview-card {
+
+  min-width:
+    0;
+
+  padding:
+    12px;
+
+  box-sizing:
+    border-box;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  text-align:
+    center;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    8px;
+
+}
+
+
+/* =================================================
+   QR CODE
+   ================================================= */
+
+.qr-preview-code {
+
+  width:
+    180px;
+
+  height:
+    180px;
+
+  max-width:
+    100%;
+
+  margin:
+    0 auto 9px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    #ffffff;
+
+}
+
+
+/* =================================================
+   QR POINT ID
+   ================================================= */
+
+.qr-preview-point-id {
+
+  font-size:
+    17px;
+
+  font-weight:
+    800;
+
+  color:
+    #400000;
+
+}
+
+
+/* =================================================
+   QR LOCATION
+   ================================================= */
+
+.qr-preview-location {
+
+  margin-top:
+    4px;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1.35;
+
+}
+
+
+/* =================================================
+   QR ZONE
+   ================================================= */
+
+.qr-preview-zone {
+
+  margin-top:
+    3px;
+
+  font-size:
+    12px;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   PRINT AREA
+   ================================================= */
+
+.qr-print-area {
+
+  display:
+    none;
+
+}
+
+
+/* =================================================
+   DESKTOP LARGE
+   ================================================= */
+
+@media (min-width: 1500px) {
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      repeat(6, minmax(0, 1fr));
+
+  }
+
+
+  .qr-preview-grid {
+
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   DESKTOP
+   ================================================= */
+
+@media (max-width: 1300px) {
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+  }
+
+
+  .qr-preview-grid {
+
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   LAPTOP
+   ================================================= */
+
+@media (max-width: 1050px) {
+
+  .qr-filter-panel {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .qr-selection-summary {
+
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+  }
+
+
+  .qr-management-toolbar {
+
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .qr-selection-tools {
+
+    justify-content:
+      flex-start;
+
+  }
+
+
+  .qr-management-actions {
+
+    justify-content:
+      flex-start;
+
+    flex-wrap:
+      wrap;
+
+  }
+
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+  }
+
+
+  .qr-preview-grid {
+
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   TABLET
+   ================================================= */
+
+@media (max-width: 800px) {
+
+  .qr-selection-summary {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .qr-preview-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+}
+
+
+/* =================================================
+   MOBILE
+   ================================================= */
+
+@media (max-width: 600px) {
+
+  .qr-management-view {
+
+    width:
+      100%;
+
+  }
+
+
+  /* ===============================
+     HEADER
+     =============================== */
+
+  .qr-management-header {
+
+    padding:
+      13px;
+
+  }
+
+
+  .qr-management-header h2 {
+
+    font-size:
+      19px;
+
+  }
+
+
+  .qr-management-header p {
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* ===============================
+     FILTER
+     =============================== */
+
+  .qr-filter-panel {
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      10px;
+
+    padding:
+      12px;
+
+  }
+
+
+  /* ===============================
+     SUMMARY
+     =============================== */
+
+  .qr-selection-summary {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap:
+      7px;
+
+  }
+
+
+  .qr-summary-item {
+
+    min-height:
+      65px;
+
+    padding:
+      8px 10px;
+
+  }
+
+
+  .qr-summary-label {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .qr-summary-value {
+
+    font-size:
+      21px;
+
+  }
+
+
+  /* ===============================
+     TOOLBAR
+     =============================== */
+
+  .qr-management-toolbar {
+
+    padding:
+      10px;
+
+  }
+
+
+  .qr-selection-tools {
+
+    width:
+      100%;
+
+  }
+
+
+  .qr-selection-tools .qr-action-button {
+
+    flex:
+      1;
+
+  }
+
+
+  .qr-management-actions {
+
+    width:
+      100%;
+
+    display:
+      grid;
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .qr-management-actions .qr-action-button {
+
+    width:
+      100%;
+
+  }
+
+
+  /* ===============================
+     LIST CONTROL
+     =============================== */
+
+  .qr-list-control {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .qr-page-size {
+
+    width:
+      100%;
+
+    justify-content:
+      flex-end;
+
+  }
+
+
+  /* ===============================
+     LOCATION
+     =============================== */
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap:
+      7px;
+
+  }
+
+
+  .qr-location-card {
+
+    min-height:
+      130px;
+
+    padding:
+      10px 8px 9px 34px;
+
+  }
+
+
+  .qr-checkbox-wrapper {
+
+    left:
+      8px;
+
+    top:
+      10px;
+
+  }
+
+
+  .qr-location-point-id {
+
+    font-size:
+      14px;
+
+  }
+
+
+  .qr-location-active-status {
+
+    font-size:
+      9px;
+
+    padding:
+      3px 5px;
+
+  }
+
+
+  .qr-location-zone {
+
+    font-size:
+      11px;
+
+  }
+
+
+  .qr-location-name {
+
+    font-size:
+      13px;
+
+  }
+
+
+  .qr-location-info {
+
+    font-size:
+      11px;
+
+  }
+
+
+  /* ===============================
+     PAGINATION
+     =============================== */
+
+  .qr-pagination {
+
+    gap:
+      3px;
+
+  }
+
+
+  .qr-pagination button {
+
+    min-width:
+      32px;
+
+    height:
+      34px;
+
+    padding:
+      4px 7px;
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* ===============================
+     PREVIEW
+     =============================== */
+
+  .qr-preview-section {
+
+    padding:
+      12px;
+
+  }
+
+
+  .qr-preview-header {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .qr-preview-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .qr-preview-code {
+
+    width:
+      180px;
+
+    height:
+      180px;
+
+  }
+
+}
+
+
+/* =================================================
+   VERY SMALL MOBILE
+   ================================================= */
+
+@media (max-width: 380px) {
+
+  .qr-location-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .qr-selection-tools {
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .qr-selection-tools .qr-action-button {
+
+    width:
+      100%;
+
+  }
+
+
+  .qr-summary-value {
+
+    font-size:
+      20px;
+
+  }
+
+}
