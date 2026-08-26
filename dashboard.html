@@ -24,56 +24,179 @@
 
 
   <!-- ==================================================
-       DASHBOARD CONTAINER
+       APP SHELL
        ================================================== -->
 
-  <div class="dashboard-container">
+  <div class="dashboard-app-shell">
 
 
     <!-- ==================================================
-         HEADER
+         SIDEBAR
+         Desktop
          ================================================== -->
 
-    <header class="dashboard-header">
+    <aside
+      class="dashboard-sidebar"
+      aria-label="เมนูหลัก"
+    >
 
 
       <!-- ==================================================
-           LOGO
+           BRAND
            ================================================== -->
 
-      <div class="logo">
+      <div class="dashboard-sidebar-brand">
 
-        <img
-          src="./logo%20ggn%202016.png"
-          alt="โลโก้ GGN"
-        >
+        <div class="dashboard-sidebar-logo">
+
+          <img
+            src="./logo%20ggn%202016.png"
+            alt="โลโก้ GGN"
+          >
+
+        </div>
+
+        <div class="dashboard-sidebar-brand-text">
+
+          <strong>GGN</strong>
+
+          <span>CHECK-IN</span>
+
+        </div>
 
       </div>
 
 
       <!-- ==================================================
-           ZONE
+           SYSTEM
            ================================================== -->
 
-      <h2
-        class="zone-title"
-        id="zoneTitle"
+      <div class="dashboard-sidebar-system">
+
+        <span>ระบบจัดการการเข้า-ออกงาน</span>
+
+      </div>
+
+
+      <!-- ==================================================
+           NAVIGATION
+           ================================================== -->
+
+      <nav
+        class="dashboard-sidebar-nav"
+        aria-label="เมนูหลัก"
       >
-        ทดสอบ
-      </h2>
+
+
+        <button
+          type="button"
+          id="dashboardMenuBtn"
+          class="dashboard-menu-button dashboard-menu-active"
+        >
+
+          <span class="dashboard-menu-icon">📊</span>
+
+          <span class="dashboard-menu-text">
+            Dashboard
+          </span>
+
+        </button>
+
+
+        <button
+          type="button"
+          id="qrManagementMenuBtn"
+          class="dashboard-menu-button"
+        >
+
+          <span class="dashboard-menu-icon">📱</span>
+
+          <span class="dashboard-menu-text">
+            QR Management
+          </span>
+
+        </button>
+
+
+      </nav>
 
 
       <!-- ==================================================
-           SYSTEM TITLE
+           SIDEBAR FOOTER
            ================================================== -->
 
-      <h2 class="system-title">
-        📊 GGN Check-in
-      </h2>
+      <div class="dashboard-sidebar-footer">
+
+        <span>
+          GGN Check-in
+        </span>
+
+      </div>
+
+
+    </aside>
+
+
+    <!-- ==================================================
+         MAIN AREA
+         ================================================== -->
+
+    <div class="dashboard-main-area">
 
 
       <!-- ==================================================
-           STATUS
+           TOP HEADER
+           ================================================== -->
+
+      <header class="dashboard-topbar">
+
+
+        <div class="dashboard-topbar-title">
+
+          <div class="dashboard-topbar-icon">
+            📊
+          </div>
+
+          <div>
+
+            <h1>
+              GGN Check-in
+            </h1>
+
+            <p>
+              ระบบติดตามการเข้า-ออกงาน
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             ZONE
+             ================================================== -->
+
+        <div class="dashboard-topbar-zone">
+
+          <span class="dashboard-topbar-zone-label">
+            จุดตรวจ
+          </span>
+
+          <strong
+            id="zoneTitle"
+            class="zone-title"
+          >
+            ทดสอบ
+          </strong>
+
+        </div>
+
+
+      </header>
+
+
+      <!-- ==================================================
+           STATUS BAR
            ================================================== -->
 
       <div
@@ -84,99 +207,128 @@
       </div>
 
 
-    </header>
-
-
-    <!-- ==================================================
-         STICKY MAIN MENU
-         ================================================== -->
-
-    <nav
-      class="dashboard-menu dashboard-menu-sticky"
-      aria-label="เมนูหลัก"
-    >
-
-
       <!-- ==================================================
-           DASHBOARD
+           CONTENT
            ================================================== -->
 
-      <button
-        type="button"
-        id="dashboardMenuBtn"
-        class="dashboard-menu-button dashboard-menu-active"
+      <main
+        id="dashboardView"
+        class="dashboard-view"
       >
-        📊 Dashboard
-      </button>
 
 
-      <!-- ==================================================
-           QR MANAGEMENT
-           ================================================== -->
+        <!-- ==================================================
+             PAGE HEADER
+             ================================================== -->
 
-      <button
-        type="button"
-        id="qrManagementMenuBtn"
-        class="dashboard-menu-button"
-      >
-        📱 QR Management
-      </button>
+        <section class="dashboard-content-header">
 
+          <div>
 
-    </nav>
+            <h2>
+              📊 Dashboard
+            </h2>
 
+            <p>
+              ภาพรวมสถานะจุดตรวจทั้งหมด
+            </p>
 
-    <!-- ==================================================
-         DASHBOARD VIEW
-         ================================================== -->
+          </div>
 
-    <main
-      id="dashboardView"
-      class="dashboard-view"
-    >
+        </section>
 
 
-      <!-- ==================================================
-           SUMMARY
-           ================================================== -->
+        <!-- ==================================================
+             SUMMARY
+             ================================================== -->
 
-      <section
-        id="dashboardSummary"
-        class="dashboard-summary"
-      ></section>
-
-
-      <!-- ==================================================
-           ZONES
-           ================================================== -->
-
-      <section
-        id="dashboardZones"
-        class="dashboard-zones"
-      ></section>
+        <section
+          id="dashboardSummary"
+          class="dashboard-summary"
+        ></section>
 
 
-      <!-- ==================================================
-           REFRESH
-           ================================================== -->
+        <!-- ==================================================
+             ZONES
+             ================================================== -->
 
-      <div class="dashboard-refresh">
-
-        <button
-          type="button"
-          id="refreshDashboardBtn"
-          class="dashboard-refresh-button"
-        >
-          🔄 รีเฟรชข้อมูล
-        </button>
-
-      </div>
+        <section
+          id="dashboardZones"
+          class="dashboard-zones"
+        ></section>
 
 
-    </main>
+        <!-- ==================================================
+             REFRESH
+             ================================================== -->
+
+        <div class="dashboard-refresh">
+
+          <button
+            type="button"
+            id="refreshDashboardBtn"
+            class="dashboard-refresh-button"
+          >
+            🔄 รีเฟรชข้อมูล
+          </button>
+
+        </div>
+
+
+      </main>
+
+
+    </div>
 
 
   </div>
+
+
+  <!-- ==================================================
+       MOBILE BOTTOM NAVIGATION
+       ================================================== -->
+
+  <nav
+    class="dashboard-bottom-nav"
+    aria-label="เมนูหลัก"
+  >
+
+
+    <button
+      type="button"
+      class="dashboard-bottom-nav-button dashboard-menu-active"
+      data-menu-target="dashboardMenuBtn"
+    >
+
+      <span class="dashboard-bottom-nav-icon">
+        📊
+      </span>
+
+      <span class="dashboard-bottom-nav-text">
+        Dashboard
+      </span>
+
+    </button>
+
+
+    <button
+      type="button"
+      class="dashboard-bottom-nav-button"
+      data-menu-target="qrManagementMenuBtn"
+    >
+
+      <span class="dashboard-bottom-nav-icon">
+        📱
+      </span>
+
+      <span class="dashboard-bottom-nav-text">
+        QR Management
+      </span>
+
+    </button>
+
+
+  </nav>
 
 
   <!-- ==================================================
