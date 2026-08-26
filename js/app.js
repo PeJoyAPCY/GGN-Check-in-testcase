@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // APP.JS
-// Version 3.1
+// Version 4.0
 //
 // หน้าที่:
 // - Common Function
@@ -12,32 +12,15 @@
 // - QR Point ID
 // - ตรวจสอบจุดตรวจจาก Backend
 // - ส่ง Point ID ต่อระหว่างหน้า
-//
-// QR FLOW:
-// QR Code
-//   ↓
-// pointId
-//   ↓
-// Backend: locationByPoint
-//   ↓
-// zone + location
-//   ↓
-// Index
-//   ↓
-// Check-in / Check-out
-//   ↓
-// ตรวจสอบ pointId ซ้ำ
-//   ↓
-// ใช้ zone + location เดิม
+// - Dashboard / QR Management Navigation
 //
 // IMPORTANT:
-// - ยังรักษา Logic เดิมของระบบ
-// - Check-in / Check-out เดิมยังทำงานได้
-// - ถ้าไม่มี pointId จะใช้ ZONE เดิม
 // - ไม่แก้ Backend
+// - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
-// - pointId จะถูกตรวจสอบใน index.html
-//   checkin.html และ checkout.html
+// - รักษา Logic Check-in / Check-out เดิม
+// - รองรับ dashboard.html
+// - รองรับ qr.html
 // ==================================================
 
 
@@ -51,9 +34,6 @@ const GOOGLE_APPS_SCRIPT_URL =
 
 // ==================================================
 // DEFAULT ZONE
-//
-// ใช้เป็นค่าเดิมของระบบ
-// กรณีเปิดหน้าเว็บโดยไม่มี pointId
 // ==================================================
 
 const ZONE =
@@ -67,18 +47,11 @@ const ZONE =
 const currentPage =
   window.location.pathname
     .split("/")
-    .pop();
+    .pop() || "index.html";
 
 
 // ==================================================
 // QR POINT ID
-//
-// อ่าน pointId จาก URL
-//
-// ตัวอย่าง:
-// index.html?pointId=P001
-// checkin.html?pointId=P001
-// checkout.html?pointId=P001
 // ==================================================
 
 const urlParams =
@@ -96,8 +69,6 @@ const POINT_ID =
 
 // ==================================================
 // CURRENT LOCATION DATA
-//
-// ค่าเริ่มต้นยังคงใช้ระบบเดิม
 // ==================================================
 
 let currentZone =
@@ -139,8 +110,6 @@ function getSelectedJob() {
 
 // ==================================================
 // GET CURRENT ZONE
-//
-// ให้ไฟล์อื่นเรียกใช้ได้
 // ==================================================
 
 function getCurrentZone() {
@@ -193,12 +162,6 @@ function updateLocationDisplay() {
   }
 
 
-  /*
-   * -----------------------------------------------
-   * มีข้อมูลจุดจาก QR
-   * -----------------------------------------------
-   */
-
   if (POINT_ID) {
 
     if (currentLocation) {
@@ -218,14 +181,6 @@ function updateLocationDisplay() {
   }
 
 
-  /*
-   * -----------------------------------------------
-   * ไม่มี QR
-   *
-   * ใช้ระบบเดิม
-   * -----------------------------------------------
-   */
-
   zoneTitle.textContent =
     currentZone;
 
@@ -234,20 +189,9 @@ function updateLocationDisplay() {
 
 // ==================================================
 // LOAD LOCATION BY POINT ID
-//
-// เรียก Backend:
-// action=locationByPoint
-//
-// ตัวอย่าง:
-// ?action=locationByPoint&pointId=P001
 // ==================================================
 
 async function loadLocationByPoint() {
-
-  /*
-   * ถ้าไม่มี pointId
-   * ไม่ต้องเรียก Backend
-   */
 
   if (!POINT_ID) {
 
@@ -257,10 +201,6 @@ async function loadLocationByPoint() {
 
   }
 
-
-  /*
-   * ตรวจ URL Backend
-   */
 
   if (!GOOGLE_APPS_SCRIPT_URL) {
 
@@ -276,10 +216,6 @@ async function loadLocationByPoint() {
   }
 
 
-  /*
-   * แสดงสถานะกำลังตรวจสอบ
-   */
-
   if (zoneTitle) {
 
     zoneTitle.textContent =
@@ -289,12 +225,6 @@ async function loadLocationByPoint() {
 
 
   try {
-
-    /*
-     * ---------------------------------------------
-     * API URL
-     * ---------------------------------------------
-     */
 
     const apiUrl =
       `${GOOGLE_APPS_SCRIPT_URL}` +
@@ -308,23 +238,11 @@ async function loadLocationByPoint() {
     );
 
 
-    /*
-     * ---------------------------------------------
-     * Request
-     * ---------------------------------------------
-     */
-
     const response =
       await fetch(
         apiUrl
       );
 
-
-    /*
-     * ---------------------------------------------
-     * ตรวจ HTTP Response
-     * ---------------------------------------------
-     */
 
     if (!response.ok) {
 
@@ -335,12 +253,6 @@ async function loadLocationByPoint() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * อ่าน JSON
-     * ---------------------------------------------
-     */
-
     const result =
       await response.json();
 
@@ -350,12 +262,6 @@ async function loadLocationByPoint() {
       result
     );
 
-
-    /*
-     * ---------------------------------------------
-     * ตรวจ Success
-     * ---------------------------------------------
-     */
 
     if (
       !result ||
@@ -372,21 +278,9 @@ async function loadLocationByPoint() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * อ่าน Data
-     * ---------------------------------------------
-     */
-
     const data =
       result.data || {};
 
-
-    /*
-     * ---------------------------------------------
-     * ตรวจ Point ID
-     * ---------------------------------------------
-     */
 
     const returnedPointId =
       String(
@@ -395,12 +289,6 @@ async function loadLocationByPoint() {
       ).trim();
 
 
-    /*
-     * ---------------------------------------------
-     * ตรวจ Zone
-     * ---------------------------------------------
-     */
-
     const returnedZone =
       String(
         data.zone ||
@@ -408,27 +296,12 @@ async function loadLocationByPoint() {
       ).trim();
 
 
-    /*
-     * ---------------------------------------------
-     * ตรวจ Location
-     * ---------------------------------------------
-     */
-
     const returnedLocation =
       String(
         data.location ||
         ""
       ).trim();
 
-
-    /*
-     * ---------------------------------------------
-     * ตรวจ Active
-     *
-     * จุดที่ถูกปิดใช้งาน
-     * ไม่ควรนำมาใช้งาน
-     * ---------------------------------------------
-     */
 
     const active =
       data.active === true;
@@ -443,12 +316,6 @@ async function loadLocationByPoint() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * ต้องมี Zone
-     * ---------------------------------------------
-     */
-
     if (!returnedZone) {
 
       throw new Error(
@@ -457,12 +324,6 @@ async function loadLocationByPoint() {
 
     }
 
-
-    /*
-     * ---------------------------------------------
-     * ต้องมี Location
-     * ---------------------------------------------
-     */
 
     if (!returnedLocation) {
 
@@ -473,12 +334,6 @@ async function loadLocationByPoint() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * อัปเดตข้อมูลปัจจุบัน
-     * ---------------------------------------------
-     */
-
     currentZone =
       returnedZone;
 
@@ -487,25 +342,12 @@ async function loadLocationByPoint() {
       returnedLocation;
 
 
-    /*
-     * ---------------------------------------------
-     * แสดงข้อมูล
-     * ---------------------------------------------
-     */
-
     updateLocationDisplay();
 
-
-    /*
-     * ---------------------------------------------
-     * Log
-     * ---------------------------------------------
-     */
 
     console.log(
       "GGN Point Verified:",
       {
-
         pointId:
           returnedPointId,
 
@@ -517,16 +359,9 @@ async function loadLocationByPoint() {
 
         active:
           active
-
       }
     );
 
-
-    /*
-     * ---------------------------------------------
-     * สำเร็จ
-     * ---------------------------------------------
-     */
 
     return true;
 
@@ -539,12 +374,6 @@ async function loadLocationByPoint() {
     );
 
 
-    /*
-     * ---------------------------------------------
-     * กรณีตรวจสอบจุดไม่สำเร็จ
-     * ---------------------------------------------
-     */
-
     if (zoneTitle) {
 
       zoneTitle.textContent =
@@ -556,6 +385,271 @@ async function loadLocationByPoint() {
     return false;
 
   }
+
+}
+
+
+// ==================================================
+// DASHBOARD / QR NAVIGATION
+//
+// ใช้กับ:
+// dashboard.html
+// qr.html
+//
+// ไม่ใช้ router
+// เปลี่ยนหน้าโดยตรง
+// ==================================================
+
+function initializeManagementNavigation() {
+
+  /*
+   * ----------------------------------------------
+   * Dashboard Menu
+   * ----------------------------------------------
+   */
+
+  const dashboardMenuButtons =
+    document.querySelectorAll(
+      "#dashboardMenuBtn"
+    );
+
+
+  dashboardMenuButtons.forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        function(event) {
+
+          event.preventDefault();
+
+          if (
+            currentPage === "dashboard.html"
+          ) {
+
+            return;
+
+          }
+
+          window.location.href =
+            "./dashboard.html";
+
+        }
+      );
+
+    }
+  );
+
+
+  /*
+   * ----------------------------------------------
+   * QR Management Menu
+   * ----------------------------------------------
+   */
+
+  const qrManagementMenuButtons =
+    document.querySelectorAll(
+      "#qrManagementMenuBtn"
+    );
+
+
+  qrManagementMenuButtons.forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        function(event) {
+
+          event.preventDefault();
+
+          if (
+            currentPage === "qr.html"
+          ) {
+
+            return;
+
+          }
+
+          window.location.href =
+            "./qr.html";
+
+        }
+      );
+
+    }
+  );
+
+
+  /*
+   * ----------------------------------------------
+   * Mobile Bottom Navigation
+   *
+   * ใช้ data-menu-target
+   * ----------------------------------------------
+   */
+
+  const bottomButtons =
+    document.querySelectorAll(
+      ".dashboard-bottom-nav-button"
+    );
+
+
+  bottomButtons.forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        function(event) {
+
+          event.preventDefault();
+
+
+          const targetId =
+            button.dataset.menuTarget;
+
+
+          if (!targetId) {
+
+            return;
+
+          }
+
+
+          const target =
+            document.getElementById(
+              targetId
+            );
+
+
+          if (!target) {
+
+            return;
+
+          }
+
+
+          target.click();
+
+        }
+      );
+
+    }
+  );
+
+
+  /*
+   * ----------------------------------------------
+   * Active Menu
+   * ----------------------------------------------
+   */
+
+  updateManagementNavigationState();
+
+}
+
+
+// ==================================================
+// UPDATE NAVIGATION STATE
+// ==================================================
+
+function updateManagementNavigationState() {
+
+  const isDashboard =
+    currentPage === "dashboard.html";
+
+
+  const isQR =
+    currentPage === "qr.html";
+
+
+  /*
+   * ----------------------------------------------
+   * Sidebar
+   * ----------------------------------------------
+   */
+
+  document
+    .querySelectorAll(
+      "#dashboardMenuBtn"
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "dashboard-menu-active",
+          isDashboard
+        );
+
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      "#qrManagementMenuBtn"
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "dashboard-menu-active",
+          isQR
+        );
+
+      }
+    );
+
+
+  /*
+   * ----------------------------------------------
+   * Mobile Bottom
+   * ----------------------------------------------
+   */
+
+  document
+    .querySelectorAll(
+      ".dashboard-bottom-nav-button"
+    )
+    .forEach(
+      button => {
+
+        const targetId =
+          button.dataset.menuTarget;
+
+
+        let active =
+          false;
+
+
+        if (
+          targetId ===
+          "dashboardMenuBtn"
+        ) {
+
+          active =
+            isDashboard;
+
+        }
+
+
+        if (
+          targetId ===
+          "qrManagementMenuBtn"
+        ) {
+
+          active =
+            isQR;
+
+        }
+
+
+        button.classList.toggle(
+          "dashboard-menu-active",
+          active
+        );
+
+      }
+    );
 
 }
 
@@ -575,9 +669,9 @@ function initializeIndex() {
 
 
   /*
-   * -----------------------------------------------
+   * ----------------------------------------------
    * CHECK-IN
-   * -----------------------------------------------
+   * ----------------------------------------------
    */
 
   if (checkinBtn) {
@@ -585,11 +679,6 @@ function initializeIndex() {
     checkinBtn.addEventListener(
       "click",
       () => {
-
-        /*
-         * ถ้ามี pointId
-         * ส่ง pointId ต่อไปด้วย
-         */
 
         if (POINT_ID) {
 
@@ -601,12 +690,6 @@ function initializeIndex() {
         }
 
 
-        /*
-         * -----------------------------------------
-         * Logic เดิม
-         * -----------------------------------------
-         */
-
         window.location.href =
           `./checkin.html?zone=${encodeURIComponent(currentZone)}`;
 
@@ -617,9 +700,9 @@ function initializeIndex() {
 
 
   /*
-   * -----------------------------------------------
+   * ----------------------------------------------
    * CHECK-OUT
-   * -----------------------------------------------
+   * ----------------------------------------------
    */
 
   if (checkoutBtn) {
@@ -627,11 +710,6 @@ function initializeIndex() {
     checkoutBtn.addEventListener(
       "click",
       () => {
-
-        /*
-         * ถ้ามี pointId
-         * ส่ง pointId ต่อไปด้วย
-         */
 
         if (POINT_ID) {
 
@@ -642,12 +720,6 @@ function initializeIndex() {
 
         }
 
-
-        /*
-         * -----------------------------------------
-         * Logic เดิม
-         * -----------------------------------------
-         */
 
         window.location.href =
           `./checkout.html?zone=${encodeURIComponent(currentZone)}`;
@@ -662,18 +734,36 @@ function initializeIndex() {
 
 // ==================================================
 // START APPLICATION
-//
-// Version 3.1
-//
-// ตรวจสอบ pointId ในทุกหน้าที่เกี่ยวข้อง
 // ==================================================
 
 async function startApplication() {
 
   /*
-   * -----------------------------------------------
-   * หน้า Index
-   * -----------------------------------------------
+   * ----------------------------------------------
+   * Management Pages
+   * ----------------------------------------------
+   *
+   * ต้องเริ่ม Navigation ก่อน
+   * เพื่อให้ Dashboard ↔ QR ใช้งานได้
+   * ----------------------------------------------
+   */
+
+  if (
+    currentPage === "dashboard.html" ||
+    currentPage === "qr.html"
+  ) {
+
+    initializeManagementNavigation();
+
+    return;
+
+  }
+
+
+  /*
+   * ----------------------------------------------
+   * INDEX
+   * ----------------------------------------------
    */
 
   if (
@@ -681,30 +771,16 @@ async function startApplication() {
     currentPage === "index.html"
   ) {
 
-    /*
-     * ถ้ามี QR pointId
-     * ตรวจสอบจุดก่อน
-     */
-
     if (POINT_ID) {
 
       await loadLocationByPoint();
 
     } else {
 
-      /*
-       * ไม่มี QR
-       * ใช้ระบบเดิม
-       */
-
       updateLocationDisplay();
 
     }
 
-
-    /*
-     * เริ่มปุ่ม Index
-     */
 
     initializeIndex();
 
@@ -714,22 +790,14 @@ async function startApplication() {
 
 
   /*
-   * -----------------------------------------------
-   * หน้า Check-in
-   * -----------------------------------------------
+   * ----------------------------------------------
+   * CHECK-IN
+   * ----------------------------------------------
    */
 
   if (
     currentPage === "checkin.html"
   ) {
-
-    /*
-     * ถ้ามี pointId
-     * ต้องตรวจสอบจุดใหม่
-     *
-     * เพื่อให้ currentZone และ
-     * currentLocation ถูกต้อง
-     */
 
     if (POINT_ID) {
 
@@ -737,15 +805,9 @@ async function startApplication() {
 
     } else {
 
-      /*
-       * ไม่มี QR
-       * ใช้ระบบเดิม
-       */
-
       updateLocationDisplay();
 
     }
-
 
     return;
 
@@ -753,19 +815,14 @@ async function startApplication() {
 
 
   /*
-   * -----------------------------------------------
-   * หน้า Check-out
-   * -----------------------------------------------
+   * ----------------------------------------------
+   * CHECK-OUT
+   * ----------------------------------------------
    */
 
   if (
     currentPage === "checkout.html"
   ) {
-
-    /*
-     * ถ้ามี pointId
-     * ต้องตรวจสอบจุดใหม่
-     */
 
     if (POINT_ID) {
 
@@ -773,15 +830,9 @@ async function startApplication() {
 
     } else {
 
-      /*
-       * ไม่มี QR
-       * ใช้ระบบเดิม
-       */
-
       updateLocationDisplay();
 
     }
-
 
     return;
 
