@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
 
@@ -24,180 +25,48 @@
 
 
   <!-- ==================================================
-       APP SHELL
+       DASHBOARD CONTAINER
        ================================================== -->
 
-  <div class="dashboard-app-shell">
+  <div class="dashboard-container">
 
 
     <!-- ==================================================
-         SIDEBAR
-         Desktop
+         HEADER
          ================================================== -->
 
-    <aside
-      class="dashboard-sidebar"
-      aria-label="เมนูหลัก"
-    >
+    <header class="dashboard-header">
 
+      <!-- LOGO -->
 
-      <!-- ==================================================
-           BRAND
-           ================================================== -->
+      <div class="logo">
 
-      <div class="dashboard-sidebar-brand">
-
-        <div class="dashboard-sidebar-logo">
-
-          <img
-            src="./logo%20ggn%202016.png"
-            alt="โลโก้ GGN"
-          >
-
-        </div>
-
-        <div class="dashboard-sidebar-brand-text">
-
-          <strong>GGN</strong>
-
-          <span>CHECK-IN</span>
-
-        </div>
+        <img
+          src="./logo%20ggn%202016.png"
+          alt="โลโก้ GGN"
+        >
 
       </div>
 
 
-      <!-- ==================================================
-           SYSTEM
-           ================================================== -->
+      <!-- ZONE -->
 
-      <div class="dashboard-sidebar-system">
-
-        <span>ระบบจัดการการเข้า-ออกงาน</span>
-
-      </div>
-
-
-      <!-- ==================================================
-           NAVIGATION
-           ================================================== -->
-
-      <nav
-        class="dashboard-sidebar-nav"
-        aria-label="เมนูหลัก"
+      <h2
+        class="zone-title"
+        id="zoneTitle"
       >
+        ทดสอบ
+      </h2>
 
 
-        <button
-          type="button"
-          id="dashboardMenuBtn"
-          class="dashboard-menu-button dashboard-menu-active"
-        >
+      <!-- SYSTEM TITLE -->
 
-          <span class="dashboard-menu-icon">📊</span>
-
-          <span class="dashboard-menu-text">
-            Dashboard
-          </span>
-
-        </button>
+      <h2 class="system-title">
+        📊 GGN Dashboard
+      </h2>
 
 
-        <button
-          type="button"
-          id="qrManagementMenuBtn"
-          class="dashboard-menu-button"
-        >
-
-          <span class="dashboard-menu-icon">📱</span>
-
-          <span class="dashboard-menu-text">
-            QR Management
-          </span>
-
-        </button>
-
-
-      </nav>
-
-
-      <!-- ==================================================
-           SIDEBAR FOOTER
-           ================================================== -->
-
-      <div class="dashboard-sidebar-footer">
-
-        <span>
-          GGN Check-in
-        </span>
-
-      </div>
-
-
-    </aside>
-
-
-    <!-- ==================================================
-         MAIN AREA
-         ================================================== -->
-
-    <div class="dashboard-main-area">
-
-
-      <!-- ==================================================
-           TOP HEADER
-           ================================================== -->
-
-      <header class="dashboard-topbar">
-
-
-        <div class="dashboard-topbar-title">
-
-          <div class="dashboard-topbar-icon">
-            📊
-          </div>
-
-          <div>
-
-            <h1>
-              GGN Check-in
-            </h1>
-
-            <p>
-              ระบบติดตามการเข้า-ออกงาน
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <!-- ==================================================
-             ZONE
-             ================================================== -->
-
-        <div class="dashboard-topbar-zone">
-
-          <span class="dashboard-topbar-zone-label">
-            จุดตรวจ
-          </span>
-
-          <strong
-            id="zoneTitle"
-            class="zone-title"
-          >
-            ทดสอบ
-          </strong>
-
-        </div>
-
-
-      </header>
-
-
-      <!-- ==================================================
-           STATUS BAR
-           ================================================== -->
+      <!-- STATUS -->
 
       <div
         id="dashboardStatus"
@@ -206,79 +75,107 @@
         ⏳ กำลังโหลดข้อมูล...
       </div>
 
+    </header>
+
+
+    <!-- ==================================================
+         MAIN MENU
+         ================================================== -->
+
+    <nav
+      class="dashboard-menu dashboard-menu-sticky"
+      aria-label="เมนูหลัก"
+    >
+
+      <button
+        type="button"
+        id="dashboardMenuBtn"
+        class="dashboard-menu-button dashboard-menu-active"
+      >
+        📊 Dashboard
+      </button>
+
+
+      <button
+        type="button"
+        id="qrManagementMenuBtn"
+        class="dashboard-menu-button"
+      >
+        📱 QR Management
+      </button>
+
+    </nav>
+
+
+    <!-- ==================================================
+         DASHBOARD PAGE
+         ================================================== -->
+
+    <main
+      id="dashboardView"
+      class="dashboard-view"
+    >
+
 
       <!-- ==================================================
-           CONTENT
+           PAGE TITLE
            ================================================== -->
 
-      <main
-        id="dashboardView"
-        class="dashboard-view"
-      >
+      <section class="dashboard-content-header">
 
+        <div>
 
-        <!-- ==================================================
-             PAGE HEADER
-             ================================================== -->
+          <h1>
+            📊 Dashboard
+          </h1>
 
-        <section class="dashboard-content-header">
-
-          <div>
-
-            <h2>
-              📊 Dashboard
-            </h2>
-
-            <p>
-              ภาพรวมสถานะจุดตรวจทั้งหมด
-            </p>
-
-          </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             SUMMARY
-             ================================================== -->
-
-        <section
-          id="dashboardSummary"
-          class="dashboard-summary"
-        ></section>
-
-
-        <!-- ==================================================
-             ZONES
-             ================================================== -->
-
-        <section
-          id="dashboardZones"
-          class="dashboard-zones"
-        ></section>
-
-
-        <!-- ==================================================
-             REFRESH
-             ================================================== -->
-
-        <div class="dashboard-refresh">
-
-          <button
-            type="button"
-            id="refreshDashboardBtn"
-            class="dashboard-refresh-button"
-          >
-            🔄 รีเฟรชข้อมูล
-          </button>
+          <p>
+            ภาพรวมสถานะจุดตรวจทั้งหมด
+          </p>
 
         </div>
 
+      </section>
 
-      </main>
+
+      <!-- ==================================================
+           SUMMARY
+           ================================================== -->
+
+      <section
+        id="dashboardSummary"
+        class="dashboard-summary"
+      ></section>
 
 
-    </div>
+      <!-- ==================================================
+           ZONES
+           ================================================== -->
+
+      <section
+        id="dashboardZones"
+        class="dashboard-zones"
+      ></section>
+
+
+      <!-- ==================================================
+           REFRESH
+           ================================================== -->
+
+      <div class="dashboard-refresh">
+
+        <button
+          type="button"
+          id="refreshDashboardBtn"
+          class="dashboard-refresh-button"
+        >
+          🔄 รีเฟรชข้อมูล
+        </button>
+
+      </div>
+
+
+    </main>
 
 
   </div>
@@ -292,7 +189,6 @@
     class="dashboard-bottom-nav"
     aria-label="เมนูหลัก"
   >
-
 
     <button
       type="button"
@@ -326,7 +222,6 @@
       </span>
 
     </button>
-
 
   </nav>
 
