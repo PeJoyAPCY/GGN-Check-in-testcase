@@ -36,7 +36,6 @@
 
     <header class="dashboard-header">
 
-
       <!-- LOGO -->
 
       <div class="logo">
@@ -75,7 +74,6 @@
         ⏳ กำลังโหลดข้อมูล...
       </div>
 
-
     </header>
 
 
@@ -109,7 +107,7 @@
 
 
     <!-- ==================================================
-         QR MANAGEMENT
+         QR MANAGEMENT PAGE
          ================================================== -->
 
     <main
@@ -122,16 +120,20 @@
            PAGE TITLE
            ================================================== -->
 
-      <section class="qr-management-header">
+      <section class="qr-page-heading">
 
         <div>
 
-          <h2>
-            📱 QR MANAGEMENT
-          </h2>
+          <h1>
+            📱 QR Management
+          </h1>
 
           <p>
             จัดการ QR Code จุดตรวจทั้งหมด
+            <strong id="qrPageTotal">
+              0
+            </strong>
+            จุด
           </p>
 
         </div>
@@ -140,46 +142,44 @@
 
 
       <!-- ==================================================
-           SEARCH & FILTER
+           SEARCH
            ================================================== -->
 
-      <section class="qr-filter-panel">
+      <section class="qr-search-section">
+
+        <label
+          for="qrSearchInput"
+          class="qr-search-label"
+        >
+          🔎 ค้นหา จุด / Point ID / เขต
+        </label>
 
 
-        <!-- SEARCH -->
+        <input
+          type="text"
+          id="qrSearchInput"
+          class="qr-search-input"
+          placeholder="ค้นหา Point ID, ชื่อจุดตรวจ หรือเขต..."
+          autocomplete="off"
+        >
 
-        <div class="qr-search-box">
-
-          <label
-            for="qrSearchInput"
-            class="qr-filter-label"
-          >
-            🔎 ค้นหาจุดตรวจ
-          </label>
-
-
-          <input
-            type="text"
-            id="qrSearchInput"
-            class="qr-search-input"
-            placeholder="ค้นหา จุดตรวจ / Point ID / เขต"
-            autocomplete="off"
-          >
-
-        </div>
+      </section>
 
 
-        <!-- ZONE FILTER -->
+      <!-- ==================================================
+           FILTERS
+           ================================================== -->
 
-        <div class="qr-filter-box">
+      <section class="qr-filter-section">
 
-          <label
-            for="qrZoneFilter"
-            class="qr-filter-label"
-          >
+
+        <!-- ZONE -->
+
+        <div class="qr-filter-item">
+
+          <label for="qrZoneFilter">
             เขต
           </label>
-
 
           <select
             id="qrZoneFilter"
@@ -195,17 +195,13 @@
         </div>
 
 
-        <!-- STATUS FILTER -->
+        <!-- STATUS -->
 
-        <div class="qr-filter-box">
+        <div class="qr-filter-item">
 
-          <label
-            for="qrStatusFilter"
-            class="qr-filter-label"
-          >
+          <label for="qrStatusFilter">
             สถานะ
           </label>
-
 
           <select
             id="qrStatusFilter"
@@ -229,17 +225,13 @@
         </div>
 
 
-        <!-- QR FILTER -->
+        <!-- QR -->
 
-        <div class="qr-filter-box">
+        <div class="qr-filter-item">
 
-          <label
-            for="qrExistFilter"
-            class="qr-filter-label"
-          >
+          <label for="qrExistFilter">
             QR
           </label>
-
 
           <select
             id="qrExistFilter"
@@ -247,14 +239,14 @@
           >
 
             <option value="">
-              ทั้งหมด
+              ทุก QR
             </option>
 
-            <option value="hasQR">
+            <option value="yes">
               มี QR
             </option>
 
-            <option value="noQR">
+            <option value="no">
               ยังไม่มี QR
             </option>
 
@@ -262,6 +254,16 @@
 
         </div>
 
+
+        <!-- CLEAR FILTER -->
+
+        <button
+          type="button"
+          id="clearQrFilterBtn"
+          class="qr-filter-clear-button"
+        >
+          ล้างตัวกรอง
+        </button>
 
       </section>
 
@@ -271,23 +273,20 @@
            ================================================== -->
 
       <section
-        class="qr-selection-summary"
         id="qrSelectionSummary"
+        class="qr-management-summary"
       >
 
 
         <!-- TOTAL -->
 
-        <div class="qr-summary-item">
+        <div class="qr-management-summary-item">
 
-          <span class="qr-summary-label">
+          <span>
             จุดทั้งหมด
           </span>
 
-          <strong
-            id="qrTotalCount"
-            class="qr-summary-value"
-          >
+          <strong id="qrTotalCount">
             0
           </strong>
 
@@ -296,34 +295,28 @@
 
         <!-- ACTIVE -->
 
-        <div class="qr-summary-item">
+        <div class="qr-management-summary-item">
 
-          <span class="qr-summary-label">
-            เปิดใช้งาน
+          <span>
+            จุด Active
           </span>
 
-          <strong
-            id="qrActiveCount"
-            class="qr-summary-value"
-          >
+          <strong id="qrActiveCount">
             0
           </strong>
 
         </div>
 
 
-        <!-- HAS QR -->
+        <!-- QR -->
 
-        <div class="qr-summary-item">
+        <div class="qr-management-summary-item">
 
-          <span class="qr-summary-label">
+          <span>
             มี QR
           </span>
 
-          <strong
-            id="qrHasQrCount"
-            class="qr-summary-value"
-          >
+          <strong id="qrHasQrCount">
             0
           </strong>
 
@@ -332,147 +325,154 @@
 
         <!-- SELECTED -->
 
-        <div class="qr-summary-item">
+        <div class="qr-management-summary-item qr-summary-selected">
 
-          <span class="qr-summary-label">
+          <span>
             เลือกแล้ว
           </span>
 
-          <strong
-            id="qrSelectedCount"
-            class="qr-summary-value"
-          >
+          <strong id="qrSelectedCount">
             0
           </strong>
 
         </div>
 
-
       </section>
 
 
       <!-- ==================================================
-           TOOLBAR
+           TABLE TOOLBAR
            ================================================== -->
 
-      <section class="qr-management-toolbar">
+      <section class="qr-table-toolbar">
 
 
-        <!-- SELECT -->
+        <!-- SELECT ALL -->
 
-        <div class="qr-selection-tools">
+        <label class="qr-select-all-wrapper">
 
-          <button
-            type="button"
-            id="selectAllQrBtn"
-            class="qr-action-button"
+          <input
+            type="checkbox"
+            id="selectAllQrCheckbox"
           >
-            ☑️ เลือกทั้งหมด
-          </button>
 
-
-          <button
-            type="button"
-            id="clearAllQrBtn"
-            class="qr-action-button secondary"
-          >
-            ◻️ ยกเลิกทั้งหมด
-          </button>
-
-        </div>
-
-
-        <!-- ACTION -->
-
-        <div class="qr-management-actions">
-
-          <button
-            type="button"
-            id="createQrBtn"
-            class="qr-action-button qr-create-button"
-          >
-            📱 สร้าง QR
-          </button>
-
-
-          <button
-            type="button"
-            id="printSelectedQrBtn"
-            class="qr-action-button qr-print-button"
-          >
-            🖨️ พิมพ์จุดที่เลือก
-          </button>
-
-
-          <button
-            type="button"
-            id="printAllQrBtn"
-            class="qr-action-button qr-print-all-button"
-          >
-            🖨️ พิมพ์ทั้งหมด
-          </button>
-
-        </div>
-
-
-      </section>
-
-
-      <!-- ==================================================
-           LIST HEADER
-           ================================================== -->
-
-      <section class="qr-list-control">
-
-
-        <div class="qr-list-info">
-
-          <strong>
-            📍 รายการจุดตรวจ
-          </strong>
-
-
-          <span id="qrResultCount">
-            0 จุด
+          <span>
+            เลือกทั้งหมด
           </span>
 
-        </div>
+        </label>
 
 
-        <!-- ITEMS PER PAGE -->
+        <!-- PAGE SIZE -->
 
         <div class="qr-page-size">
 
-          <label
-            for="qrPageSize"
-          >
+          <label for="qrPageSize">
             แสดง
           </label>
 
-
           <select
             id="qrPageSize"
-            class="qr-filter-select"
           >
 
-            <option value="25">
-              25 รายการ
+            <option value="25" selected>
+              25
             </option>
 
             <option value="50">
-              50 รายการ
+              50
             </option>
 
             <option value="100">
-              100 รายการ
-            </option>
-
-            <option value="all">
-              ทั้งหมด
+              100
             </option>
 
           </select>
 
+          <span>
+            รายการ/หน้า
+          </span>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==================================================
+           LOCATION TABLE
+           ================================================== -->
+
+      <section class="qr-table-section">
+
+
+        <div class="qr-table-wrapper">
+
+
+          <table class="qr-management-table">
+
+
+            <!-- TABLE HEADER -->
+
+            <thead>
+
+              <tr>
+
+                <th class="qr-col-check">
+                  <span class="sr-only">
+                    เลือก
+                  </span>
+                </th>
+
+                <th class="qr-col-point">
+                  Point
+                </th>
+
+                <th class="qr-col-zone">
+                  เขต
+                </th>
+
+                <th class="qr-col-location">
+                  จุดตรวจ
+                </th>
+
+                <th class="qr-col-status">
+                  สถานะ
+                </th>
+
+                <th class="qr-col-qr">
+                  QR
+                </th>
+
+                <th class="qr-col-action">
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <!-- TABLE BODY -->
+
+            <tbody id="qrLocationTableBody">
+
+              <tr>
+
+                <td
+                  colspan="7"
+                  class="qr-table-loading"
+                >
+                  ⏳ กำลังโหลดรายการจุดตรวจ...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+
+          </table>
+
+
         </div>
 
 
@@ -480,39 +480,78 @@
 
 
       <!-- ==================================================
-           LOCATION LIST
+           TABLE FOOTER
            ================================================== -->
 
-      <section
-        id="qrLocationList"
-        class="qr-location-list"
-      >
+      <section class="qr-table-footer">
 
 
-        <!-- LOADING -->
+        <!-- RESULT INFO -->
 
         <div
-          id="qrLoading"
-          class="qr-empty-state"
+          id="qrPaginationInfo"
+          class="qr-pagination-info"
         >
-          ⏳ กำลังโหลดรายการจุดตรวจ...
+          0 รายการ
         </div>
 
+
+        <!-- PAGINATION -->
+
+        <div
+          id="qrPagination"
+          class="qr-pagination"
+          aria-label="Pagination"
+        ></div>
 
       </section>
 
 
       <!-- ==================================================
-           PAGINATION
+           BULK ACTIONS
            ================================================== -->
 
-      <nav
-        id="qrPagination"
-        class="qr-pagination"
-        aria-label="เปลี่ยนหน้ารายการจุดตรวจ"
-      >
+      <section class="qr-bulk-actions">
 
-      </nav>
+
+        <button
+          type="button"
+          id="clearAllQrBtn"
+          class="qr-bulk-button secondary"
+        >
+          ยกเลิกทั้งหมด
+        </button>
+
+
+        <button
+          type="button"
+          id="createQrBtn"
+          class="qr-bulk-button create"
+          disabled
+        >
+          📱 สร้าง QR ที่เลือก
+        </button>
+
+
+        <button
+          type="button"
+          id="printSelectedQrBtn"
+          class="qr-bulk-button print"
+          disabled
+        >
+          🖨️ พิมพ์จุดที่เลือก
+        </button>
+
+
+        <button
+          type="button"
+          id="printAllQrBtn"
+          class="qr-bulk-button print-all"
+        >
+          🖨️ พิมพ์ทั้งหมด
+        </button>
+
+      </section>
 
 
       <!-- ==================================================
@@ -525,36 +564,30 @@
       >
 
 
-        <!-- PREVIEW HEADER -->
-
         <div class="qr-preview-header">
-
 
           <div>
 
-            <h3>
+            <h2>
               📱 QR Code Preview
-            </h3>
+            </h2>
 
             <p>
-              ตัวอย่าง QR Code สำหรับนำไปติดตั้งที่จุดตรวจ
+              ตัวอย่าง QR Code ที่สร้างจาก Point ID
             </p>
 
           </div>
 
 
-          <div
+          <strong
             id="qrPreviewCount"
             class="qr-preview-count"
           >
             0 จุด
-          </div>
-
+          </strong>
 
         </div>
 
-
-        <!-- PREVIEW GRID -->
 
         <div
           id="qrPreviewGrid"
@@ -562,11 +595,12 @@
         >
 
           <div class="qr-empty-state">
+
             ยังไม่มี QR Code
+
           </div>
 
         </div>
-
 
       </section>
 
@@ -579,22 +613,6 @@
         id="qrPrintArea"
         class="qr-print-area"
       >
-
-        <!--
-
-          พื้นที่สำหรับระบบพิมพ์ QR
-
-          ขั้นต่อไปจะพัฒนาเป็น:
-
-          1 แผ่น = 8 QR
-
-          ┌────────┬────────┬────────┬────────┐
-          │ QR 01  │ QR 02  │ QR 03  │ QR 04  │
-          ├────────┼────────┼────────┼────────┤
-          │ QR 05  │ QR 06  │ QR 07  │ QR 08  │
-          └────────┴────────┴────────┴────────┘
-
-        -->
 
       </section>
 
@@ -629,16 +647,14 @@
   <script src="./js/app.js"></script>
 
 
-  <!-- ==================================================
-       QR CODE LIBRARY
-       ================================================== -->
+  <!-- QR CODE LIBRARY -->
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+  ></script>
 
 
-  <!-- ==================================================
-       QR MANAGEMENT
-       ================================================== -->
+  <!-- QR MANAGEMENT -->
 
   <script src="./js/qr.js"></script>
 

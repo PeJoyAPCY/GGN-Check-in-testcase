@@ -1,7 +1,8 @@
+
 /* =================================================
    GGN CHECK-IN
    STYLE.CSS
-   Version 3.0
+   Version 3.2
 
    หน้าที่:
    - Global UI
@@ -9,6 +10,18 @@
    - Check-in
    - Check-out
    - Dashboard
+   - QR Management
+
+   QR MANAGEMENT:
+   - Table Layout
+   - Search
+   - Filter
+   - Summary
+   - Select All
+   - Pagination
+   - QR Status
+   - QR Action
+   - Responsive
 
    IMPORTANT:
    - ไม่กระทบ JavaScript
@@ -103,16 +116,13 @@ body {
 .zone-title {
 
   margin:
-    0;
+    0 0 5px;
 
   font-size:
     22px;
 
   color:
     #800000;
-
-  margin-bottom:
-    5px;
 
   text-align:
     center;
@@ -123,16 +133,13 @@ body {
 .system-title {
 
   margin:
-    0;
+    0 0 20px;
 
   font-size:
     18px;
 
   color:
     #800000;
-
-  margin-bottom:
-    20px;
 
   text-align:
     center;
@@ -254,11 +261,11 @@ body {
 
 .job-type {
 
-  margin-bottom:
-    5px;
-
   margin-top:
     15px;
+
+  margin-bottom:
+    5px;
 
 }
 
@@ -754,16 +761,6 @@ canvas {
    POINT GRID
    ================================================= */
 
-/*
-   Desktop:
-   8 จุด / แถว
-
-   เหมาะกับ:
-   - หน้าจอคอมพิวเตอร์
-   - จุดประมาณ 40 จุด / เขต
-   - ประมาณ 5 แถว / เขต
-*/
-
 .dashboard-points-grid {
 
   width:
@@ -1116,39 +1113,7 @@ canvas {
 
 
 /* =================================================
-   DASHBOARD STATUS COLORS
-   ================================================= */
-
-.point-status-check_in
-.point-status-checkout
-.point-status-no_data
-.point-status-unknown {
-
-  transition:
-    0.2s;
-
-}
-
-
-/* =================================================
-   DESKTOP
-   1600px ขึ้นไป
-   ================================================= */
-
-@media (min-width: 1600px) {
-
-  .dashboard-points-grid {
-
-    grid-template-columns:
-      repeat(8, minmax(0, 1fr));
-
-  }
-
-}
-
-
-/* =================================================
-   LAPTOP
+   DASHBOARD RESPONSIVE
    ================================================= */
 
 @media (max-width: 1200px) {
@@ -1162,10 +1127,6 @@ canvas {
 
 }
 
-
-/* =================================================
-   TABLET
-   ================================================= */
 
 @media (max-width: 900px) {
 
@@ -1205,10 +1166,6 @@ canvas {
 
 }
 
-
-/* =================================================
-   MOBILE
-   ================================================= */
 
 @media (max-width: 600px) {
 
@@ -1258,10 +1215,6 @@ canvas {
   }
 
 
-  /* ===============================
-     SUMMARY
-     =============================== */
-
   .dashboard-summary {
 
     grid-template-columns:
@@ -1308,10 +1261,6 @@ canvas {
   }
 
 
-  /* ===============================
-     ZONE
-     =============================== */
-
   .dashboard-zone-title {
 
     font-size:
@@ -1328,10 +1277,6 @@ canvas {
   }
 
 
-  /* ===============================
-     POINT GRID
-     =============================== */
-
   .dashboard-points-grid {
 
     grid-template-columns:
@@ -1342,10 +1287,6 @@ canvas {
 
   }
 
-
-  /* ===============================
-     POINT CARD
-     =============================== */
 
   .dashboard-point-card {
 
@@ -1414,10 +1355,6 @@ canvas {
   }
 
 
-  /* ===============================
-     REFRESH
-     =============================== */
-
   .dashboard-refresh {
 
     text-align:
@@ -1435,28 +1372,13 @@ canvas {
 
 }
 
+
 /* =================================================
-   GGN CHECK-IN
-   QR MANAGEMENT UI
-   Version 3.1
-
-   หน้าที่:
-   - QR Management UI
-   - Search
-   - Filter
-   - Summary
-   - Location List
-   - Pagination
-   - QR Preview
-   - QR Action Buttons
-
-   IMPORTANT:
-   - CSS ชุดนี้ใช้เฉพาะ QR Management
-   - ไม่แก้ Dashboard
-   - ไม่แก้ Check-in
-   - ไม่แก้ Check-out
-   - ไม่กระทบ JavaScript
-   - ไม่กระทบ Backend
+   =================================================
+   QR MANAGEMENT
+   Version 3.2
+   TABLE LAYOUT
+   =================================================
    ================================================= */
 
 
@@ -1479,19 +1401,19 @@ canvas {
 
 
 /* =================================================
-   QR MANAGEMENT HEADER
+   PAGE HEADING
    ================================================= */
 
-.qr-management-header {
+.qr-page-heading {
 
   width:
     100%;
 
   margin:
-    0 auto 16px;
+    0 0 16px;
 
   padding:
-    16px 20px;
+    16px 18px;
 
   box-sizing:
     border-box;
@@ -1503,12 +1425,12 @@ canvas {
     1px solid #dddddd;
 
   border-radius:
-    10px;
+    8px;
 
 }
 
 
-.qr-management-header h2 {
+.qr-page-heading h1 {
 
   margin:
     0;
@@ -1522,7 +1444,7 @@ canvas {
 }
 
 
-.qr-management-header p {
+.qr-page-heading p {
 
   margin:
     5px 0 0;
@@ -1531,58 +1453,35 @@ canvas {
     14px;
 
   color:
-    #666666;
+    #555555;
+
+}
+
+
+.qr-page-heading strong {
+
+  color:
+    #800000;
 
 }
 
 
 /* =================================================
-   SEARCH & FILTER PANEL
+   SEARCH
    ================================================= */
 
-.qr-filter-panel {
+.qr-search-section {
 
   width:
     100%;
 
-  display:
-    grid;
-
-  grid-template-columns:
-    minmax(280px, 2fr)
-    minmax(150px, 1fr)
-    minmax(150px, 1fr)
-    minmax(150px, 1fr);
-
-  gap:
-    12px;
-
   margin:
-    0 auto 14px;
-
-  padding:
-    15px;
-
-  box-sizing:
-    border-box;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #dddddd;
-
-  border-radius:
-    10px;
+    0 0 12px;
 
 }
 
 
-/* =================================================
-   FILTER LABEL
-   ================================================= */
-
-.qr-filter-label {
+.qr-search-label {
 
   display:
     block;
@@ -1591,20 +1490,16 @@ canvas {
     0 0 6px;
 
   font-size:
-    13px;
+    15px;
 
   font-weight:
     700;
 
   color:
-    #555555;
+    #400000;
 
 }
 
-
-/* =================================================
-   SEARCH INPUT
-   ================================================= */
 
 .qr-search-input {
 
@@ -1612,13 +1507,13 @@ canvas {
     100%;
 
   height:
-    42px;
+    44px;
 
   margin:
     0;
 
   padding:
-    8px 12px;
+    8px 14px;
 
   box-sizing:
     border-box;
@@ -1636,7 +1531,7 @@ canvas {
     #333333;
 
   font-size:
-    15px;
+    16px;
 
   outline:
     none;
@@ -1656,8 +1551,59 @@ canvas {
 
 
 /* =================================================
-   FILTER SELECT
+   FILTER
    ================================================= */
+
+.qr-filter-section {
+
+  width:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  gap:
+    10px;
+
+  margin:
+    0 0 16px;
+
+  box-sizing:
+    border-box;
+
+}
+
+
+.qr-filter-item {
+
+  min-width:
+    170px;
+
+}
+
+
+.qr-filter-item label {
+
+  display:
+    block;
+
+  margin:
+    0 0 5px;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  color:
+    #555555;
+
+}
+
 
 .qr-filter-select {
 
@@ -1671,7 +1617,7 @@ canvas {
     0;
 
   padding:
-    8px 10px;
+    7px 10px;
 
   box-sizing:
     border-box;
@@ -1680,7 +1626,7 @@ canvas {
     1px solid #cccccc;
 
   border-radius:
-    7px;
+    6px;
 
   background:
     #ffffff;
@@ -1708,1000 +1654,19 @@ canvas {
 }
 
 
-/* =================================================
-   QR SUMMARY
-   ================================================= */
-
-.qr-selection-summary {
-
-  width:
-    100%;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap:
-    10px;
-
-  margin:
-    0 auto 14px;
-
-}
-
-
-/* =================================================
-   SUMMARY ITEM
-   ================================================= */
-
-.qr-summary-item {
-
-  min-height:
-    72px;
-
-  padding:
-    10px 14px;
-
-  box-sizing:
-    border-box;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  justify-content:
-    center;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #dddddd;
-
-  border-radius:
-    9px;
-
-}
-
-
-/* =================================================
-   SUMMARY LABEL
-   ================================================= */
-
-.qr-summary-label {
-
-  font-size:
-    13px;
-
-  color:
-    #666666;
-
-}
-
-
-/* =================================================
-   SUMMARY VALUE
-   ================================================= */
-
-.qr-summary-value {
-
-  margin-top:
-    3px;
-
-  font-size:
-    24px;
-
-  line-height:
-    1.1;
-
-  color:
-    #800000;
-
-}
-
-
-/* =================================================
-   TOOLBAR
-   ================================================= */
-
-.qr-management-toolbar {
-
-  width:
-    100%;
-
-  margin:
-    0 auto 14px;
-
-  padding:
-    12px;
-
-  box-sizing:
-    border-box;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    12px;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #dddddd;
-
-  border-radius:
-    9px;
-
-}
-
-
-/* =================================================
-   SELECTION TOOLS
-   ================================================= */
-
-.qr-selection-tools {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    8px;
-
-}
-
-
-/* =================================================
-   ACTION AREA
-   ================================================= */
-
-.qr-management-actions {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    flex-end;
-
-  gap:
-    8px;
-
-}
-
-
-/* =================================================
-   QR ACTION BUTTON
-   ================================================= */
-
-.qr-action-button {
+.qr-filter-clear-button {
 
   width:
     auto;
 
-  min-height:
-    40px;
-
-  margin:
-    0;
-
-  padding:
-    8px 13px;
-
-  border:
-    1px solid #800000;
-
-  border-radius:
-    7px;
-
-  background:
-    #800000;
-
-  color:
-    #ffffff;
-
-  font-size:
-    14px;
-
-  font-weight:
-    700;
-
-  white-space:
-    nowrap;
-
-  cursor:
-    pointer;
-
-  transition:
-    0.2s;
-
-}
-
-
-.qr-action-button:hover {
-
-  background:
-    #a00000;
-
-}
-
-
-.qr-action-button:disabled {
-
-  background:
-    #dddddd;
-
-  border-color:
-    #cccccc;
-
-  color:
-    #888888;
-
-  cursor:
-    not-allowed;
-
-}
-
-
-/* =================================================
-   SECONDARY BUTTON
-   ================================================= */
-
-.qr-action-button.secondary {
-
-  background:
-    #ffffff;
-
-  border-color:
-    #cccccc;
-
-  color:
-    #555555;
-
-}
-
-
-.qr-action-button.secondary:hover {
-
-  background:
-    #f5f5f5;
-
-}
-
-
-/* =================================================
-   CREATE QR
-   ================================================= */
-
-.qr-create-button {
-
-  background:
-    #198754;
-
-  border-color:
-    #198754;
-
-}
-
-
-.qr-create-button:hover {
-
-  background:
-    #157347;
-
-}
-
-
-/* =================================================
-   PRINT SELECTED
-   ================================================= */
-
-.qr-print-button {
-
-  background:
-    #6c5ce7;
-
-  border-color:
-    #6c5ce7;
-
-}
-
-
-.qr-print-button:hover {
-
-  background:
-    #5849c7;
-
-}
-
-
-/* =================================================
-   PRINT ALL
-   ================================================= */
-
-.qr-print-all-button {
-
-  background:
-    #495057;
-
-  border-color:
-    #495057;
-
-}
-
-
-.qr-print-all-button:hover {
-
-  background:
-    #343a40;
-
-}
-
-
-/* =================================================
-   LIST CONTROL
-   ================================================= */
-
-.qr-list-control {
-
-  width:
-    100%;
-
-  margin:
-    0 auto 10px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    12px;
-
-}
-
-
-/* =================================================
-   LIST INFO
-   ================================================= */
-
-.qr-list-info {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    8px;
-
-  min-width:
-    0;
-
-}
-
-
-.qr-list-info strong {
-
-  font-size:
-    17px;
-
-  color:
-    #400000;
-
-}
-
-
-.qr-list-info span {
-
-  font-size:
-    13px;
-
-  color:
-    #777777;
-
-}
-
-
-/* =================================================
-   PAGE SIZE
-   ================================================= */
-
-.qr-page-size {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    7px;
-
-  font-size:
-    13px;
-
-  color:
-    #555555;
-
-}
-
-
-.qr-page-size .qr-filter-select {
-
-  width:
-    auto;
-
-  min-width:
-    115px;
-
   height:
-    36px;
-
-}
-
-
-/* =================================================
-   LOCATION LIST
-   ================================================= */
-
-.qr-location-list {
-
-  width:
-    100%;
-
-  margin:
-    0 auto;
-
-}
-
-
-/* =================================================
-   LIST HEADER
-   ================================================= */
-
-.qr-list-header {
-
-  display:
-    none;
-
-}
-
-
-/* =================================================
-   LOCATION GRID
-   ================================================= */
-
-/*
-   ใช้ grid เพื่อให้ข้อมูล 25 จุด
-   อยู่ในหน้าจอได้อย่างกระชับ
-
-   Desktop:
-   1 แถว = 5 จุด
-*/
-
-.qr-location-grid {
-
-  width:
-    100%;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(5, minmax(0, 1fr));
-
-  gap:
-    8px;
-
-}
-
-
-/* =================================================
-   LOCATION CARD
-   ================================================= */
-
-.qr-location-card {
-
-  position:
-    relative;
-
-  min-width:
-    0;
-
-  min-height:
-    130px;
-
-  padding:
-    11px 11px 10px 38px;
-
-  box-sizing:
-    border-box;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #d6d6d6;
-
-  border-radius:
-    8px;
-
-  cursor:
-    pointer;
-
-  transition:
-    0.15s;
-
-}
-
-
-/* =================================================
-   CARD HOVER
-   ================================================= */
-
-.qr-location-card:hover {
-
-  border-color:
-    #a00000;
-
-  box-shadow:
-    0 2px 7px rgba(0, 0, 0, 0.09);
-
-}
-
-
-/* =================================================
-   SELECTED CARD
-   ================================================= */
-
-.qr-location-card.qr-location-selected {
-
-  border:
-    2px solid #800000;
-
-  background:
-    #fff8f8;
-
-}
-
-
-/* =================================================
-   INACTIVE CARD
-   ================================================= */
-
-.qr-location-card.qr-location-inactive {
-
-  background:
-    #f5f5f5;
-
-  color:
-    #888888;
-
-  cursor:
-    not-allowed;
-
-  opacity:
-    0.75;
-
-}
-
-
-.qr-location-card.qr-location-inactive:hover {
-
-  border-color:
-    #d6d6d6;
-
-  box-shadow:
-    none;
-
-}
-
-
-/* =================================================
-   CHECKBOX WRAPPER
-   ================================================= */
-
-.qr-checkbox-wrapper {
-
-  position:
-    absolute;
-
-  top:
-    11px;
-
-  left:
-    10px;
-
-  width:
-    22px;
-
-  height:
-    22px;
+    42px;
 
   margin:
     0;
 
   padding:
-    0;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  cursor:
-    pointer;
-
-}
-
-
-/* =================================================
-   CHECKBOX
-   ================================================= */
-
-.qr-location-checkbox {
-
-  width:
-    18px !important;
-
-  height:
-    18px;
-
-  margin:
-    0 !important;
-
-  padding:
-    0 !important;
-
-  cursor:
-    pointer;
-
-  accent-color:
-    #800000;
-
-}
-
-
-.qr-location-checkbox:disabled {
-
-  cursor:
-    not-allowed;
-
-}
-
-
-/* =================================================
-   LOCATION HEADER
-   ================================================= */
-
-.qr-location-header {
-
-  width:
-    100%;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    5px;
-
-  margin:
-    0 0 7px;
-
-}
-
-
-/* =================================================
-   POINT ID
-   ================================================= */
-
-.qr-location-point-id {
-
-  min-width:
-    0;
-
-  font-size:
-    16px;
-
-  font-weight:
-    800;
-
-  color:
-    #400000;
-
-  overflow:
-    hidden;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
-
-}
-
-
-/* =================================================
-   ACTIVE STATUS
-   ================================================= */
-
-.qr-location-active-status {
-
-  flex-shrink:
-    0;
-
-  padding:
-    3px 6px;
-
-  border-radius:
-    5px;
-
-  font-size:
-    10px;
-
-  font-weight:
-    800;
-
-  line-height:
-    1;
-
-}
-
-
-/* =================================================
-   ACTIVE
-   ================================================= */
-
-.qr-location-active .qr-location-active-status {
-
-  background:
-    #d1e7dd;
-
-  color:
-    #146c43;
-
-}
-
-
-/* =================================================
-   INACTIVE
-   ================================================= */
-
-.qr-location-inactive .qr-location-active-status {
-
-  background:
-    #e9ecef;
-
-  color:
-    #6c757d;
-
-}
-
-
-/* =================================================
-   ZONE
-   ================================================= */
-
-.qr-location-zone {
-
-  margin:
-    0 0 5px;
-
-  font-size:
-    12px;
-
-  color:
-    #777777;
-
-  overflow:
-    hidden;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
-
-}
-
-
-/* =================================================
-   LOCATION NAME
-   ================================================= */
-
-.qr-location-name {
-
-  min-height:
-    38px;
-
-  margin:
-    0 0 7px;
-
-  font-size:
-    14px;
-
-  font-weight:
-    700;
-
-  line-height:
-    1.35;
-
-  color:
-    #333333;
-
-  overflow:
-    hidden;
-
-  display:
-    -webkit-box;
-
-  -webkit-box-orient:
-    vertical;
-
-  -webkit-line-clamp:
-    2;
-
-}
-
-
-/* =================================================
-   QR INFO
-   ================================================= */
-
-.qr-location-info {
-
-  margin-top:
-    auto;
-
-  font-size:
-    12px;
-
-  line-height:
-    1.3;
-
-  color:
-    #198754;
-
-}
-
-
-.qr-location-inactive .qr-location-info {
-
-  color:
-    #777777;
-
-}
-
-
-/* =================================================
-   EMPTY STATE
-   ================================================= */
-
-.qr-empty-state {
-
-  width:
-    100%;
-
-  min-height:
-    100px;
-
-  padding:
-    25px 15px;
-
-  box-sizing:
-    border-box;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  text-align:
-    center;
-
-  background:
-    #ffffff;
-
-  border:
-    1px solid #dddddd;
-
-  border-radius:
-    9px;
-
-  color:
-    #777777;
-
-  font-size:
-    15px;
-
-}
-
-
-/* =================================================
-   PAGINATION
-   ================================================= */
-
-.qr-pagination {
-
-  width:
-    100%;
-
-  margin:
-    16px auto 20px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    5px;
-
-  flex-wrap:
-    wrap;
-
-}
-
-
-/* =================================================
-   PAGINATION BUTTON
-   ================================================= */
-
-.qr-pagination button {
-
-  width:
-    auto;
-
-  min-width:
-    36px;
-
-  height:
-    36px;
-
-  margin:
-    0;
-
-  padding:
-    5px 9px;
+    0 15px;
 
   border:
     1px solid #cccccc;
@@ -2721,6 +1686,975 @@ canvas {
   font-weight:
     600;
 
+  white-space:
+    nowrap;
+
+}
+
+
+.qr-filter-clear-button:hover {
+
+  background:
+    #f3f3f3;
+
+}
+
+
+/* =================================================
+   SUMMARY
+   ================================================= */
+
+.qr-management-summary {
+
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap:
+    10px;
+
+  margin:
+    0 0 14px;
+
+}
+
+
+.qr-management-summary-item {
+
+  min-height:
+    68px;
+
+  padding:
+    10px 15px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  justify-content:
+    center;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-radius:
+    7px;
+
+}
+
+
+.qr-management-summary-item span {
+
+  font-size:
+    13px;
+
+  color:
+    #666666;
+
+}
+
+
+.qr-management-summary-item strong {
+
+  margin-top:
+    2px;
+
+  font-size:
+    25px;
+
+  line-height:
+    1.1;
+
+  color:
+    #800000;
+
+}
+
+
+.qr-management-summary-item.qr-summary-selected {
+
+  background:
+    #fff8f8;
+
+  border-color:
+    #d9b3b3;
+
+}
+
+
+/* =================================================
+   TABLE TOOLBAR
+   ================================================= */
+
+.qr-table-toolbar {
+
+  width:
+    100%;
+
+  min-height:
+    48px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    15px;
+
+  margin:
+    0;
+
+  padding:
+    8px 12px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-bottom:
+    none;
+
+  border-radius:
+    8px 8px 0 0;
+
+}
+
+
+/* =================================================
+   SELECT ALL
+   ================================================= */
+
+.qr-select-all-wrapper {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  margin:
+    0;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  color:
+    #400000;
+
+  cursor:
+    pointer;
+
+}
+
+
+.qr-select-all-wrapper input {
+
+  width:
+    17px;
+
+  height:
+    17px;
+
+  margin:
+    0;
+
+  padding:
+    0;
+
+  cursor:
+    pointer;
+
+  accent-color:
+    #800000;
+
+}
+
+
+/* =================================================
+   PAGE SIZE
+   ================================================= */
+
+.qr-page-size {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  margin:
+    0;
+
+  font-size:
+    13px;
+
+  color:
+    #555555;
+
+}
+
+
+.qr-page-size select {
+
+  width:
+    auto;
+
+  min-width:
+    65px;
+
+  height:
+    34px;
+
+  margin:
+    0;
+
+  padding:
+    4px 7px;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    5px;
+
+  background:
+    #ffffff;
+
+  font-size:
+    13px;
+
+}
+
+
+/* =================================================
+   TABLE SECTION
+   ================================================= */
+
+.qr-table-section {
+
+  width:
+    100%;
+
+  margin:
+    0;
+
+}
+
+
+/* =================================================
+   TABLE WRAPPER
+   ================================================= */
+
+.qr-table-wrapper {
+
+  width:
+    100%;
+
+  overflow-x:
+    auto;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  box-sizing:
+    border-box;
+
+}
+
+
+/* =================================================
+   TABLE
+   ================================================= */
+
+.qr-management-table {
+
+  width:
+    100%;
+
+  min-width:
+    780px;
+
+  border-collapse:
+    collapse;
+
+  table-layout:
+    fixed;
+
+}
+
+
+/* =================================================
+   TABLE HEADER
+   ================================================= */
+
+.qr-management-table thead {
+
+  background:
+    #f2f2f2;
+
+}
+
+
+.qr-management-table th {
+
+  height:
+    46px;
+
+  padding:
+    8px 10px;
+
+  box-sizing:
+    border-box;
+
+  border-bottom:
+    1px solid #cccccc;
+
+  color:
+    #400000;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  text-align:
+    left;
+
+  white-space:
+    nowrap;
+
+}
+
+
+.qr-management-table th:first-child,
+.qr-management-table td:first-child {
+
+  text-align:
+    center;
+
+}
+
+
+/* =================================================
+   TABLE COLUMNS
+   ================================================= */
+
+.qr-col-check {
+
+  width:
+    48px;
+
+}
+
+
+.qr-col-point {
+
+  width:
+    110px;
+
+}
+
+
+.qr-col-zone {
+
+  width:
+    130px;
+
+}
+
+
+.qr-col-location {
+
+  width:
+    auto;
+
+}
+
+
+.qr-col-status {
+
+  width:
+    110px;
+
+}
+
+
+.qr-col-qr {
+
+  width:
+    70px;
+
+  text-align:
+    center !important;
+
+}
+
+
+.qr-col-action {
+
+  width:
+    85px;
+
+  text-align:
+    center !important;
+
+}
+
+
+/* =================================================
+   TABLE BODY
+   ================================================= */
+
+.qr-management-table td {
+
+  height:
+    48px;
+
+  padding:
+    8px 10px;
+
+  box-sizing:
+    border-box;
+
+  border-bottom:
+    1px solid #eeeeee;
+
+  color:
+    #333333;
+
+  font-size:
+    14px;
+
+  vertical-align:
+    middle;
+
+}
+
+
+.qr-management-table tbody tr {
+
+  background:
+    #ffffff;
+
+  transition:
+    background-color 0.15s;
+
+}
+
+
+.qr-management-table tbody tr:hover {
+
+  background:
+    #fff8f8;
+
+}
+
+
+/* =================================================
+   ROW CHECKBOX
+   ================================================= */
+
+.qr-row-checkbox {
+
+  width:
+    17px !important;
+
+  height:
+    17px;
+
+  margin:
+    0 !important;
+
+  padding:
+    0 !important;
+
+  cursor:
+    pointer;
+
+  accent-color:
+    #800000;
+
+}
+
+
+.qr-row-checkbox:disabled {
+
+  cursor:
+    not-allowed;
+
+}
+
+
+/* =================================================
+   POINT ID
+   ================================================= */
+
+.qr-table-point-id {
+
+  display:
+    block;
+
+  font-weight:
+    700;
+
+  color:
+    #800000;
+
+  white-space:
+    nowrap;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+}
+
+
+/* =================================================
+   ZONE
+   ================================================= */
+
+.qr-table-zone {
+
+  white-space:
+    nowrap;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+}
+
+
+/* =================================================
+   LOCATION
+   ================================================= */
+
+.qr-table-location {
+
+  font-weight:
+    600;
+
+  white-space:
+    nowrap;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+}
+
+
+/* =================================================
+   ACTIVE STATUS
+   ================================================= */
+
+.qr-status-badge {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-width:
+    72px;
+
+  padding:
+    4px 8px;
+
+  box-sizing:
+    border-box;
+
+  border-radius:
+    20px;
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1.2;
+
+}
+
+
+.qr-status-active {
+
+  background:
+    #e8f5e9;
+
+  color:
+    #1b5e20;
+
+}
+
+
+.qr-status-inactive {
+
+  background:
+    #eeeeee;
+
+  color:
+    #666666;
+
+}
+
+
+/* =================================================
+   QR STATUS
+   ================================================= */
+
+.qr-exists {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    100%;
+
+  font-size:
+    17px;
+
+  font-weight:
+    700;
+
+  color:
+    #198754;
+
+}
+
+
+.qr-not-exists {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    100%;
+
+  font-size:
+    17px;
+
+  color:
+    #999999;
+
+}
+
+
+/* =================================================
+   ROW ACTION
+   ================================================= */
+
+.qr-row-action-button {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    auto;
+
+  min-width:
+    56px;
+
+  height:
+    34px;
+
+  margin:
+    0;
+
+  padding:
+    5px 11px;
+
+  box-sizing:
+    border-box;
+
+  border:
+    none;
+
+  border-radius:
+    5px;
+
+  background:
+    #800000;
+
+  color:
+    #ffffff;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+}
+
+
+.qr-row-action-button:hover {
+
+  background:
+    #a00000;
+
+}
+
+
+/* =================================================
+   INACTIVE ROW
+   ================================================= */
+
+.qr-row-inactive {
+
+  background:
+    #fafafa !important;
+
+}
+
+
+.qr-row-inactive td {
+
+  color:
+    #999999;
+
+}
+
+
+.qr-row-inactive .qr-table-point-id {
+
+  color:
+    #888888;
+
+}
+
+
+/* =================================================
+   LOADING
+   ================================================= */
+
+.qr-table-loading {
+
+  height:
+    100px;
+
+  padding:
+    25px !important;
+
+  text-align:
+    center !important;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   EMPTY
+   ================================================= */
+
+.qr-table-empty {
+
+  height:
+    100px;
+
+  padding:
+    25px !important;
+
+  text-align:
+    center !important;
+
+  color:
+    #777777;
+
+}
+
+
+/* =================================================
+   TABLE FOOTER
+   ================================================= */
+
+.qr-table-footer {
+
+  width:
+    100%;
+
+  min-height:
+    58px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    15px;
+
+  padding:
+    8px 12px;
+
+  box-sizing:
+    border-box;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid #dddddd;
+
+  border-top:
+    none;
+
+}
+
+
+/* =================================================
+   PAGINATION INFO
+   ================================================= */
+
+.qr-pagination-info {
+
+  font-size:
+    13px;
+
+  color:
+    #666666;
+
+}
+
+
+/* =================================================
+   PAGINATION
+   ================================================= */
+
+.qr-pagination {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    4px;
+
+  flex-wrap:
+    wrap;
+
+}
+
+
+.qr-pagination button {
+
+  width:
+    34px;
+
+  min-width:
+    34px;
+
+  height:
+    34px;
+
+  margin:
+    0;
+
+  padding:
+    0;
+
+  box-sizing:
+    border-box;
+
+  border:
+    1px solid #cccccc;
+
+  border-radius:
+    5px;
+
+  background:
+    #ffffff;
+
+  color:
+    #555555;
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+
   cursor:
     pointer;
 
@@ -2735,38 +2669,30 @@ canvas {
 }
 
 
-/* =================================================
-   ACTIVE PAGE
-   ================================================= */
-
 .qr-pagination button.active {
 
   background:
     #800000;
 
-  border-color:
-    #800000;
-
   color:
     #ffffff;
 
+  border-color:
+    #800000;
+
 }
 
-
-/* =================================================
-   DISABLED PAGE
-   ================================================= */
 
 .qr-pagination button:disabled {
 
   background:
     #eeeeee;
 
-  border-color:
-    #dddddd;
-
   color:
     #aaaaaa;
+
+  border-color:
+    #dddddd;
 
   cursor:
     not-allowed;
@@ -2781,7 +2707,7 @@ canvas {
 .qr-pagination span {
 
   padding:
-    0 4px;
+    0 3px;
 
   color:
     #777777;
@@ -2790,7 +2716,159 @@ canvas {
 
 
 /* =================================================
-   QR PREVIEW SECTION
+   BULK ACTIONS
+   ================================================= */
+
+.qr-bulk-actions {
+
+  width:
+    100%;
+
+  display:
+    flex;
+
+  justify-content:
+    flex-end;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    8px;
+
+  margin:
+    15px 0 20px;
+
+}
+
+
+.qr-bulk-button {
+
+  width:
+    auto;
+
+  min-height:
+    40px;
+
+  margin:
+    0;
+
+  padding:
+    8px 14px;
+
+  border:
+    none;
+
+  border-radius:
+    6px;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+}
+
+
+.qr-bulk-button.secondary {
+
+  background:
+    #eeeeee;
+
+  color:
+    #555555;
+
+}
+
+
+.qr-bulk-button.secondary:hover {
+
+  background:
+    #dddddd;
+
+}
+
+
+.qr-bulk-button.create {
+
+  background:
+    #800000;
+
+  color:
+    #ffffff;
+
+}
+
+
+.qr-bulk-button.create:hover {
+
+  background:
+    #a00000;
+
+}
+
+
+.qr-bulk-button.print {
+
+  background:
+    #555555;
+
+  color:
+    #ffffff;
+
+}
+
+
+.qr-bulk-button.print:hover {
+
+  background:
+    #333333;
+
+}
+
+
+.qr-bulk-button.print-all {
+
+  background:
+    #222222;
+
+  color:
+    #ffffff;
+
+}
+
+
+.qr-bulk-button.print-all:hover {
+
+  background:
+    #000000;
+
+}
+
+
+.qr-bulk-button:disabled {
+
+  background:
+    #cccccc;
+
+  color:
+    #888888;
+
+  cursor:
+    not-allowed;
+
+}
+
+
+/* =================================================
+   QR PREVIEW
    ================================================= */
 
 .qr-preview-section {
@@ -2799,7 +2877,7 @@ canvas {
     100%;
 
   margin:
-    25px auto 0;
+    25px 0;
 
   padding:
     16px;
@@ -2814,14 +2892,10 @@ canvas {
     1px solid #dddddd;
 
   border-radius:
-    10px;
+    8px;
 
 }
 
-
-/* =================================================
-   QR PREVIEW HEADER
-   ================================================= */
 
 .qr-preview-header {
 
@@ -2835,7 +2909,7 @@ canvas {
     space-between;
 
   gap:
-    12px;
+    15px;
 
   margin:
     0 0 15px;
@@ -2843,7 +2917,7 @@ canvas {
 }
 
 
-.qr-preview-header h3 {
+.qr-preview-header h2 {
 
   margin:
     0;
@@ -2852,7 +2926,7 @@ canvas {
     18px;
 
   color:
-    #400000;
+    #800000;
 
 }
 
@@ -2866,40 +2940,33 @@ canvas {
     13px;
 
   color:
-    #777777;
+    #666666;
 
 }
 
 
-/* =================================================
-   PREVIEW COUNT
-   ================================================= */
-
 .qr-preview-count {
 
-  flex-shrink:
-    0;
+  min-width:
+    60px;
 
   padding:
     6px 10px;
 
-  background:
-    #f5f5f5;
-
-  border:
-    1px solid #dddddd;
-
   border-radius:
-    6px;
+    20px;
+
+  background:
+    #f4eaea;
+
+  color:
+    #800000;
+
+  text-align:
+    center;
 
   font-size:
     13px;
-
-  font-weight:
-    700;
-
-  color:
-    #555555;
 
 }
 
@@ -2917,7 +2984,7 @@ canvas {
     grid;
 
   grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+    repeat(6, minmax(0, 1fr));
 
   gap:
     12px;
@@ -2940,15 +3007,6 @@ canvas {
   box-sizing:
     border-box;
 
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
   text-align:
     center;
 
@@ -2959,7 +3017,7 @@ canvas {
     1px solid #dddddd;
 
   border-radius:
-    8px;
+    7px;
 
 }
 
@@ -2973,14 +3031,14 @@ canvas {
   width:
     180px;
 
-  height:
-    180px;
-
   max-width:
     100%;
 
+  min-height:
+    180px;
+
   margin:
-    0 auto 9px;
+    0 auto 8px;
 
   display:
     flex;
@@ -2991,65 +3049,102 @@ canvas {
   justify-content:
     center;
 
-  background:
-    #ffffff;
+}
+
+
+.qr-preview-code img,
+.qr-preview-code canvas {
+
+  display:
+    block;
+
+  max-width:
+    100%;
 
 }
 
 
 /* =================================================
-   QR POINT ID
+   QR PREVIEW TEXT
    ================================================= */
 
 .qr-preview-point-id {
 
-  font-size:
-    17px;
-
-  font-weight:
-    800;
-
-  color:
-    #400000;
-
-}
-
-
-/* =================================================
-   QR LOCATION
-   ================================================= */
-
-.qr-preview-location {
-
   margin-top:
-    4px;
+    5px;
 
   font-size:
-    14px;
+    15px;
 
   font-weight:
     700;
 
-  line-height:
-    1.35;
+  color:
+    #800000;
 
 }
 
 
-/* =================================================
-   QR ZONE
-   ================================================= */
-
-.qr-preview-zone {
+.qr-preview-location {
 
   margin-top:
     3px;
 
   font-size:
+    14px;
+
+  font-weight:
+    600;
+
+  color:
+    #333333;
+
+}
+
+
+.qr-preview-zone {
+
+  margin-top:
+    2px;
+
+  font-size:
     12px;
 
   color:
+    #666666;
+
+}
+
+
+/* =================================================
+   EMPTY STATE
+   ================================================= */
+
+.qr-empty-state {
+
+  width:
+    100%;
+
+  min-height:
+    90px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  box-sizing:
+    border-box;
+
+  color:
     #777777;
+
+  font-size:
+    14px;
 
 }
 
@@ -3067,23 +3162,51 @@ canvas {
 
 
 /* =================================================
-   DESKTOP LARGE
+   SCREEN READER ONLY
    ================================================= */
 
-@media (min-width: 1500px) {
+.sr-only {
 
-  .qr-location-grid {
+  position:
+    absolute;
 
-    grid-template-columns:
-      repeat(6, minmax(0, 1fr));
+  width:
+    1px;
 
-  }
+  height:
+    1px;
+
+  padding:
+    0;
+
+  margin:
+    -1px;
+
+  overflow:
+    hidden;
+
+  clip:
+    rect(0, 0, 0, 0);
+
+  white-space:
+    nowrap;
+
+  border:
+    0;
+
+}
 
 
-  .qr-preview-grid {
+/* =================================================
+   QR MANAGEMENT LARGE DESKTOP
+   ================================================= */
 
-    grid-template-columns:
-      repeat(5, minmax(0, 1fr));
+@media (min-width: 1400px) {
+
+  .qr-management-view {
+
+    max-width:
+      1600px;
 
   }
 
@@ -3091,74 +3214,12 @@ canvas {
 
 
 /* =================================================
-   DESKTOP
-   ================================================= */
-
-@media (max-width: 1300px) {
-
-  .qr-location-grid {
-
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-
-  }
-
-
-  .qr-preview-grid {
-
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-
-  }
-
-}
-
-
-/* =================================================
-   LAPTOP
+   QR MANAGEMENT LAPTOP
    ================================================= */
 
 @media (max-width: 1050px) {
 
-  .qr-filter-panel {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-  }
-
-
-  .qr-selection-summary {
-
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-
-  }
-
-
-  .qr-management-toolbar {
-
-    align-items:
-      stretch;
-
-    flex-direction:
-      column;
-
-  }
-
-
-  .qr-selection-tools {
-
-    justify-content:
-      flex-start;
-
-  }
-
-
-  .qr-management-actions {
-
-    justify-content:
-      flex-start;
+  .qr-filter-section {
 
     flex-wrap:
       wrap;
@@ -3166,18 +3227,18 @@ canvas {
   }
 
 
-  .qr-location-grid {
+  .qr-filter-item {
 
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
+    flex:
+      1 1 180px;
 
   }
 
 
-  .qr-preview-grid {
+  .qr-management-summary {
 
     grid-template-columns:
-      repeat(3, minmax(0, 1fr));
+      repeat(4, minmax(0, 1fr));
 
   }
 
@@ -3185,12 +3246,12 @@ canvas {
 
 
 /* =================================================
-   TABLET
+   QR MANAGEMENT TABLET
    ================================================= */
 
 @media (max-width: 800px) {
 
-  .qr-selection-summary {
+  .qr-management-summary {
 
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
@@ -3198,181 +3259,7 @@ canvas {
   }
 
 
-  .qr-location-grid {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-  }
-
-
-  .qr-preview-grid {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-  }
-
-}
-
-
-/* =================================================
-   MOBILE
-   ================================================= */
-
-@media (max-width: 600px) {
-
-  .qr-management-view {
-
-    width:
-      100%;
-
-  }
-
-
-  /* ===============================
-     HEADER
-     =============================== */
-
-  .qr-management-header {
-
-    padding:
-      13px;
-
-  }
-
-
-  .qr-management-header h2 {
-
-    font-size:
-      19px;
-
-  }
-
-
-  .qr-management-header p {
-
-    font-size:
-      13px;
-
-  }
-
-
-  /* ===============================
-     FILTER
-     =============================== */
-
-  .qr-filter-panel {
-
-    grid-template-columns:
-      1fr;
-
-    gap:
-      10px;
-
-    padding:
-      12px;
-
-  }
-
-
-  /* ===============================
-     SUMMARY
-     =============================== */
-
-  .qr-selection-summary {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-    gap:
-      7px;
-
-  }
-
-
-  .qr-summary-item {
-
-    min-height:
-      65px;
-
-    padding:
-      8px 10px;
-
-  }
-
-
-  .qr-summary-label {
-
-    font-size:
-      12px;
-
-  }
-
-
-  .qr-summary-value {
-
-    font-size:
-      21px;
-
-  }
-
-
-  /* ===============================
-     TOOLBAR
-     =============================== */
-
-  .qr-management-toolbar {
-
-    padding:
-      10px;
-
-  }
-
-
-  .qr-selection-tools {
-
-    width:
-      100%;
-
-  }
-
-
-  .qr-selection-tools .qr-action-button {
-
-    flex:
-      1;
-
-  }
-
-
-  .qr-management-actions {
-
-    width:
-      100%;
-
-    display:
-      grid;
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-
-  .qr-management-actions .qr-action-button {
-
-    width:
-      100%;
-
-  }
-
-
-  /* ===============================
-     LIST CONTROL
-     =============================== */
-
-  .qr-list-control {
+  .qr-table-toolbar {
 
     align-items:
       flex-start;
@@ -3394,71 +3281,81 @@ canvas {
   }
 
 
-  /* ===============================
-     LOCATION
-     =============================== */
+  .qr-table-footer {
 
-  .qr-location-grid {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .qr-pagination {
+
+    width:
+      100%;
+
+    justify-content:
+      center;
+
+  }
+
+
+  .qr-bulk-actions {
+
+    justify-content:
+      flex-start;
+
+  }
+
+
+  .qr-preview-grid {
 
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(3, minmax(0, 1fr));
 
-    gap:
-      7px;
+  }
+
+}
+
+
+/* =================================================
+   QR MANAGEMENT MOBILE
+   ================================================= */
+
+@media (max-width: 600px) {
+
+  .qr-management-view {
+
+    width:
+      100%;
 
   }
 
 
-  .qr-location-card {
+  /* ===============================
+     HEADING
+     =============================== */
 
-    min-height:
-      130px;
+  .qr-page-heading {
 
     padding:
-      10px 8px 9px 34px;
+      13px;
 
   }
 
 
-  .qr-checkbox-wrapper {
-
-    left:
-      8px;
-
-    top:
-      10px;
-
-  }
-
-
-  .qr-location-point-id {
+  .qr-page-heading h1 {
 
     font-size:
-      14px;
+      19px;
 
   }
 
 
-  .qr-location-active-status {
-
-    font-size:
-      9px;
-
-    padding:
-      3px 5px;
-
-  }
-
-
-  .qr-location-zone {
-
-    font-size:
-      11px;
-
-  }
-
-
-  .qr-location-name {
+  .qr-page-heading p {
 
     font-size:
       13px;
@@ -3466,17 +3363,255 @@ canvas {
   }
 
 
-  .qr-location-info {
+  /* ===============================
+     SEARCH
+     =============================== */
+
+  .qr-search-input {
+
+    height:
+      42px;
 
     font-size:
-      11px;
+      15px;
 
   }
 
 
   /* ===============================
-     PAGINATION
+     FILTER
      =============================== */
+
+  .qr-filter-section {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap:
+      8px;
+
+  }
+
+
+  .qr-filter-item {
+
+    min-width:
+      0;
+
+  }
+
+
+  .qr-filter-clear-button {
+
+    width:
+      100%;
+
+    grid-column:
+      1 / -1;
+
+  }
+
+
+  /* ===============================
+     SUMMARY
+     =============================== */
+
+  .qr-management-summary {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap:
+      8px;
+
+  }
+
+
+  .qr-management-summary-item {
+
+    min-height:
+      62px;
+
+    padding:
+      8px 10px;
+
+  }
+
+
+  .qr-management-summary-item span {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .qr-management-summary-item strong {
+
+    font-size:
+      21px;
+
+  }
+
+
+  /* ===============================
+     TOOLBAR
+     =============================== */
+
+  .qr-table-toolbar {
+
+    padding:
+      9px 10px;
+
+  }
+
+
+  .qr-select-all-wrapper {
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* ===============================
+     TABLE
+     =============================== */
+
+  .qr-table-wrapper {
+
+    overflow-x:
+      auto;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+  }
+
+
+  .qr-management-table {
+
+    min-width:
+      760px;
+
+  }
+
+
+  .qr-management-table th {
+
+    height:
+      42px;
+
+    padding:
+      7px 8px;
+
+    font-size:
+      12px;
+
+  }
+
+
+  .qr-management-table td {
+
+    height:
+      44px;
+
+    padding:
+      7px 8px;
+
+    font-size:
+      13px;
+
+  }
+
+
+  .qr-col-check {
+
+    width:
+      42px;
+
+  }
+
+
+  .qr-col-point {
+
+    width:
+      90px;
+
+  }
+
+
+  .qr-col-zone {
+
+    width:
+      100px;
+
+  }
+
+
+  .qr-col-status {
+
+    width:
+      95px;
+
+  }
+
+
+  .qr-col-qr {
+
+    width:
+      60px;
+
+  }
+
+
+  .qr-col-action {
+
+    width:
+      75px;
+
+  }
+
+
+  .qr-row-action-button {
+
+    min-width:
+      50px;
+
+    height:
+      31px;
+
+    padding:
+      4px 9px;
+
+    font-size:
+      12px;
+
+  }
+
+
+  /* ===============================
+     FOOTER
+     =============================== */
+
+  .qr-table-footer {
+
+    padding:
+      9px 10px;
+
+  }
+
+
+  .qr-pagination-info {
+
+    font-size:
+      12px;
+
+  }
+
 
   .qr-pagination {
 
@@ -3488,17 +3623,40 @@ canvas {
 
   .qr-pagination button {
 
+    width:
+      32px;
+
     min-width:
       32px;
 
     height:
-      34px;
-
-    padding:
-      4px 7px;
+      32px;
 
     font-size:
-      13px;
+      12px;
+
+  }
+
+
+  /* ===============================
+     BULK ACTION
+     =============================== */
+
+  .qr-bulk-actions {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .qr-bulk-button {
+
+    width:
+      100%;
 
   }
 
@@ -3529,7 +3687,18 @@ canvas {
   .qr-preview-grid {
 
     grid-template-columns:
-      1fr;
+      repeat(2, minmax(0, 1fr));
+
+    gap:
+      8px;
+
+  }
+
+
+  .qr-preview-card {
+
+    padding:
+      8px;
 
   }
 
@@ -3537,10 +3706,46 @@ canvas {
   .qr-preview-code {
 
     width:
-      180px;
+      140px;
+
+    min-height:
+      140px;
+
+  }
+
+
+  .qr-preview-code img,
+  .qr-preview-code canvas {
+
+    width:
+      140px !important;
 
     height:
-      180px;
+      140px !important;
+
+  }
+
+
+  .qr-preview-point-id {
+
+    font-size:
+      14px;
+
+  }
+
+
+  .qr-preview-location {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .qr-preview-zone {
+
+    font-size:
+      11px;
 
   }
 
@@ -3553,7 +3758,15 @@ canvas {
 
 @media (max-width: 380px) {
 
-  .qr-location-grid {
+  .qr-management-summary {
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .qr-bulk-actions {
 
     grid-template-columns:
       1fr;
@@ -3561,27 +3774,12 @@ canvas {
   }
 
 
-  .qr-selection-tools {
+  .qr-management-table {
 
-    flex-direction:
-      column;
-
-  }
-
-
-  .qr-selection-tools .qr-action-button {
-
-    width:
-      100%;
-
-  }
-
-
-  .qr-summary-value {
-
-    font-size:
-      20px;
+    min-width:
+      740px;
 
   }
 
 }
+
