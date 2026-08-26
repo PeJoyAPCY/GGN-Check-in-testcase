@@ -13,27 +13,29 @@
 // - Base64
 // - ส่งข้อมูล
 // - รองรับ QR Point ID
+// - ใช้ Zone / Location จาก Backend
 //
 // QR FLOW:
-// QR Code
-//   ↓
-// pointId
-//   ↓
+//
+// checkin.html?pointId=P001
+//        ↓
 // app.js
-//   ↓
+//        ↓
 // locationByPoint
-//   ↓
-// zone + location
-//   ↓
+//        ↓
+// Zone + Location
+//        ↓
 // checkin.js
-//   ↓
-// ส่งข้อมูล Check-in
+//        ↓
+// ส่งข้อมูลตาม Zone จริง
 //
 // IMPORTANT:
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - ใช้ข้อมูลจุดจาก app.js
-// - ไม่แก้ Backend
-// - Logic การส่งข้อมูลเดิมยังคงอยู่
+// - ใช้ POINT_ID จาก app.js
+// - ใช้ getCurrentZone()
+// - ใช้ getCurrentLocation()
+// - ไม่ใช้ ZONE สำหรับ QR
+// - Logic รูปภาพเดิมยังคงอยู่
 // ==================================================
 
 
@@ -41,7 +43,7 @@
 // INITIALIZE CHECK-IN
 // ==================================================
 
-function initializeCheckin() {
+async function initializeCheckin() {
 
   const imageInput =
     getElement("imageInput");
@@ -86,14 +88,57 @@ function initializeCheckin() {
   }
 
 
-  let photos = [];
-
-
-  // =================================================
-  // CURRENT LOCATION
+  // ==================================================
+  // QR LOCATION VERIFICATION
   //
-  // อ่านข้อมูลจาก app.js
-  // =================================================
+  // ถ้ามี pointId
+  // ต้องตรวจสอบ Backend ก่อน
+  // ==================================================
+
+  try {
+
+    if (
+      typeof POINT_ID !== "undefined" &&
+      POINT_ID
+    ) {
+
+      status.textContent =
+        "⏳ กำลังตรวจสอบจุดตรวจ...";
+
+
+      /*
+       * เรียก Backend ผ่าน app.js
+       *
+       * เพื่อให้แน่ใจว่า
+       * currentZone
+       * currentLocation
+       *
+       * เป็นค่าจริงของ pointId
+       */
+
+      if (
+        typeof loadLocationByPoint === "function"
+      ) {
+
+        await loadLocationByPoint();
+
+      }
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "GGN Check-in Point Verification Error:",
+      error
+    );
+
+  }
+
+
+  // ==================================================
+  // CURRENT LOCATION
+  // ==================================================
 
   function getCheckinZone() {
 
@@ -101,12 +146,19 @@ function initializeCheckin() {
       typeof getCurrentZone === "function"
     ) {
 
-      return getCurrentZone();
+      return (
+        getCurrentZone() ||
+        "-"
+      );
 
     }
 
 
-    return ZONE;
+    return (
+      typeof ZONE !== "undefined"
+        ? ZONE
+        : "-"
+    );
 
   }
 
@@ -117,12 +169,15 @@ function initializeCheckin() {
       typeof getCurrentLocation === "function"
     ) {
 
-      return getCurrentLocation();
+      return (
+        getCurrentLocation() ||
+        "-"
+      );
 
     }
 
 
-    return "";
+    return "-";
 
   }
 
@@ -133,7 +188,19 @@ function initializeCheckin() {
       typeof getCurrentPointId === "function"
     ) {
 
-      return getCurrentPointId();
+      return (
+        getCurrentPointId() ||
+        ""
+      );
+
+    }
+
+
+    if (
+      typeof POINT_ID !== "undefined"
+    ) {
+
+      return POINT_ID;
 
     }
 
@@ -143,9 +210,16 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
+  // STATE
+  // ==================================================
+
+  let photos = [];
+
+
+  // ==================================================
   // PREVIEW TEXT
-  // =================================================
+  // ==================================================
 
   function updatePreviewText() {
 
@@ -165,6 +239,18 @@ function initializeCheckin() {
       "-";
 
 
+    const zone =
+      getCheckinZone();
+
+
+    const location =
+      getCheckinLocation();
+
+
+    const pointId =
+      getCheckinPointId();
+
+
     const now =
       new Date();
 
@@ -179,23 +265,17 @@ function initializeCheckin() {
       "เข้างาน";
 
 
-    const zone =
-      getCheckinZone();
-
-
-    const location =
-      getCheckinLocation();
-
-
-    const pointId =
-      getCheckinPointId();
-
+    /*
+     * -----------------------------------------------
+     * แสดงข้อมูลจุด
+     * -----------------------------------------------
+     */
 
     let locationText =
       `📍 เขต: ${zone}`;
 
 
-    if (location) {
+    if (location && location !== "-") {
 
       locationText +=
         `\n📌 จุดตรวจ: ${location}`;
@@ -215,7 +295,8 @@ function initializeCheckin() {
 
       `📅 ${nowStr}\n` +
 
-      locationText + `\n` +
+      locationText +
+      `\n` +
 
       `👤 ชื่อ: ${name}\n` +
 
@@ -232,9 +313,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // IMAGE PREVIEW
-  // =================================================
+  // ==================================================
 
   function updatePreview() {
 
@@ -274,9 +355,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // IMAGE SELECT
-  // =================================================
+  // ==================================================
 
   if (imageInput) {
 
@@ -321,9 +402,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // INPUT EVENTS
-  // =================================================
+  // ==================================================
 
   fullname.addEventListener(
     "input",
@@ -357,9 +438,9 @@ function initializeCheckin() {
     );
 
 
-  // =================================================
+  // ==================================================
   // PROCESS IMAGE
-  // =================================================
+  // ==================================================
 
   async function processImage(file) {
 
@@ -368,6 +449,12 @@ function initializeCheckin() {
 
         const img =
           new Image();
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
 
 
         img.onload =
@@ -406,6 +493,11 @@ function initializeCheckin() {
               canvas.toBlob(
                 blob => {
 
+                  URL.revokeObjectURL(
+                    objectUrl
+                  );
+
+
                   if (!blob) {
 
                     reject(
@@ -431,6 +523,11 @@ function initializeCheckin() {
 
             } catch (error) {
 
+              URL.revokeObjectURL(
+                objectUrl
+              );
+
+
               reject(
                 error
               );
@@ -443,6 +540,11 @@ function initializeCheckin() {
         img.onerror =
           () => {
 
+            URL.revokeObjectURL(
+              objectUrl
+            );
+
+
             reject(
               new Error(
                 "ไม่สามารถเปิดรูปภาพได้"
@@ -453,9 +555,7 @@ function initializeCheckin() {
 
 
         img.src =
-          URL.createObjectURL(
-            file
-          );
+          objectUrl;
 
       }
     );
@@ -463,9 +563,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // BLOB → BASE64
-  // =================================================
+  // ==================================================
 
   function blobToBase64(blob) {
 
@@ -508,9 +608,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // SEND
-  // =================================================
+  // ==================================================
 
   async function sendData() {
 
@@ -540,9 +640,9 @@ function initializeCheckin() {
       getCheckinPointId();
 
 
-    // -----------------------------------------------
+    // ==================================================
     // NAME
-    // -----------------------------------------------
+    // ==================================================
 
     if (!name) {
 
@@ -568,9 +668,9 @@ function initializeCheckin() {
     }
 
 
-    // -----------------------------------------------
+    // ==================================================
     // JOB
-    // -----------------------------------------------
+    // ==================================================
 
     if (!job) {
 
@@ -582,9 +682,9 @@ function initializeCheckin() {
     }
 
 
-    // -----------------------------------------------
+    // ==================================================
     // CHECK-IN IMAGE
-    // -----------------------------------------------
+    // ==================================================
 
     if (
       photos.length === 0
@@ -598,9 +698,9 @@ function initializeCheckin() {
     }
 
 
-    // -----------------------------------------------
+    // ==================================================
     // API
-    // -----------------------------------------------
+    // ==================================================
 
     if (!GOOGLE_APPS_SCRIPT_URL) {
 
@@ -608,34 +708,6 @@ function initializeCheckin() {
         "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
 
       return;
-
-    }
-
-
-    // -----------------------------------------------
-    // QR LOCATION CHECK
-    // -----------------------------------------------
-
-    if (pointId) {
-
-      if (!zone) {
-
-        status.textContent =
-          "❌ ไม่พบข้อมูลเขตจาก QR";
-
-        return;
-
-      }
-
-
-      if (!location) {
-
-        status.textContent =
-          "❌ ไม่พบข้อมูลจุดตรวจจาก QR";
-
-        return;
-
-      }
 
     }
 
@@ -668,59 +740,47 @@ function initializeCheckin() {
           );
 
 
+        // ==================================================
+        // PAYLOAD
+        // ==================================================
+
         const payload = {
 
-          // -----------------------------------------
-          // ZONE
-          // -----------------------------------------
+          /*
+           * Zone จริงจาก Backend
+           */
 
           zone:
             zone,
 
 
-          // -----------------------------------------
-          // LOCATION
-          // -----------------------------------------
+          /*
+           * จุดตรวจจริง
+           */
 
           location:
             location,
 
 
-          // -----------------------------------------
-          // POINT ID
-          // -----------------------------------------
+          /*
+           * Point ID จาก QR
+           */
 
           pointId:
             pointId,
 
 
-          // -----------------------------------------
-          // PERSON
-          // -----------------------------------------
-
           fullname:
             name,
 
-
-          // -----------------------------------------
-          // JOB
-          // -----------------------------------------
 
           jobType:
             "Check in (เข้างาน) - " + job,
 
 
-          // -----------------------------------------
-          // EXTRA TEXT
-          // -----------------------------------------
-
           extraText:
             extraMsg,
 
-
-          // -----------------------------------------
-          // IMAGE
-          // -----------------------------------------
 
           imageBase64:
             imageBase64,
@@ -734,22 +794,7 @@ function initializeCheckin() {
 
         console.log(
           "GGN Check-in Payload:",
-          {
-            zone:
-              payload.zone,
-
-            location:
-              payload.location,
-
-            pointId:
-              payload.pointId,
-
-            fullname:
-              payload.fullname,
-
-            jobType:
-              payload.jobType
-          }
+          payload
         );
 
 
@@ -760,9 +805,9 @@ function initializeCheckin() {
       }
 
 
-      // =================================================
+      // ==================================================
       // SUCCESS
-      // =================================================
+      // ==================================================
 
       status.textContent =
         "✅ Check-in สำเร็จ";
@@ -774,7 +819,7 @@ function initializeCheckin() {
     } catch (error) {
 
       console.error(
-        "GGN Check Error:",
+        "GGN Check-in Error:",
         error
       );
 
@@ -798,9 +843,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // REQUEST
-  // =================================================
+  // ==================================================
 
   async function sendRequest(payload) {
 
@@ -853,9 +898,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // RESET
-  // =================================================
+  // ==================================================
 
   function resetForm() {
 
@@ -905,9 +950,9 @@ function initializeCheckin() {
   }
 
 
-  // =================================================
+  // ==================================================
   // BUTTON
-  // =================================================
+  // ==================================================
 
   sendBtn.addEventListener(
     "click",
@@ -915,9 +960,9 @@ function initializeCheckin() {
   );
 
 
-  // =================================================
-  // INITIAL
-  // =================================================
+  // ==================================================
+  // INITIAL PREVIEW
+  // ==================================================
 
   updatePreviewText();
 
