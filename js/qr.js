@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 5.0
+// Version 5.1
 //
 // หน้าที่:
 // - QR Management
@@ -24,16 +24,16 @@
 // - พิมพ์ Active ทั้งหมด
 // - รีเฟรชรายการ
 //
-// IMPORTANT:
+// VERSION 5.1
+// - แก้ปัญหาหน้าพิมพ์เปล่า
+// - ไม่ซ่อน .dashboard-container
+// - ซ่อนเฉพาะเนื้อหาปกติของหน้าเมื่อพิมพ์
+// - ให้ #qrPrintArea แสดงได้จริง
+// - รอ QR DOM render ก่อน window.print()
+// - QR Data = pointId
 // - ไม่แก้ Backend
 // - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - API Action = qrManagement
-// - QR Data = pointId
-// - QR เดิมจะไม่เปลี่ยน หาก pointId เดิม
-// - รองรับข้อมูลประมาณ 150 จุดขึ้นไป
-// - ใช้โครงสร้าง qr.html Version ล่าสุด
 // ==================================================
 
 
@@ -218,11 +218,9 @@ async function loadQRManagement() {
 
   try {
 
-    /*
-     * ---------------------------------------------
-     * ตรวจสอบ API URL
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // ตรวจสอบ API URL
+    // ---------------------------------------------
 
     if (
       typeof GOOGLE_APPS_SCRIPT_URL ===
@@ -237,11 +235,9 @@ async function loadQRManagement() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * เรียก Backend
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // เรียก Backend
+    // ---------------------------------------------
 
     const url =
       `${GOOGLE_APPS_SCRIPT_URL}?action=qrManagement`;
@@ -275,11 +271,9 @@ async function loadQRManagement() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * JSON
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // JSON
+    // ---------------------------------------------
 
     const result =
       await response.json();
@@ -291,11 +285,9 @@ async function loadQRManagement() {
     );
 
 
-    /*
-     * ---------------------------------------------
-     * Validate
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // Validate
+    // ---------------------------------------------
 
     if (
       !result ||
@@ -312,28 +304,17 @@ async function loadQRManagement() {
     }
 
 
-    /*
-     * ---------------------------------------------
-     * DATA
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // DATA
+    // ---------------------------------------------
 
     const data =
       result.data || {};
 
 
-    /*
-     * ---------------------------------------------
-     * LOCATIONS
-     * ---------------------------------------------
-     *
-     * ใช้ locations เป็นข้อมูลหลัก
-     *
-     * activeLocations ใช้เป็นข้อมูลเสริม
-     * แต่ไม่ใช้แทน locations
-     *
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // LOCATIONS
+    // ---------------------------------------------
 
     qrLocations =
       Array.isArray(
@@ -343,11 +324,9 @@ async function loadQRManagement() {
         : [];
 
 
-    /*
-     * ---------------------------------------------
-     * NORMALIZE DATA
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // NORMALIZE
+    // ---------------------------------------------
 
     qrLocations =
       qrLocations.map(
@@ -355,76 +334,60 @@ async function loadQRManagement() {
       );
 
 
-    /*
-     * ---------------------------------------------
-     * RESET SELECTION
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // RESET SELECTION
+    // ---------------------------------------------
 
     selectedPointIds =
       new Set();
 
 
-    /*
-     * ---------------------------------------------
-     * RESET PAGE
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // RESET PAGE
+    // ---------------------------------------------
 
     qrCurrentPage =
       1;
 
 
-    /*
-     * ---------------------------------------------
-     * BUILD ZONE FILTER
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // BUILD ZONE FILTER
+    // ---------------------------------------------
 
     buildZoneFilter();
 
 
-    /*
-     * ---------------------------------------------
-     * UPDATE SUMMARY
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // UPDATE SUMMARY
+    // ---------------------------------------------
 
     updateQRSummary();
 
 
-    /*
-     * ---------------------------------------------
-     * RENDER
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // RENDER
+    // ---------------------------------------------
 
     renderQRTable();
 
 
-    /*
-     * ---------------------------------------------
-     * CLEAR PREVIEW
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // CLEAR PREVIEW
+    // ---------------------------------------------
 
     clearQRPreview();
 
 
-    /*
-     * ---------------------------------------------
-     * CLEAR PRINT AREA
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // CLEAR PRINT AREA
+    // ---------------------------------------------
 
     clearQRPrintArea();
 
 
-    /*
-     * ---------------------------------------------
-     * STATUS
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // STATUS
+    // ---------------------------------------------
 
     setQRStatus(
       `✅ โหลดข้อมูลสำเร็จ ${qrLocations.length} จุด`
@@ -447,6 +410,7 @@ async function loadQRManagement() {
 
     qrLocations =
       [];
+
 
     selectedPointIds =
       new Set();
@@ -742,9 +706,7 @@ function getFilteredLocations() {
     [...qrLocations];
 
 
-  /*
-   * SEARCH
-   */
+  // SEARCH
 
   const keyword =
     String(
@@ -802,9 +764,7 @@ function getFilteredLocations() {
   }
 
 
-  /*
-   * ZONE
-   */
+  // ZONE
 
   if (qrZoneValue) {
 
@@ -826,9 +786,7 @@ function getFilteredLocations() {
   }
 
 
-  /*
-   * ACTIVE / INACTIVE
-   */
+  // STATUS
 
   if (
     qrStatusValue ===
@@ -858,9 +816,7 @@ function getFilteredLocations() {
   }
 
 
-  /*
-   * QR EXIST
-   */
+  // QR EXIST
 
   if (
     qrExistValue ===
@@ -1083,10 +1039,6 @@ function renderQRTable() {
     "";
 
 
-  /*
-   * EMPTY
-   */
-
   if (
     pageLocations.length === 0
   ) {
@@ -1135,14 +1087,13 @@ function renderQRTable() {
     updatePageSelectAll();
 
 
+    updateQRSummary();
+
+
     return;
 
   }
 
-
-  /*
-   * RENDER ROWS
-   */
 
   pageLocations.forEach(
     function(location) {
@@ -1243,9 +1194,7 @@ function createLocationRow(
   }
 
 
-  /*
-   * CHECKBOX
-   */
+  // CHECKBOX
 
   const checkCell =
     document.createElement(
@@ -1316,9 +1265,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * POINT
-   */
+  // POINT
 
   const pointCell =
     document.createElement(
@@ -1351,9 +1298,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * ZONE
-   */
+  // ZONE
 
   const zoneCell =
     document.createElement(
@@ -1375,9 +1320,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * LOCATION
-   */
+  // LOCATION
 
   const locationCell =
     document.createElement(
@@ -1399,9 +1342,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * ACTIVE STATUS
-   */
+  // STATUS
 
   const statusCell =
     document.createElement(
@@ -1441,9 +1382,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * QR STATUS
-   */
+  // QR STATUS
 
   const qrCell =
     document.createElement(
@@ -1483,9 +1422,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * ACTION
-   */
+  // ACTION
 
   const actionCell =
     document.createElement(
@@ -1573,9 +1510,7 @@ function createLocationRow(
   );
 
 
-  /*
-   * ROW CLICK
-   */
+  // ROW CLICK
 
   row.addEventListener(
     "click",
@@ -2181,11 +2116,6 @@ function createSelectedQR() {
 
 // ==================================================
 // RENDER QR PREVIEW
-//
-// QR DATA = pointId
-//
-// IMPORTANT:
-// pointId เดิม = QR เดิม
 // ==================================================
 
 function renderQRPreview(
@@ -2227,10 +2157,6 @@ function renderQRPreview(
       card.className =
         "qr-preview-card";
 
-
-      /*
-       * QR BOX
-       */
 
       const qrBox =
         document.createElement(
@@ -2293,10 +2219,6 @@ function renderQRPreview(
       }
 
 
-      /*
-       * POINT ID
-       */
-
       const pointIdElement =
         document.createElement(
           "div"
@@ -2311,10 +2233,6 @@ function renderQRPreview(
         pointId ||
         "-";
 
-
-      /*
-       * LOCATION
-       */
 
       const locationElement =
         document.createElement(
@@ -2331,10 +2249,6 @@ function renderQRPreview(
         "-";
 
 
-      /*
-       * ZONE
-       */
-
       const zoneElement =
         document.createElement(
           "div"
@@ -2349,10 +2263,6 @@ function renderQRPreview(
         location.zone ||
         "-";
 
-
-      /*
-       * APPEND
-       */
 
       card.appendChild(
         qrBox
@@ -2389,10 +2299,6 @@ function renderQRPreview(
 
   }
 
-
-  /*
-   * เลื่อนไปยัง Preview
-   */
 
   if (qrPreviewSection) {
 
@@ -2444,12 +2350,23 @@ function clearQRPreview() {
 // ==================================================
 // PRINT STYLE
 //
-// ไม่แก้ qr.html
-// สร้าง CSS สำหรับการพิมพ์จาก JavaScript
+// VERSION 5.1
 //
-// A4
-// 2 columns × 4 rows
-// = 8 QR / page
+// จุดสำคัญ:
+// ไม่ซ่อน .dashboard-container
+// เพราะ #qrPrintArea อยู่ภายในมัน
+//
+// เมื่อพิมพ์:
+// - ซ่อน qrManagementPage
+// - แสดง qrPrintArea
+// - qrPrintArea ต้องอยู่นอกส่วนที่ถูกซ่อน
+//
+// แต่เนื่องจาก HTML ปัจจุบัน:
+// #qrPrintArea อยู่ใน #qrManagementPage
+//
+// จึงใช้วิธี:
+// - ซ่อนทุก child ของ dashboard-container
+// - ยกเว้น qrPrintArea
 // ==================================================
 
 function injectQRPrintStyle() {
@@ -2481,28 +2398,58 @@ function injectQRPrintStyle() {
        2 COLUMNS × 4 ROWS
        ========================================= */
 
-    .qr-print-area {
+
+    /* -----------------------------------------
+       NORMAL STATE
+       ----------------------------------------- */
+
+    #qrPrintArea {
       display: none;
     }
 
 
-    .ggn-qr-print-active
+    /* -----------------------------------------
+       PRINT MODE
+       ----------------------------------------- */
+
+    body.ggn-qr-print-active
     .dashboard-container {
-      display: none !important;
-    }
 
-
-    .ggn-qr-print-active
-    .qr-print-area {
       display: block !important;
-      width: 210mm;
-      margin: 0 auto;
-      padding: 0;
+
     }
 
+
+    body.ggn-qr-print-active
+    #qrManagementPage {
+
+      display: none !important;
+
+    }
+
+
+    body.ggn-qr-print-active
+    #qrPrintArea {
+
+      display: block !important;
+
+      width: 210mm;
+
+      margin: 0;
+
+      padding: 0;
+
+    }
+
+
+    /* -----------------------------------------
+       PRINT PAGE
+       ----------------------------------------- */
 
     .ggn-qr-print-page {
+
       width: 210mm;
+
       height: 297mm;
 
       box-sizing: border-box;
@@ -2526,20 +2473,29 @@ function injectQRPrintStyle() {
       overflow: hidden;
 
       background: #ffffff;
+
     }
 
 
     .ggn-qr-print-page:last-child {
+
       page-break-after: auto;
+
       break-after: auto;
+
     }
 
+
+    /* -----------------------------------------
+       PRINT CARD
+       ----------------------------------------- */
 
     .ggn-qr-print-card {
 
       box-sizing: border-box;
 
       width: 100%;
+
       height: 100%;
 
       border: 1px solid #cccccc;
@@ -2561,35 +2517,60 @@ function injectQRPrintStyle() {
       overflow: hidden;
 
       background: #ffffff;
+
     }
 
+
+    /* -----------------------------------------
+       QR
+       ----------------------------------------- */
 
     .ggn-qr-print-code {
 
       width: 34mm;
+
       height: 34mm;
+
+      min-width: 34mm;
+
+      min-height: 34mm;
 
       display: flex;
 
       align-items: center;
+
       justify-content: center;
 
       margin-bottom: 3mm;
+
+      flex-shrink: 0;
+
     }
 
 
     .ggn-qr-print-code img,
     .ggn-qr-print-code canvas {
 
-      display: block;
+      display: block !important;
 
       width: 34mm !important;
+
       height: 34mm !important;
 
+      min-width: 34mm !important;
+
+      min-height: 34mm !important;
+
       max-width: 34mm !important;
+
       max-height: 34mm !important;
+
     }
 
+
+    /* -----------------------------------------
+       POINT ID
+       ----------------------------------------- */
 
     .ggn-qr-print-point {
 
@@ -2604,8 +2585,13 @@ function injectQRPrintStyle() {
       word-break: break-word;
 
       overflow-wrap: anywhere;
+
     }
 
+
+    /* -----------------------------------------
+       LOCATION
+       ----------------------------------------- */
 
     .ggn-qr-print-location {
 
@@ -2622,8 +2608,13 @@ function injectQRPrintStyle() {
       overflow-wrap: anywhere;
 
       margin-bottom: 1mm;
+
     }
 
+
+    /* -----------------------------------------
+       ZONE
+       ----------------------------------------- */
 
     .ggn-qr-print-zone {
 
@@ -2636,55 +2627,89 @@ function injectQRPrintStyle() {
       word-break: break-word;
 
       overflow-wrap: anywhere;
+
     }
 
+
+    /* -----------------------------------------
+       PAGE
+       ----------------------------------------- */
 
     @page {
 
       size: A4 portrait;
 
       margin: 0;
+
     }
 
+
+    /* =========================================
+       PRINT MEDIA
+       ========================================= */
 
     @media print {
 
       html,
       body {
 
-        width: 210mm;
-        height: 297mm;
+        width: 210mm !important;
+
+        min-width: 210mm !important;
 
         margin: 0 !important;
+
         padding: 0 !important;
 
         background: #ffffff !important;
+
       }
 
 
       body.ggn-qr-print-active {
 
         margin: 0 !important;
+
         padding: 0 !important;
+
+        overflow: visible !important;
+
       }
 
 
       body.ggn-qr-print-active
       .dashboard-container {
 
-        display: none !important;
+        display: block !important;
+
+        width: 210mm !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
       }
 
 
       body.ggn-qr-print-active
-      .qr-print-area {
+      #qrManagementPage {
+
+        display: none !important;
+
+      }
+
+
+      body.ggn-qr-print-active
+      #qrPrintArea {
 
         display: block !important;
 
         width: 210mm !important;
 
         margin: 0 !important;
+
         padding: 0 !important;
+
       }
 
 
@@ -2692,20 +2717,63 @@ function injectQRPrintStyle() {
       .ggn-qr-print-page {
 
         width: 210mm !important;
+
         height: 297mm !important;
 
-        page-break-after: always;
+        padding: 10mm !important;
 
-        break-after: page;
+        box-sizing: border-box !important;
+
+        display: grid !important;
+
+        grid-template-columns:
+          repeat(2, 1fr) !important;
+
+        grid-template-rows:
+          repeat(4, 1fr) !important;
+
+        gap: 5mm !important;
+
+        page-break-after: always !important;
+
+        break-after: page !important;
+
+        overflow: hidden !important;
+
       }
 
 
       body.ggn-qr-print-active
       .ggn-qr-print-page:last-child {
 
-        page-break-after: auto;
+        page-break-after: auto !important;
 
-        break-after: auto;
+        break-after: auto !important;
+
+      }
+
+
+      body.ggn-qr-print-active
+      .ggn-qr-print-code {
+
+        width: 34mm !important;
+
+        height: 34mm !important;
+
+      }
+
+
+      body.ggn-qr-print-active
+      .ggn-qr-print-code img,
+      body.ggn-qr-print-active
+      .ggn-qr-print-code canvas {
+
+        display: block !important;
+
+        width: 34mm !important;
+
+        height: 34mm !important;
+
       }
 
     }
@@ -2745,15 +2813,6 @@ function clearQRPrintArea() {
 
 // ==================================================
 // CREATE PRINT CARD
-//
-// QR DATA = pointId
-//
-// สำคัญ:
-// ไม่ใช้ข้อมูล QR จาก Preview
-// แต่สร้างใหม่จาก pointId เดิม
-//
-// ดังนั้น:
-// P001 → P001 เสมอ
 // ==================================================
 
 function createQRPrintCard(
@@ -2791,9 +2850,7 @@ function createQRPrintCard(
     ).trim();
 
 
-  /*
-   * QR
-   */
+  // QR
 
   const qrCodeContainer =
     document.createElement(
@@ -2849,9 +2906,7 @@ function createQRPrintCard(
   }
 
 
-  /*
-   * POINT ID
-   */
+  // POINT ID
 
   const pointElement =
     document.createElement(
@@ -2868,9 +2923,7 @@ function createQRPrintCard(
     "-";
 
 
-  /*
-   * LOCATION
-   */
+  // LOCATION
 
   const locationElement =
     document.createElement(
@@ -2887,9 +2940,7 @@ function createQRPrintCard(
     "-";
 
 
-  /*
-   * ZONE
-   */
+  // ZONE
 
   const zoneElement =
     document.createElement(
@@ -2906,9 +2957,7 @@ function createQRPrintCard(
     "-";
 
 
-  /*
-   * APPEND
-   */
+  // APPEND
 
   card.appendChild(
     qrCodeContainer
@@ -2936,10 +2985,9 @@ function createQRPrintCard(
 
 
 // ==================================================
-// BUILD PRINT DOCUMENT
+// BUILD PRINT AREA
 //
 // 8 QR / A4
-//
 // 2 × 4
 // ==================================================
 
@@ -2989,12 +3037,6 @@ function buildQRPrintArea(
 
   clearQRPrintArea();
 
-
-  /*
-   * ---------------------------------------------
-   * 8 QR / PAGE
-   * ---------------------------------------------
-   */
 
   const ITEMS_PER_PAGE =
     8;
@@ -3072,10 +3114,9 @@ function buildQRPrintArea(
 
 
 // ==================================================
-// WAIT FOR QR RENDER
+// WAIT FOR QR PRINT RENDER
 //
-// qrcodejs สร้าง QR แบบ DOM
-// รอ browser render ก่อนเรียก print
+// ตรวจสอบว่า QR ถูกสร้างจริงก่อนพิมพ์
 // ==================================================
 
 function waitForQRPrintRender() {
@@ -3083,26 +3124,107 @@ function waitForQRPrintRender() {
   return new Promise(
     function(resolve) {
 
-      requestAnimationFrame(
-        function() {
+      let attempts =
+        0;
+
+
+      const maxAttempts =
+        30;
+
+
+      function checkRender() {
+
+        attempts++;
+
+
+        if (!qrPrintArea) {
+
+          resolve();
+
+          return;
+
+        }
+
+
+        const qrElements =
+          qrPrintArea.querySelectorAll(
+            ".ggn-qr-print-code img, " +
+            ".ggn-qr-print-code canvas"
+          );
+
+
+        const containers =
+          qrPrintArea.querySelectorAll(
+            ".ggn-qr-print-code"
+          );
+
+
+        /*
+         * ถ้ามี QR ครบตาม container
+         */
+
+        if (
+          containers.length > 0 &&
+          qrElements.length >=
+            containers.length
+        ) {
 
           requestAnimationFrame(
             function() {
 
-              setTimeout(
+              requestAnimationFrame(
                 function() {
 
                   resolve();
 
-                },
-                150
+                }
               );
 
             }
           );
 
+          return;
+
         }
-      );
+
+
+        /*
+         * ยังไม่ครบ ให้รอต่อ
+         */
+
+        if (
+          attempts >=
+          maxAttempts
+        ) {
+
+          console.warn(
+            "GGN QR: QR render timeout",
+            {
+              containers:
+                containers.length,
+
+              qrElements:
+                qrElements.length
+            }
+          );
+
+
+          resolve();
+
+          return;
+
+        }
+
+
+        setTimeout(
+          checkRender,
+          100
+        );
+
+      }
+
+
+      checkRender();
 
     }
   );
@@ -3162,9 +3284,11 @@ async function startQRPrint(
       "❌ ไม่พบพื้นที่พิมพ์ QR"
     );
 
+
     console.error(
       "GGN QR: ไม่พบ #qrPrintArea"
     );
+
 
     return;
 
@@ -3177,11 +3301,9 @@ async function startQRPrint(
 
   try {
 
-    /*
-     * ---------------------------------------------
-     * BUILD PRINT AREA
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // BUILD
+    // ---------------------------------------------
 
     const success =
       buildQRPrintArea(
@@ -3196,11 +3318,9 @@ async function startQRPrint(
     }
 
 
-    /*
-     * ---------------------------------------------
-     * STATUS
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // STATUS
+    // ---------------------------------------------
 
     setQRStatus(
       statusMessage ||
@@ -3208,11 +3328,9 @@ async function startQRPrint(
     );
 
 
-    /*
-     * ---------------------------------------------
-     * เปิดโหมดพิมพ์
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // PRINT MODE
+    // ---------------------------------------------
 
     document.body.classList.add(
       "ggn-qr-print-active"
@@ -3220,19 +3338,50 @@ async function startQRPrint(
 
 
     /*
-     * ---------------------------------------------
-     * รอ QR render
-     * ---------------------------------------------
+     * สำคัญ:
+     * บังคับให้ browser คำนวณ layout
+     * ก่อนรอ QR
      */
+
+    void qrPrintArea.offsetHeight;
+
+
+    // ---------------------------------------------
+    // WAIT QR
+    // ---------------------------------------------
 
     await waitForQRPrintRender();
 
 
-    /*
-     * ---------------------------------------------
-     * PRINT
-     * ---------------------------------------------
-     */
+    // ---------------------------------------------
+    // DEBUG
+    // ---------------------------------------------
+
+    console.log(
+      "GGN QR: Ready to print",
+      {
+        pages:
+          qrPrintArea.querySelectorAll(
+            ".ggn-qr-print-page"
+          ).length,
+
+        cards:
+          qrPrintArea.querySelectorAll(
+            ".ggn-qr-print-card"
+          ).length,
+
+        qr:
+          qrPrintArea.querySelectorAll(
+            ".ggn-qr-print-code img, " +
+            ".ggn-qr-print-code canvas"
+          ).length
+      }
+    );
+
+
+    // ---------------------------------------------
+    // PRINT
+    // ---------------------------------------------
 
     window.print();
 
@@ -3248,15 +3397,12 @@ async function startQRPrint(
       "❌ ไม่สามารถเตรียมการพิมพ์ได้"
     );
 
-  } finally {
 
-    /*
-     * ---------------------------------------------
-     * ถ้า browser ยังไม่เข้า print
-     * cleanup จะทำงานหลัง print dialog
-     * ผ่าน afterprint ด้านล่าง
-     * ---------------------------------------------
-     */
+    document.body.classList.remove(
+      "ggn-qr-print-active"
+    );
+
+  } finally {
 
     qrIsPrinting =
       false;
@@ -3268,8 +3414,6 @@ async function startQRPrint(
 
 // ==================================================
 // AFTER PRINT
-//
-// คืนหน้าเว็บกลับสู่สถานะปกติ
 // ==================================================
 
 function handleQRAfterPrint() {
@@ -3316,13 +3460,6 @@ function printSelectedQR() {
   }
 
 
-  /*
-   * ไม่จำเป็นต้องสร้าง Preview ก่อน
-   *
-   * เพราะระบบพิมพ์สร้าง QR
-   * จาก pointId เดิมโดยตรง
-   */
-
   startQRPrint(
     selectedLocations,
     `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด — 8 QR / A4`
@@ -3356,10 +3493,6 @@ function printAllQR() {
   }
 
 
-  /*
-   * เลือก Active ทั้งหมด
-   */
-
   selectedPointIds =
     new Set(
 
@@ -3381,10 +3514,6 @@ function printAllQR() {
 
   updateQRSummary();
 
-
-  /*
-   * พิมพ์ Active ทั้งหมด
-   */
 
   startQRPrint(
     activeLocations,
@@ -3425,10 +3554,6 @@ function updatePagination(
     );
 
 
-  /*
-   * INFO
-   */
-
   if (
     totalItems === 0
   ) {
@@ -3462,10 +3587,6 @@ function updatePagination(
   }
 
 
-  /*
-   * PAGINATION
-   */
-
   if (!qrPagination) {
 
     return;
@@ -3477,9 +3598,7 @@ function updatePagination(
     "";
 
 
-  /*
-   * Previous
-   */
+  // PREVIOUS
 
   const previousButton =
     document.createElement(
@@ -3534,9 +3653,7 @@ function updatePagination(
   );
 
 
-  /*
-   * Page numbers
-   */
+  // PAGE NUMBERS
 
   const pages =
     createPageNumbers(
@@ -3627,9 +3744,7 @@ function updatePagination(
   );
 
 
-  /*
-   * Next
-   */
+  // NEXT
 
   const nextButton =
     document.createElement(
