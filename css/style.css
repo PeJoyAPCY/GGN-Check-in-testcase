@@ -3783,3 +3783,148 @@ canvas {
 
 }
 
+/* =================================================
+   GGN CHECK-IN
+   HEADER + NAVIGATION
+   Version 3.2
+
+   หน้าที่:
+   - Freeze Header
+   - Freeze Main Navigation
+   - Dashboard / QR Management Navigation
+   - Active Menu
+   - ไม่กระทบ API
+   - ไม่กระทบ Backend
+   - ไม่กระทบ Dashboard Content
+   - ไม่กระทบ Check-in / Check-out
+   ================================================= */
+
+
+/* =================================================
+   HEADER WRAPPER
+   ================================================= */
+
+header {
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 1000;
+
+}
+
+
+/* =================================================
+   MAIN HEADER
+   ================================================= */
+
+.main-header {
+
+  position: relative;
+
+  z-index: 1001;
+
+}
+
+
+/* =================================================
+   NAVIGATION
+   ================================================= */
+
+.main-navigation {
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 1000;
+
+}
+
+
+/* =================================================
+   DASHBOARD / QR MANAGEMENT NAV
+   ================================================= */
+
+.main-navigation,
+.navigation,
+.navbar,
+.nav-menu {
+
+  box-sizing: border-box;
+
+}
+
+
+/* =================================================
+   NAV BUTTON
+   ================================================= */
+
+.nav-button {
+
+  cursor: pointer;
+
+}
+
+
+/* =================================================
+   ACTIVE NAVIGATION
+   ================================================= */
+
+.nav-button.active {
+
+  font-weight: 700;
+
+}
+
+
+/* =================================================
+   HEADER CONTENT
+   ================================================= */
+
+.header-content {
+
+  box-sizing: border-box;
+
+}
+
+
+/* =================================================
+   MOBILE
+   ================================================= */
+
+@media (max-width: 600px) {
+
+  header {
+
+    position: sticky;
+
+    top: 0;
+
+  }
+
+
+  .main-navigation {
+
+    position: sticky;
+
+    top: 0;
+
+  }
+
+}
+
+/*
+**แต่ฉันไม่แนะนำให้เราจบแค่ CSS นี้ค่ะ** เพราะจากโครงสร้าง GGN CHECK-IN ที่เราทำอยู่ เราต้องตรวจชื่อ class ของ Header/Menu ใน `index.html` และ `app.js` ให้ตรงกันก่อน เพื่อไม่ให้เกิดกรณี “CSS Sticky ทำงาน แต่กด Dashboard / QR Management แล้วไม่สลับหน้า”
+
+ดังนั้นลำดับที่ถูกต้องตอนนี้คือ:
+
+**1. `style.css` → Freeze Header/Menu** ✅ กำลังทำ
+**2. `index.html` → วางเมนู Dashboard / QR Management**
+**3. `app.js` → สั่งสลับ View**
+**4. ทดสอบ Scroll → Header ต้องไม่หาย**
+**5. ทดสอบ Dashboard → QR Management → Dashboard**
+**6. เมื่อทำงานถูกต้องแล้ว ค่อยกลับมาปรับความสวยงาม**
+
+และฉันจะ **ไม่แตะ QR Table ที่ตอนนี้คุณบอกว่าหน้าตาค่อนข้างโอเคแล้ว** จนกว่า Header จะเรียบร้อยค่ะ*/
