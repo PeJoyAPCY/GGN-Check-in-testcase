@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 4.0
+// Version 5.0
 //
 // หน้าที่:
 // - QR Management
@@ -17,7 +17,11 @@
 // - เลือกข้ามหน้าได้
 // - สร้าง QR Code จาก pointId
 // - แสดง QR Preview
-// - เตรียมระบบพิมพ์ QR
+// - พิมพ์ QR จริง
+// - จัดพิมพ์ A4 = 8 QR / หน้า
+// - 2 คอลัมน์ × 4 แถว
+// - พิมพ์เฉพาะรายการที่เลือก
+// - พิมพ์ Active ทั้งหมด
 // - รีเฟรชรายการ
 //
 // IMPORTANT:
@@ -27,6 +31,7 @@
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
 // - API Action = qrManagement
 // - QR Data = pointId
+// - QR เดิมจะไม่เปลี่ยน หาก pointId เดิม
 // - รองรับข้อมูลประมาณ 150 จุดขึ้นไป
 // - ใช้โครงสร้าง qr.html Version ล่าสุด
 // ==================================================
@@ -172,6 +177,17 @@ let qrCurrentPageSize =
 // ==================================================
 
 let qrEventsInitialized =
+  false;
+
+
+// ==================================================
+// PRINT STATE
+// ==================================================
+
+let qrPrintStyleInjected =
+  false;
+
+let qrIsPrinting =
   false;
 
 
@@ -397,6 +413,15 @@ async function loadQRManagement() {
 
     /*
      * ---------------------------------------------
+     * CLEAR PRINT AREA
+     * ---------------------------------------------
+     */
+
+    clearQRPrintArea();
+
+
+    /*
+     * ---------------------------------------------
      * STATUS
      * ---------------------------------------------
      */
@@ -436,6 +461,9 @@ async function loadQRManagement() {
     clearQRPreview();
 
 
+    clearQRPrintArea();
+
+
     setQRStatus(
       "❌ โหลดข้อมูลไม่สำเร็จ" +
       (
@@ -453,8 +481,6 @@ async function loadQRManagement() {
 
 // ==================================================
 // NORMALIZE LOCATION
-//
-// ทำให้ข้อมูลจาก Backend มีรูปแบบเดียวกัน
 // ==================================================
 
 function normalizeLocation(
@@ -497,13 +523,6 @@ function normalizeLocation(
       ""
     ).trim();
 
-
-  /*
-   * Active
-   *
-   * Backend ปัจจุบันควรส่ง boolean
-   * แต่รองรับ string ด้วย
-   */
 
   normalized.active =
     normalizeBoolean(
@@ -691,10 +710,6 @@ function buildZoneFilter() {
   );
 
 
-  /*
-   * คืนค่าเดิมถ้ายังมีอยู่
-   */
-
   const exists =
     Array.from(
       qrZoneFilter.options
@@ -728,9 +743,7 @@ function getFilteredLocations() {
 
 
   /*
-   * ---------------------------------------------
    * SEARCH
-   * ---------------------------------------------
    */
 
   const keyword =
@@ -790,9 +803,7 @@ function getFilteredLocations() {
 
 
   /*
-   * ---------------------------------------------
    * ZONE
-   * ---------------------------------------------
    */
 
   if (qrZoneValue) {
@@ -816,9 +827,7 @@ function getFilteredLocations() {
 
 
   /*
-   * ---------------------------------------------
    * ACTIVE / INACTIVE
-   * ---------------------------------------------
    */
 
   if (
@@ -850,9 +859,7 @@ function getFilteredLocations() {
 
 
   /*
-   * ---------------------------------------------
    * QR EXIST
-   * ---------------------------------------------
    */
 
   if (
@@ -894,11 +901,6 @@ function getFilteredLocations() {
 
 // ==================================================
 // DETECT QR STATUS
-//
-// รองรับ property หลายรูปแบบ
-//
-// หมายเหตุ:
-// QR ที่สร้างใน Browser ยังไม่ได้บันทึก Backend
 // ==================================================
 
 function locationHasQR(
@@ -1082,9 +1084,7 @@ function renderQRTable() {
 
 
   /*
-   * ---------------------------------------------
    * EMPTY
-   * ---------------------------------------------
    */
 
   if (
@@ -1141,9 +1141,7 @@ function renderQRTable() {
 
 
   /*
-   * ---------------------------------------------
    * RENDER ROWS
-   * ---------------------------------------------
    */
 
   pageLocations.forEach(
@@ -1227,12 +1225,6 @@ function createLocationRow(
     );
 
 
-  /*
-   * ---------------------------------------------
-   * Selected class
-   * ---------------------------------------------
-   */
-
   if (isSelected) {
 
     row.classList.add(
@@ -1252,9 +1244,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * CHECKBOX
-   * ---------------------------------------------
    */
 
   const checkCell =
@@ -1327,9 +1317,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * POINT
-   * ---------------------------------------------
    */
 
   const pointCell =
@@ -1364,9 +1352,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * ZONE
-   * ---------------------------------------------
    */
 
   const zoneCell =
@@ -1390,9 +1376,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * LOCATION
-   * ---------------------------------------------
    */
 
   const locationCell =
@@ -1416,9 +1400,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * ACTIVE STATUS
-   * ---------------------------------------------
    */
 
   const statusCell =
@@ -1460,9 +1442,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * QR STATUS
-   * ---------------------------------------------
    */
 
   const qrCell =
@@ -1504,9 +1484,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * ACTION
-   * ---------------------------------------------
    */
 
   const actionCell =
@@ -1596,12 +1574,7 @@ function createLocationRow(
 
 
   /*
-   * ---------------------------------------------
    * ROW CLICK
-   *
-   * คลิกแถวเพื่อเลือก
-   * ยกเว้นปุ่ม / checkbox
-   * ---------------------------------------------
    */
 
   row.addEventListener(
@@ -1828,7 +1801,8 @@ function toggleSelectCurrentPage() {
 
         return selectedPointIds.has(
           String(
-            location.pointId
+            location.pointId ||
+            ""
           ).trim()
         );
 
@@ -1880,8 +1854,6 @@ function toggleSelectCurrentPage() {
 
 // ==================================================
 // SELECT ALL ACTIVE
-//
-// ปุ่มนี้หมายถึงเลือก Active ทั้งหมดทุกหน้า
 // ==================================================
 
 function selectAllQR() {
@@ -1961,6 +1933,9 @@ function clearAllQR() {
   clearQRPreview();
 
 
+  clearQRPrintArea();
+
+
   setQRStatus(
     "⬜ ยกเลิกการเลือกทั้งหมดแล้ว"
   );
@@ -1990,6 +1965,33 @@ function getSelectedLocations() {
         selectedPointIds.has(
           pointId
         )
+      );
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// GET ACTIVE LOCATIONS
+// ==================================================
+
+function getActiveLocations() {
+
+  return qrLocations.filter(
+    function(location) {
+
+      const pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
+
+
+      return (
+        location.active === true &&
+        pointId !== ""
       );
 
     }
@@ -2033,12 +2035,6 @@ function updateQRSummary() {
   const selected =
     selectedPointIds.size;
 
-
-  /*
-   * ---------------------------------------------
-   * HTML SUMMARY
-   * ---------------------------------------------
-   */
 
   if (qrTotalCount) {
 
@@ -2087,12 +2083,6 @@ function updateQRSummary() {
 
   }
 
-
-  /*
-   * ---------------------------------------------
-   * BUTTON STATE
-   * ---------------------------------------------
-   */
 
   if (createQrBtn) {
 
@@ -2193,6 +2183,9 @@ function createSelectedQR() {
 // RENDER QR PREVIEW
 //
 // QR DATA = pointId
+//
+// IMPORTANT:
+// pointId เดิม = QR เดิม
 // ==================================================
 
 function renderQRPreview(
@@ -2236,9 +2229,7 @@ function renderQRPreview(
 
 
       /*
-       * ---------------------------------------------
        * QR BOX
-       * ---------------------------------------------
        */
 
       const qrBox =
@@ -2303,9 +2294,7 @@ function renderQRPreview(
 
 
       /*
-       * ---------------------------------------------
        * POINT ID
-       * ---------------------------------------------
        */
 
       const pointIdElement =
@@ -2324,9 +2313,7 @@ function renderQRPreview(
 
 
       /*
-       * ---------------------------------------------
        * LOCATION
-       * ---------------------------------------------
        */
 
       const locationElement =
@@ -2345,9 +2332,7 @@ function renderQRPreview(
 
 
       /*
-       * ---------------------------------------------
        * ZONE
-       * ---------------------------------------------
        */
 
       const zoneElement =
@@ -2366,9 +2351,7 @@ function renderQRPreview(
 
 
       /*
-       * ---------------------------------------------
        * APPEND
-       * ---------------------------------------------
        */
 
       card.appendChild(
@@ -2455,11 +2438,828 @@ function clearQRPreview() {
 
   }
 
+}
 
-  if (qrPrintArea) {
 
-    qrPrintArea.innerHTML =
-      "";
+// ==================================================
+// PRINT STYLE
+//
+// ไม่แก้ qr.html
+// สร้าง CSS สำหรับการพิมพ์จาก JavaScript
+//
+// A4
+// 2 columns × 4 rows
+// = 8 QR / page
+// ==================================================
+
+function injectQRPrintStyle() {
+
+  if (
+    qrPrintStyleInjected
+  ) {
+
+    return;
+
+  }
+
+
+  const style =
+    document.createElement(
+      "style"
+    );
+
+
+  style.id =
+    "ggn-qr-print-style";
+
+
+  style.textContent = `
+
+    /* =========================================
+       GGN QR PRINT
+       A4 = 8 QR / PAGE
+       2 COLUMNS × 4 ROWS
+       ========================================= */
+
+    .qr-print-area {
+      display: none;
+    }
+
+
+    .ggn-qr-print-active
+    .dashboard-container {
+      display: none !important;
+    }
+
+
+    .ggn-qr-print-active
+    .qr-print-area {
+      display: block !important;
+      width: 210mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+
+    .ggn-qr-print-page {
+      width: 210mm;
+      height: 297mm;
+
+      box-sizing: border-box;
+
+      padding: 10mm;
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
+      grid-template-rows:
+        repeat(4, 1fr);
+
+      gap: 5mm;
+
+      page-break-after: always;
+
+      break-after: page;
+
+      overflow: hidden;
+
+      background: #ffffff;
+    }
+
+
+    .ggn-qr-print-page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+
+    .ggn-qr-print-card {
+
+      box-sizing: border-box;
+
+      width: 100%;
+      height: 100%;
+
+      border: 1px solid #cccccc;
+
+      border-radius: 3mm;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      justify-content: center;
+
+      text-align: center;
+
+      padding: 4mm;
+
+      overflow: hidden;
+
+      background: #ffffff;
+    }
+
+
+    .ggn-qr-print-code {
+
+      width: 34mm;
+      height: 34mm;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      margin-bottom: 3mm;
+    }
+
+
+    .ggn-qr-print-code img,
+    .ggn-qr-print-code canvas {
+
+      display: block;
+
+      width: 34mm !important;
+      height: 34mm !important;
+
+      max-width: 34mm !important;
+      max-height: 34mm !important;
+    }
+
+
+    .ggn-qr-print-point {
+
+      font-size: 14pt;
+
+      font-weight: 700;
+
+      line-height: 1.2;
+
+      margin-bottom: 1.5mm;
+
+      word-break: break-word;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    .ggn-qr-print-location {
+
+      font-size: 11pt;
+
+      font-weight: 600;
+
+      line-height: 1.25;
+
+      max-width: 100%;
+
+      word-break: break-word;
+
+      overflow-wrap: anywhere;
+
+      margin-bottom: 1mm;
+    }
+
+
+    .ggn-qr-print-zone {
+
+      font-size: 10pt;
+
+      line-height: 1.2;
+
+      color: #444444;
+
+      word-break: break-word;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    @page {
+
+      size: A4 portrait;
+
+      margin: 0;
+    }
+
+
+    @media print {
+
+      html,
+      body {
+
+        width: 210mm;
+        height: 297mm;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        background: #ffffff !important;
+      }
+
+
+      body.ggn-qr-print-active {
+
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+
+      body.ggn-qr-print-active
+      .dashboard-container {
+
+        display: none !important;
+      }
+
+
+      body.ggn-qr-print-active
+      .qr-print-area {
+
+        display: block !important;
+
+        width: 210mm !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+
+      body.ggn-qr-print-active
+      .ggn-qr-print-page {
+
+        width: 210mm !important;
+        height: 297mm !important;
+
+        page-break-after: always;
+
+        break-after: page;
+      }
+
+
+      body.ggn-qr-print-active
+      .ggn-qr-print-page:last-child {
+
+        page-break-after: auto;
+
+        break-after: auto;
+      }
+
+    }
+
+  `;
+
+
+  document.head.appendChild(
+    style
+  );
+
+
+  qrPrintStyleInjected =
+    true;
+
+}
+
+
+// ==================================================
+// CLEAR PRINT AREA
+// ==================================================
+
+function clearQRPrintArea() {
+
+  if (!qrPrintArea) {
+
+    return;
+
+  }
+
+
+  qrPrintArea.innerHTML =
+    "";
+
+}
+
+
+// ==================================================
+// CREATE PRINT CARD
+//
+// QR DATA = pointId
+//
+// สำคัญ:
+// ไม่ใช้ข้อมูล QR จาก Preview
+// แต่สร้างใหม่จาก pointId เดิม
+//
+// ดังนั้น:
+// P001 → P001 เสมอ
+// ==================================================
+
+function createQRPrintCard(
+  location
+) {
+
+  const card =
+    document.createElement(
+      "article"
+    );
+
+
+  card.className =
+    "ggn-qr-print-card";
+
+
+  const pointId =
+    String(
+      location.pointId ||
+      ""
+    ).trim();
+
+
+  const locationName =
+    String(
+      location.location ||
+      ""
+    ).trim();
+
+
+  const zone =
+    String(
+      location.zone ||
+      ""
+    ).trim();
+
+
+  /*
+   * QR
+   */
+
+  const qrCodeContainer =
+    document.createElement(
+      "div"
+    );
+
+
+  qrCodeContainer.className =
+    "ggn-qr-print-code";
+
+
+  if (!pointId) {
+
+    qrCodeContainer.textContent =
+      "ไม่มี Point ID";
+
+  } else {
+
+    try {
+
+      new QRCode(
+        qrCodeContainer,
+        {
+
+          text:
+            pointId,
+
+          width:
+            220,
+
+          height:
+            220,
+
+          correctLevel:
+            QRCode.CorrectLevel.H
+
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        "GGN QR Print creation error:",
+        error
+      );
+
+
+      qrCodeContainer.textContent =
+        "สร้าง QR ไม่สำเร็จ";
+
+    }
+
+  }
+
+
+  /*
+   * POINT ID
+   */
+
+  const pointElement =
+    document.createElement(
+      "div"
+    );
+
+
+  pointElement.className =
+    "ggn-qr-print-point";
+
+
+  pointElement.textContent =
+    pointId ||
+    "-";
+
+
+  /*
+   * LOCATION
+   */
+
+  const locationElement =
+    document.createElement(
+      "div"
+    );
+
+
+  locationElement.className =
+    "ggn-qr-print-location";
+
+
+  locationElement.textContent =
+    locationName ||
+    "-";
+
+
+  /*
+   * ZONE
+   */
+
+  const zoneElement =
+    document.createElement(
+      "div"
+    );
+
+
+  zoneElement.className =
+    "ggn-qr-print-zone";
+
+
+  zoneElement.textContent =
+    zone ||
+    "-";
+
+
+  /*
+   * APPEND
+   */
+
+  card.appendChild(
+    qrCodeContainer
+  );
+
+
+  card.appendChild(
+    pointElement
+  );
+
+
+  card.appendChild(
+    locationElement
+  );
+
+
+  card.appendChild(
+    zoneElement
+  );
+
+
+  return card;
+
+}
+
+
+// ==================================================
+// BUILD PRINT DOCUMENT
+//
+// 8 QR / A4
+//
+// 2 × 4
+// ==================================================
+
+function buildQRPrintArea(
+  locations
+) {
+
+  if (!qrPrintArea) {
+
+    return false;
+
+  }
+
+
+  if (
+    typeof QRCode ===
+    "undefined"
+  ) {
+
+    setQRStatus(
+      "❌ ไม่พบ QR Generator"
+    );
+
+    return false;
+
+  }
+
+
+  if (
+    !Array.isArray(
+      locations
+    ) ||
+    locations.length === 0
+  ) {
+
+    setQRStatus(
+      "⚠️ ไม่มีรายการสำหรับพิมพ์"
+    );
+
+    return false;
+
+  }
+
+
+  injectQRPrintStyle();
+
+
+  clearQRPrintArea();
+
+
+  /*
+   * ---------------------------------------------
+   * 8 QR / PAGE
+   * ---------------------------------------------
+   */
+
+  const ITEMS_PER_PAGE =
+    8;
+
+
+  for (
+    let index = 0;
+    index < locations.length;
+    index += ITEMS_PER_PAGE
+  ) {
+
+    const pageLocations =
+      locations.slice(
+        index,
+        index +
+          ITEMS_PER_PAGE
+      );
+
+
+    const page =
+      document.createElement(
+        "div"
+      );
+
+
+    page.className =
+      "ggn-qr-print-page";
+
+
+    pageLocations.forEach(
+      function(location) {
+
+        const card =
+          createQRPrintCard(
+            location
+          );
+
+
+        page.appendChild(
+          card
+        );
+
+      }
+    );
+
+
+    qrPrintArea.appendChild(
+      page
+    );
+
+  }
+
+
+  console.log(
+    "GGN QR Print Area:",
+    {
+      total:
+        locations.length,
+
+      pages:
+        Math.ceil(
+          locations.length /
+          ITEMS_PER_PAGE
+        ),
+
+      perPage:
+        ITEMS_PER_PAGE
+    }
+  );
+
+
+  return true;
+
+}
+
+
+// ==================================================
+// WAIT FOR QR RENDER
+//
+// qrcodejs สร้าง QR แบบ DOM
+// รอ browser render ก่อนเรียก print
+// ==================================================
+
+function waitForQRPrintRender() {
+
+  return new Promise(
+    function(resolve) {
+
+      requestAnimationFrame(
+        function() {
+
+          requestAnimationFrame(
+            function() {
+
+              setTimeout(
+                function() {
+
+                  resolve();
+
+                },
+                150
+              );
+
+            }
+          );
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// START PRINT
+// ==================================================
+
+async function startQRPrint(
+  locations,
+  statusMessage
+) {
+
+  if (
+    qrIsPrinting
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    !locations ||
+    locations.length === 0
+  ) {
+
+    setQRStatus(
+      "⚠️ ไม่มีรายการสำหรับพิมพ์"
+    );
+
+    return;
+
+  }
+
+
+  if (
+    typeof QRCode ===
+    "undefined"
+  ) {
+
+    setQRStatus(
+      "❌ ไม่พบ QR Generator กรุณาตรวจสอบ qrcodejs"
+    );
+
+    return;
+
+  }
+
+
+  if (!qrPrintArea) {
+
+    setQRStatus(
+      "❌ ไม่พบพื้นที่พิมพ์ QR"
+    );
+
+    console.error(
+      "GGN QR: ไม่พบ #qrPrintArea"
+    );
+
+    return;
+
+  }
+
+
+  qrIsPrinting =
+    true;
+
+
+  try {
+
+    /*
+     * ---------------------------------------------
+     * BUILD PRINT AREA
+     * ---------------------------------------------
+     */
+
+    const success =
+      buildQRPrintArea(
+        locations
+      );
+
+
+    if (!success) {
+
+      return;
+
+    }
+
+
+    /*
+     * ---------------------------------------------
+     * STATUS
+     * ---------------------------------------------
+     */
+
+    setQRStatus(
+      statusMessage ||
+      `🖨️ เตรียมพิมพ์ ${locations.length} จุด`
+    );
+
+
+    /*
+     * ---------------------------------------------
+     * เปิดโหมดพิมพ์
+     * ---------------------------------------------
+     */
+
+    document.body.classList.add(
+      "ggn-qr-print-active"
+    );
+
+
+    /*
+     * ---------------------------------------------
+     * รอ QR render
+     * ---------------------------------------------
+     */
+
+    await waitForQRPrintRender();
+
+
+    /*
+     * ---------------------------------------------
+     * PRINT
+     * ---------------------------------------------
+     */
+
+    window.print();
+
+  } catch (error) {
+
+    console.error(
+      "GGN QR Print Error:",
+      error
+    );
+
+
+    setQRStatus(
+      "❌ ไม่สามารถเตรียมการพิมพ์ได้"
+    );
+
+  } finally {
+
+    /*
+     * ---------------------------------------------
+     * ถ้า browser ยังไม่เข้า print
+     * cleanup จะทำงานหลัง print dialog
+     * ผ่าน afterprint ด้านล่าง
+     * ---------------------------------------------
+     */
+
+    qrIsPrinting =
+      false;
 
   }
 
@@ -2467,10 +3267,34 @@ function clearQRPreview() {
 
 
 // ==================================================
-// PRINT SELECTED
+// AFTER PRINT
 //
-// ตอนนี้เตรียม Preview
-// ระบบพิมพ์จริงสามารถต่อในขั้นถัดไป
+// คืนหน้าเว็บกลับสู่สถานะปกติ
+// ==================================================
+
+function handleQRAfterPrint() {
+
+  document.body.classList.remove(
+    "ggn-qr-print-active"
+  );
+
+
+  clearQRPrintArea();
+
+
+  qrIsPrinting =
+    false;
+
+
+  setQRStatus(
+    "✅ พิมพ์ QR เสร็จแล้ว"
+  );
+
+}
+
+
+// ==================================================
+// PRINT SELECTED
 // ==================================================
 
 function printSelectedQR() {
@@ -2492,33 +3316,16 @@ function printSelectedQR() {
   }
 
 
-  if (
-    typeof QRCode ===
-    "undefined"
-  ) {
+  /*
+   * ไม่จำเป็นต้องสร้าง Preview ก่อน
+   *
+   * เพราะระบบพิมพ์สร้าง QR
+   * จาก pointId เดิมโดยตรง
+   */
 
-    setQRStatus(
-      "❌ ไม่พบ QR Generator"
-    );
-
-    return;
-
-  }
-
-
-  renderQRPreview(
-    selectedLocations
-  );
-
-
-  setQRStatus(
-    `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด`
-  );
-
-
-  console.log(
-    "GGN Print Selected QR:",
-    selectedLocations
+  startQRPrint(
+    selectedLocations,
+    `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด — 8 QR / A4`
   );
 
 }
@@ -2533,19 +3340,7 @@ function printSelectedQR() {
 function printAllQR() {
 
   const activeLocations =
-    qrLocations.filter(
-      function(location) {
-
-        return (
-          location.active === true &&
-          String(
-            location.pointId ||
-            ""
-          ).trim() !== ""
-        );
-
-      }
-    );
+    getActiveLocations();
 
 
   if (
@@ -2560,6 +3355,10 @@ function printAllQR() {
 
   }
 
+
+  /*
+   * เลือก Active ทั้งหมด
+   */
 
   selectedPointIds =
     new Set(
@@ -2583,13 +3382,13 @@ function printAllQR() {
   updateQRSummary();
 
 
-  renderQRPreview(
-    activeLocations
-  );
+  /*
+   * พิมพ์ Active ทั้งหมด
+   */
 
-
-  setQRStatus(
-    `🖨️ เตรียมพิมพ์จุด Active ทั้งหมด ${activeLocations.length} จุด`
+  startQRPrint(
+    activeLocations,
+    `🖨️ เตรียมพิมพ์จุด Active ทั้งหมด ${activeLocations.length} จุด — 8 QR / A4`
   );
 
 
@@ -2627,9 +3426,7 @@ function updatePagination(
 
 
   /*
-   * ---------------------------------------------
    * INFO
-   * ---------------------------------------------
    */
 
   if (
@@ -2666,9 +3463,7 @@ function updatePagination(
 
 
   /*
-   * ---------------------------------------------
    * PAGINATION
-   * ---------------------------------------------
    */
 
   if (!qrPagination) {
@@ -3464,6 +4259,24 @@ function initializeRefresh() {
 
 
 // ==================================================
+// EVENT: AFTER PRINT
+// ==================================================
+
+function initializeAfterPrint() {
+
+  window.addEventListener(
+    "afterprint",
+    function() {
+
+      handleQRAfterPrint();
+
+    }
+  );
+
+}
+
+
+// ==================================================
 // INITIALIZE EVENTS
 // ==================================================
 
@@ -3503,6 +4316,8 @@ function initializeQREvents() {
   initializePrintAll();
 
   initializeRefresh();
+
+  initializeAfterPrint();
 
 }
 
