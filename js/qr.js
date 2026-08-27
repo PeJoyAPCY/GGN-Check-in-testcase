@@ -507,7 +507,7 @@ function injectQRPrintStyles() {
 
         width: 100% !important;
 
-        margin: 0 0 1.5mm 0 !important;
+        margin: auto 0 0 0 !important;
 
         padding: 0 !important;
 
@@ -530,7 +530,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .ggn-qr-print-location {
+        .ggn-qr-print-location {
 
         width: 100% !important;
 
@@ -542,7 +542,7 @@ function injectQRPrintStyles() {
 
         font-size: 3.4mm !important;
 
-        line-height: 1.2 !important;
+        line-height: 1.25 !important;
 
         font-weight: 600 !important;
 
@@ -552,28 +552,28 @@ function injectQRPrintStyles() {
 
         display: -webkit-box !important;
 
-        -webkit-line-clamp: 2 !important;
+        -webkit-line-clamp: 3 !important;
 
         -webkit-box-orient: vertical !important;
 
       }
 
 
-      .ggn-qr-print-zone {
+        .ggn-qr-print-zone {
 
         width: 100% !important;
 
-        margin: 0 !important;
+        margin: 0 0 1.5mm 0 !important;
 
         padding: 0 !important;
 
         text-align: center !important;
 
-        font-size: 3.3mm !important;
+        font-size: 4mm !important;
 
         line-height: 1.15 !important;
 
-        font-weight: 600 !important;
+        font-weight: 700 !important;
 
         color: #000 !important;
 
@@ -3118,27 +3118,31 @@ function createQRPrintCardSnapshot(
       : "-";
 
 
-  // ==================================================
+    // ==================================================
   // APPEND
   // ==================================================
 
+  // 1. QR CODE — อยู่บนสุด
   printCard.appendChild(
     printQR
   );
 
 
+  // 2. ZONE
   printCard.appendChild(
-    pointId
+    zone
   );
 
 
+  // 3. LOCATION
   printCard.appendChild(
     location
   );
 
 
+  // 4. POINT ID — อยู่ล่างสุด
   printCard.appendChild(
-    zone
+    pointId
   );
 
 
