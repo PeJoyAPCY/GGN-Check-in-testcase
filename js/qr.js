@@ -1880,23 +1880,69 @@ function generateQrPreview(
 // BUILD QR URL
 // ==================================================
 
-function buildQrUrl(
-  pointId
-) {
+// ==================================================
+// BUILD QR URL
+//
+// หน้าที่:
+// - สร้าง URL สำหรับ QR Code
+// - QR ต้องเปิดหน้า index.html
+// - ใช้ pointId เป็นตัวระบุจุดตรวจ
+//
+// ตัวอย่าง:
+//
+// https://pejoyapcy.github.io/GGN-Check-in-testcase/index.html?pointId=CM1_001
+//
+// IMPORTANT:
+// - ไม่ใช้ URL ของ qr.html
+// - ไม่ใช้ pathname ของ qr.html โดยตรง
+// - ใช้ตำแหน่งของไฟล์ปัจจุบันเป็นฐาน
+// - บังคับปลายทางเป็น index.html
+// ==================================================
 
-  const baseUrl =
-    window.location.origin +
-    window.location.pathname
-      .replace(
-        /\/[^/]*$/,
-        "/"
-      );
+function buildQrUrl(pointId) {
+
+  const cleanPointId =
+    qrValue(pointId);
+
+  if (!cleanPointId) {
+
+    return "";
+
+  }
 
 
-  return (
-    `${baseUrl}index.html` +
-    `?pointId=${encodeURIComponent(pointId)}`
+  // ==================================================
+  // สร้าง URL ไปยัง index.html
+  //
+  // ถ้าอยู่ที่:
+  // /GGN-Check-in-testcase/qr.html
+  //
+  // จะได้:
+  // /GGN-Check-in-testcase/index.html
+  // ==================================================
+
+  const url =
+    new URL(
+      "./index.html",
+      window.location.href
+    );
+
+
+  // ==================================================
+  // ใส่ Point ID
+  // ==================================================
+
+  url.searchParams.set(
+    "pointId",
+    cleanPointId
   );
+
+
+  // ==================================================
+  // คืน URL เต็ม
+  // ==================================================
+
+  return url.href;
 
 }
 
