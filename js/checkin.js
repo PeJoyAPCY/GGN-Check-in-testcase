@@ -1,13 +1,12 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKIN.JS
-// Version 2.0
+// Version 3.0
 //
 // หน้าที่:
 // - Check-in
-// - ชื่อ
-// - ประเภทงาน
-// - รูปภาพ
+// - ชื่อผู้ปฏิบัติงาน
+// - รูปภาพ 1 รูป
 // - Preview
 // - ประมวลผลรูป
 // - Base64
@@ -15,27 +14,23 @@
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
 //
-// QR FLOW:
+// PREVIEW / TELEGRAM:
 //
-// checkin.html?pointId=P001
-//        ↓
-// app.js
-//        ↓
-// locationByPoint
-//        ↓
-// Zone + Location
-//        ↓
-// checkin.js
-//        ↓
-// ส่งข้อมูลตาม Zone จริง
+// 🟢 CHECK-IN
+//
+// 📍 จุด: [Location]
+// 👤 ผู้ปฏิบัติงาน: [ชื่อ]
+// 🕐 เวลา: [เวลา]
 //
 // IMPORTANT:
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - ใช้ POINT_ID จาก app.js
-// - ใช้ getCurrentZone()
-// - ใช้ getCurrentLocation()
-// - ไม่ใช้ ZONE สำหรับ QR
-// - Logic รูปภาพเดิมยังคงอยู่
+// - Point ID ใช้ภายในระบบ
+// - Zone ใช้ภายในระบบ
+// - ไม่แสดง Point ID
+// - ไม่แสดง Zone
+// - ไม่มี jobType
+// - ไม่มี extraText
+// - ไม่มีหมายเหตุ
+// - ส่งรูปเพียง 1 รูป
 // ==================================================
 
 
@@ -55,10 +50,6 @@ async function initializeCheckin() {
 
   const previewText =
     getElement("previewText");
-
-
-  const extraText =
-    getElement("text");
 
 
   const fullname =
@@ -90,9 +81,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // QR LOCATION VERIFICATION
-  //
-  // ถ้ามี pointId
-  // ต้องตรวจสอบ Backend ก่อน
   // ==================================================
 
   try {
@@ -105,16 +93,6 @@ async function initializeCheckin() {
       status.textContent =
         "⏳ กำลังตรวจสอบจุดตรวจ...";
 
-
-      /*
-       * เรียก Backend ผ่าน app.js
-       *
-       * เพื่อให้แน่ใจว่า
-       * currentZone
-       * currentLocation
-       *
-       * เป็นค่าจริงของ pointId
-       */
 
       if (
         typeof loadLocationByPoint === "function"
@@ -137,7 +115,7 @@ async function initializeCheckin() {
 
 
   // ==================================================
-  // CURRENT LOCATION
+  // CURRENT ZONE
   // ==================================================
 
   function getCheckinZone() {
@@ -163,6 +141,10 @@ async function initializeCheckin() {
   }
 
 
+  // ==================================================
+  // CURRENT LOCATION
+  // ==================================================
+
   function getCheckinLocation() {
 
     if (
@@ -181,6 +163,10 @@ async function initializeCheckin() {
 
   }
 
+
+  // ==================================================
+  // CURRENT POINT ID
+  // ==================================================
 
   function getCheckinPointId() {
 
@@ -214,41 +200,24 @@ async function initializeCheckin() {
   // STATE
   // ==================================================
 
-  let photos = [];
+  let photo = null;
 
 
   // ==================================================
   // PREVIEW TEXT
+  //
+  // ต้องตรงกับ Telegram Caption
   // ==================================================
 
   function updatePreviewText() {
-
-    const job =
-      getSelectedJob() ||
-      "-";
-
-
-    const extra =
-      extraText
-        ? extraText.value.trim()
-        : "";
-
 
     const name =
       fullname.value.trim() ||
       "-";
 
 
-    const zone =
-      getCheckinZone();
-
-
     const location =
       getCheckinLocation();
-
-
-    const pointId =
-      getCheckinPointId();
 
 
     const now =
@@ -261,54 +230,15 @@ async function initializeCheckin() {
       );
 
 
-    const action =
-      "เข้างาน";
-
-
-    /*
-     * -----------------------------------------------
-     * แสดงข้อมูลจุด
-     * -----------------------------------------------
-     */
-
-    let locationText =
-      `📍 เขต: ${zone}`;
-
-
-    if (location && location !== "-") {
-
-      locationText +=
-        `\n📌 จุดตรวจ: ${location}`;
-
-    }
-
-
-    if (pointId) {
-
-      locationText +=
-        `\n🔖 Point ID: ${pointId}`;
-
-    }
-
-
     previewText.textContent =
 
-      `📅 ${nowStr}\n` +
+      "🟢 CHECK-IN\n\n" +
 
-      locationText +
-      `\n` +
+      `📍 จุด: ${location}\n` +
 
-      `👤 ชื่อ: ${name}\n` +
+      `👤 ผู้ปฏิบัติงาน: ${name}\n` +
 
-      `📌 งาน: ${job}\n` +
-
-      `🔄 รายการ: ${action}` +
-
-      (
-        extra
-          ? `\n📝 ${extra}`
-          : ""
-      );
+      `🕐 เวลา: ${nowStr}`;
 
   }
 
@@ -330,26 +260,31 @@ async function initializeCheckin() {
       "";
 
 
-    photos.forEach(
-      file => {
+    if (!photo) {
 
-        const img =
-          document.createElement(
-            "img"
-          );
+      return;
+
+    }
 
 
-        img.src =
-          URL.createObjectURL(
-            file
-          );
+    const img =
+      document.createElement(
+        "img"
+      );
 
 
-        previewContainer.appendChild(
-          img
-        );
+    img.src =
+      URL.createObjectURL(
+        photo
+      );
 
-      }
+
+    img.alt =
+      "Preview Check-in";
+
+
+    previewContainer.appendChild(
+      img
     );
 
   }
@@ -363,38 +298,65 @@ async function initializeCheckin() {
 
     imageInput.addEventListener(
       "change",
-      e => {
+      event => {
 
-        photos =
+        const files =
           Array.from(
-            e.target.files
-          ).filter(
-            file => {
-
-              if (
-                file.type === "image/heic" ||
-                file.name
-                  .toLowerCase()
-                  .endsWith(".heic")
-              ) {
-
-                status.textContent =
-                  "❌ ไม่รองรับไฟล์ .heic กรุณาใช้ .jpg หรือ .png";
-
-                return false;
-
-              }
-
-
-              return true;
-
-            }
+            event.target.files || []
           );
 
 
-        updatePreview();
+        if (!files.length) {
 
-        updatePreviewText();
+          photo =
+            null;
+
+          updatePreview();
+
+          return;
+
+        }
+
+
+        const file =
+          files[0];
+
+
+        if (
+          file.type === "image/heic" ||
+          file.name
+            .toLowerCase()
+            .endsWith(".heic")
+        ) {
+
+          status.textContent =
+            "❌ ไม่รองรับไฟล์ .heic กรุณาใช้ .jpg หรือ .png";
+
+
+          imageInput.value =
+            "";
+
+
+          photo =
+            null;
+
+
+          updatePreview();
+
+          return;
+
+        }
+
+
+        photo =
+          file;
+
+
+        status.textContent =
+          "";
+
+
+        updatePreview();
 
       }
     );
@@ -410,32 +372,6 @@ async function initializeCheckin() {
     "input",
     updatePreviewText
   );
-
-
-  if (extraText) {
-
-    extraText.addEventListener(
-      "input",
-      updatePreviewText
-    );
-
-  }
-
-
-  document
-    .querySelectorAll(
-      'input[name="jobType"]'
-    )
-    .forEach(
-      radio => {
-
-        radio.addEventListener(
-          "change",
-          updatePreviewText
-        );
-
-      }
-    );
 
 
   // ==================================================
@@ -618,16 +554,6 @@ async function initializeCheckin() {
       fullname.value.trim();
 
 
-    const job =
-      getSelectedJob();
-
-
-    const extraMsg =
-      extraText
-        ? extraText.value.trim()
-        : "";
-
-
     const zone =
       getCheckinZone();
 
@@ -641,7 +567,7 @@ async function initializeCheckin() {
 
 
     // ==================================================
-    // NAME
+    // VALIDATE NAME
     // ==================================================
 
     if (!name) {
@@ -669,13 +595,16 @@ async function initializeCheckin() {
 
 
     // ==================================================
-    // JOB
+    // VALIDATE LOCATION
     // ==================================================
 
-    if (!job) {
+    if (
+      !location ||
+      location === "-"
+    ) {
 
       status.textContent =
-        "❌ กรุณาเลือกประเภทงาน";
+        "❌ ไม่พบจุดตรวจ";
 
       return;
 
@@ -683,15 +612,44 @@ async function initializeCheckin() {
 
 
     // ==================================================
-    // CHECK-IN IMAGE
+    // VALIDATE POINT
+    // ==================================================
+
+    if (!pointId) {
+
+      status.textContent =
+        "❌ ไม่พบรหัสจุดตรวจ";
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // VALIDATE ZONE
     // ==================================================
 
     if (
-      photos.length === 0
+      !zone ||
+      zone === "-"
     ) {
 
       status.textContent =
-        "❌ กรุณาเลือกรูปภาพ";
+        "❌ ไม่พบเขตของจุดตรวจ";
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // VALIDATE IMAGE
+    // ==================================================
+
+    if (!photo) {
+
+      status.textContent =
+        "❌ กรุณาถ่ายรูปหรือเลือกรูปภาพ";
 
       return;
 
@@ -718,91 +676,65 @@ async function initializeCheckin() {
 
     try {
 
-      for (
-        let i = 0;
-        i < photos.length;
-        i++
-      ) {
-
-        status.textContent =
-          `⏳ กำลังส่งรูป ${i + 1}/${photos.length}...`;
+      status.textContent =
+        "⏳ กำลังประมวลผลรูปภาพ...";
 
 
-        const blob =
-          await processImage(
-            photos[i]
-          );
-
-
-        const imageBase64 =
-          await blobToBase64(
-            blob
-          );
-
-
-        // ==================================================
-        // PAYLOAD
-        // ==================================================
-
-        const payload = {
-
-          /*
-           * Zone จริงจาก Backend
-           */
-
-          zone:
-            zone,
-
-
-          /*
-           * จุดตรวจจริง
-           */
-
-          location:
-            location,
-
-
-          /*
-           * Point ID จาก QR
-           */
-
-          pointId:
-            pointId,
-
-
-          fullname:
-            name,
-
-
-          jobType:
-            "Check in (เข้างาน) - " + job,
-
-
-          extraText:
-            extraMsg,
-
-
-          imageBase64:
-            imageBase64,
-
-
-          imageName:
-            `checkin-${Date.now()}-${i + 1}.jpg`
-
-        };
-
-
-        console.log(
-          "GGN Check-in Payload:",
-          payload
+      const blob =
+        await processImage(
+          photo
         );
 
 
-        await sendRequest(
-          payload
+      const imageBase64 =
+        await blobToBase64(
+          blob
         );
 
-      }
+
+      // ==================================================
+      // PAYLOAD
+      // ==================================================
+
+      const payload = {
+
+        action:
+          "checkin",
+
+        zone:
+          zone,
+
+        location:
+          location,
+
+        pointId:
+          pointId,
+
+        fullname:
+          name,
+
+        imageBase64:
+          imageBase64,
+
+        imageName:
+          `checkin-${Date.now()}.jpg`
+
+      };
+
+
+      console.log(
+        "GGN Check-in Payload:",
+        payload
+      );
+
+
+      status.textContent =
+        "⏳ กำลังส่งข้อมูล...";
+
+
+      await sendRequest(
+        payload
+      );
 
 
       // ==================================================
@@ -873,6 +805,15 @@ async function initializeCheckin() {
       );
 
 
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
     const result =
       await response.json();
 
@@ -908,30 +849,8 @@ async function initializeCheckin() {
       "";
 
 
-    if (extraText) {
-
-      extraText.value =
-        "";
-
-    }
-
-
-    document
-      .querySelectorAll(
-        'input[name="jobType"]'
-      )
-      .forEach(
-        radio => {
-
-          radio.checked =
-            false;
-
-        }
-      );
-
-
-    photos =
-      [];
+    photo =
+      null;
 
 
     if (imageInput) {
@@ -943,7 +862,6 @@ async function initializeCheckin() {
 
 
     updatePreview();
-
 
     updatePreviewText();
 

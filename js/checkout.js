@@ -1,38 +1,32 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKOUT.JS
-// Version 2.0
+// Version 3.0
 //
 // หน้าที่:
 // - Check-out
 // - ชื่อ
-// - ประเภทงาน
-// - หมายเหตุ
+// - Preview
 // - ส่งข้อมูล
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
 //
-// QR FLOW:
+// รูปแบบ Preview / Telegram:
 //
-// checkout.html?pointId=P001
-//        ↓
-// app.js
-//        ↓
-// locationByPoint
-//        ↓
-// Zone + Location
-//        ↓
-// checkout.js
-//        ↓
-// ส่งข้อมูลตาม Zone จริง
+// 🔴 CHECK-OUT
+//
+// 📍 จุด: [Location]
+// 👤 ผู้ปฏิบัติงาน: [ชื่อ]
+// 🕐 เวลา: [เวลา]
 //
 // IMPORTANT:
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - ใช้ POINT_ID จาก app.js
-// - ใช้ getCurrentZone()
-// - ใช้ getCurrentLocation()
-// - ไม่ใช้ ZONE สำหรับ QR
-// - Logic Check-out เดิมยังคงอยู่
+// - Point ID ใช้ภายในระบบ
+// - Zone ใช้ภายในระบบเพื่อเลือก Telegram Group
+// - ไม่แสดง Point ID
+// - ไม่แสดง Zone
+// - ไม่มี jobType
+// - ไม่มี extraText
+// - ไม่มีหมายเหตุ
 // ==================================================
 
 
@@ -44,10 +38,6 @@ async function initializeCheckout() {
 
   const previewText =
     getElement("previewText");
-
-
-  const extraText =
-    getElement("text");
 
 
   const fullname =
@@ -75,9 +65,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // QR LOCATION VERIFICATION
-  //
-  // ถ้ามี pointId
-  // ต้องตรวจสอบ Backend ก่อน
   // ==================================================
 
   try {
@@ -90,16 +77,6 @@ async function initializeCheckout() {
       status.textContent =
         "⏳ กำลังตรวจสอบจุดตรวจ...";
 
-
-      /*
-       * เรียก Backend ผ่าน app.js
-       *
-       * เพื่อให้แน่ใจว่า
-       * currentZone
-       * currentLocation
-       *
-       * เป็นค่าจริงของ pointId
-       */
 
       if (
         typeof loadLocationByPoint === "function"
@@ -196,37 +173,20 @@ async function initializeCheckout() {
 
 
   // ==================================================
-  // PREVIEW TEXT
+  // PREVIEW
+  //
+  // รูปแบบเดียวกับ Telegram
   // ==================================================
 
   function updatePreviewText() {
-
-    const job =
-      getSelectedJob() ||
-      "-";
-
-
-    const extra =
-      extraText
-        ? extraText.value.trim()
-        : "";
-
 
     const name =
       fullname.value.trim() ||
       "-";
 
 
-    const zone =
-      getCheckoutZone();
-
-
     const location =
       getCheckoutLocation();
-
-
-    const pointId =
-      getCheckoutPointId();
 
 
     const now =
@@ -239,95 +199,27 @@ async function initializeCheckout() {
       );
 
 
-    const action =
-      "ออกงาน";
-
-
-    /*
-     * -----------------------------------------------
-     * แสดงข้อมูลจุด
-     * -----------------------------------------------
-     */
-
-    let locationText =
-      `📍 เขต: ${zone}`;
-
-
-    if (
-      location &&
-      location !== "-"
-    ) {
-
-      locationText +=
-        `\n📌 จุดตรวจ: ${location}`;
-
-    }
-
-
-    if (pointId) {
-
-      locationText +=
-        `\n🔖 Point ID: ${pointId}`;
-
-    }
-
-
     previewText.textContent =
 
-      `📅 ${nowStr}\n` +
+      "🔴 CHECK-OUT\n\n" +
 
-      locationText +
-      `\n` +
+      `📍 จุด: ${location}\n` +
 
-      `👤 ชื่อ: ${name}\n` +
+      `👤 ผู้ปฏิบัติงาน: ${name}\n` +
 
-      `📌 งาน: ${job}\n` +
-
-      `🔄 รายการ: ${action}` +
-
-      (
-        extra
-          ? `\n📝 ${extra}`
-          : ""
-      );
+      `🕐 เวลา: ${nowStr}`;
 
   }
 
 
   // ==================================================
-  // INPUT EVENTS
+  // INPUT EVENT
   // ==================================================
 
   fullname.addEventListener(
     "input",
     updatePreviewText
   );
-
-
-  if (extraText) {
-
-    extraText.addEventListener(
-      "input",
-      updatePreviewText
-    );
-
-  }
-
-
-  document
-    .querySelectorAll(
-      'input[name="jobType"]'
-    )
-    .forEach(
-      radio => {
-
-        radio.addEventListener(
-          "change",
-          updatePreviewText
-        );
-
-      }
-    );
 
 
   // ==================================================
@@ -338,16 +230,6 @@ async function initializeCheckout() {
 
     const name =
       fullname.value.trim();
-
-
-    const job =
-      getSelectedJob();
-
-
-    const extraMsg =
-      extraText
-        ? extraText.value.trim()
-        : "";
 
 
     const zone =
@@ -363,7 +245,7 @@ async function initializeCheckout() {
 
 
     // ==================================================
-    // NAME
+    // VALIDATE NAME
     // ==================================================
 
     if (!name) {
@@ -391,13 +273,41 @@ async function initializeCheckout() {
 
 
     // ==================================================
-    // JOB
+    // VALIDATE LOCATION
     // ==================================================
 
-    if (!job) {
+    if (!location || location === "-") {
 
       status.textContent =
-        "❌ กรุณาเลือกประเภทงาน";
+        "❌ ไม่พบจุดตรวจ";
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // VALIDATE POINT
+    // ==================================================
+
+    if (!pointId) {
+
+      status.textContent =
+        "❌ ไม่พบรหัสจุดตรวจ";
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // VALIDATE ZONE
+    // ==================================================
+
+    if (!zone || zone === "-") {
+
+      status.textContent =
+        "❌ ไม่พบเขตของจุดตรวจ";
 
       return;
 
@@ -430,44 +340,26 @@ async function initializeCheckout() {
 
       // ==================================================
       // PAYLOAD
+      //
+      // ส่งเฉพาะข้อมูลที่ Backend จำเป็นต้องใช้
       // ==================================================
 
       const payload = {
 
-        /*
-         * Zone จริงจาก Backend
-         */
+        action:
+          "checkout",
 
         zone:
           zone,
 
-
-        /*
-         * จุดตรวจจริง
-         */
-
         location:
           location,
-
-
-        /*
-         * Point ID จาก QR
-         */
 
         pointId:
           pointId,
 
-
         fullname:
-          name,
-
-
-        jobType:
-          "Check out (ออกงาน) - " + job,
-
-
-        extraText:
-          extraMsg
+          name
 
       };
 
@@ -595,28 +487,6 @@ async function initializeCheckout() {
       "";
 
 
-    if (extraText) {
-
-      extraText.value =
-        "";
-
-    }
-
-
-    document
-      .querySelectorAll(
-        'input[name="jobType"]'
-      )
-      .forEach(
-        radio => {
-
-          radio.checked =
-            false;
-
-        }
-      );
-
-
     updatePreviewText();
 
   }
@@ -633,7 +503,7 @@ async function initializeCheckout() {
 
 
   // ==================================================
-  // INITIAL
+  // INITIAL PREVIEW
   // ==================================================
 
   updatePreviewText();

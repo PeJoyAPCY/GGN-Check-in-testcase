@@ -32,7 +32,10 @@
   </div>
 
 
-  <h2 class="zone-title" id="zoneTitle">
+  <h2
+    class="zone-title"
+    id="zoneTitle"
+  >
     ทดสอบ
   </h2>
 
@@ -45,7 +48,7 @@
   <div class="form-container">
 
 
-    <!-- ชื่อ -->
+    <!-- ชื่อผู้ปฏิบัติงาน -->
 
     <input
       type="text"
@@ -55,48 +58,7 @@
     >
 
 
-    <!-- ประเภทงาน -->
-
-    <div class="job-type">
-
-      <label>
-
-        <input
-          type="radio"
-          name="jobType"
-          value="รปภ."
-        >
-
-        รปภ.
-
-      </label>
-
-
-      <label>
-
-        <input
-          type="radio"
-          name="jobType"
-          value="สายตรวจ"
-        >
-
-        สายตรวจ
-
-      </label>
-
-    </div>
-
-
-    <!-- หมายเหตุ -->
-
-    <textarea
-      id="text"
-      rows="2"
-      placeholder="หมายเหตุ (ถ้ามี)"
-    ></textarea>
-
-
-    <!-- Preview -->
+    <!-- Preview ข้อมูล -->
 
     <div id="previewText"></div>
 
@@ -107,7 +69,6 @@
       type="file"
       id="imageInput"
       accept="image/jpeg,image/png"
-      multiple
     >
 
 
@@ -133,7 +94,10 @@
   </div>
 
 
-  <canvas id="canvas"></canvas>
+  <canvas
+    id="canvas"
+    style="display:none;"
+  ></canvas>
 
 
   <script src="./js/app.js"></script>
