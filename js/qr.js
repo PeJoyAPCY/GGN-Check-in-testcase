@@ -513,11 +513,11 @@ function injectQRPrintStyles() {
 
         text-align: center !important;
 
-        font-size: 5mm !important;
+        font-size: 3.2mm !important;
 
         line-height: 1.05 !important;
 
-        font-weight: 700 !important;
+        font-weight: 600 !important;
 
         color: #000 !important;
 
@@ -540,11 +540,11 @@ function injectQRPrintStyles() {
 
         text-align: center !important;
 
-        font-size: 3.4mm !important;
+        font-size: 4.2mm !important;
 
         line-height: 1.25 !important;
 
-        font-weight: 600 !important;
+        font-weight: 700 !important;
 
         color: #000 !important;
 
