@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 4.0
+// Version 4.1
 //
 // หน้าที่:
 // - QR Management
@@ -15,6 +15,7 @@
 // - Select All
 // - Clear All
 // - สร้าง QR Code จาก pointId
+// - QR Data = Check-in URL
 // - แสดง QR Preview
 // - พิมพ์ QR Card จริง
 // - A4 Portrait
@@ -26,9 +27,10 @@
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
 // - ไม่แก้ Backend
 // - ไม่แก้ API
-// - QR Data = pointId
-// - Print ใช้ Preview Card ตัวจริง
+// - QR Data = URL + pointId
+// - Print ใช้ Print Snapshot
 // - ไม่ใช้ html2canvas
+// - ล็อกลำดับ Card ตอนพิมพ์
 // ==================================================
 
 
@@ -70,12 +72,14 @@ const QR_CARDS_PER_PAGE =
 const QR_CODE_SIZE_PX =
   180;
 
+
 // ==================================================
-// QR URL
+// QR LINK
 // ==================================================
 
 const QR_BASE_URL =
   "https://pejoyapcy.github.io/GGN-Check-in-testcase/index.html";
+
 
 // ==================================================
 // ELEMENTS
@@ -224,16 +228,45 @@ let qrPrintState = {
   active:
     false,
 
-  originalParent:
-    null,
-
-  originalCards:
-    [],
-
   printRoot:
     null
 
 };
+
+
+// ==================================================
+// BUILD QR URL
+// ==================================================
+
+function buildQRUrl(
+  pointId
+) {
+
+  const id =
+    String(
+      pointId ||
+      ""
+    ).trim();
+
+
+  if (
+    !id
+  ) {
+
+    return "";
+
+  }
+
+
+  return (
+    QR_BASE_URL +
+    "?pointId=" +
+    encodeURIComponent(
+      id
+    )
+  );
+
+}
 
 
 // ==================================================
@@ -317,15 +350,13 @@ function injectQRPrintStyles() {
 
         width: 210mm !important;
 
-        height: 297mm !important;
-
         margin: 0 !important;
 
         padding: 0 !important;
 
         background: #fff !important;
 
-        overflow: hidden !important;
+        overflow: visible !important;
 
       }
 
@@ -374,7 +405,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-card {
+      .ggn-qr-print-card {
 
         width: 57mm !important;
 
@@ -419,7 +450,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-code {
+      .ggn-qr-print-code {
 
         width: 46mm !important;
 
@@ -448,14 +479,18 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-code canvas,
-      .qr-preview-code img {
+      .ggn-qr-print-code img,
+      .ggn-qr-print-code canvas {
 
         display: block !important;
 
         width: 46mm !important;
 
         height: 46mm !important;
+
+        min-width: 46mm !important;
+
+        min-height: 46mm !important;
 
         max-width: 46mm !important;
 
@@ -468,7 +503,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-point-id {
+      .ggn-qr-print-point-id {
 
         width: 100% !important;
 
@@ -495,7 +530,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-location {
+      .ggn-qr-print-location {
 
         width: 100% !important;
 
@@ -524,7 +559,7 @@ function injectQRPrintStyles() {
       }
 
 
-      .qr-preview-zone {
+      .ggn-qr-print-zone {
 
         width: 100% !important;
 
@@ -550,12 +585,6 @@ function injectQRPrintStyles() {
 
       }
 
-
-      .qr-empty-state {
-
-        display: none !important;
-
-      }
 
     }
 
@@ -892,16 +921,6 @@ function locationHasQR(
   location
 ) {
 
-  /*
-   * รองรับข้อมูลจาก Backend
-   * หลายรูปแบบโดยไม่แก้ Backend
-   *
-   * หาก Backend ไม่ได้ส่งค่า QR
-   * จะใช้ pointId เป็นตัวตัดสิน
-   *
-   * เพราะระบบนี้ QR Data = pointId
-   */
-
   if (
     typeof location.qrExists ===
     "boolean"
@@ -1043,10 +1062,6 @@ function applyQRFilters() {
           );
 
 
-        // --------------------------------------------
-        // SEARCH
-        // --------------------------------------------
-
         if (
           keyword
         ) {
@@ -1079,10 +1094,6 @@ function applyQRFilters() {
         }
 
 
-        // --------------------------------------------
-        // ZONE
-        // --------------------------------------------
-
         if (
           zone &&
           locationZone !== zone
@@ -1092,10 +1103,6 @@ function applyQRFilters() {
 
         }
 
-
-        // --------------------------------------------
-        // STATUS
-        // --------------------------------------------
 
         if (
           status === "active" &&
@@ -1116,10 +1123,6 @@ function applyQRFilters() {
 
         }
 
-
-        // --------------------------------------------
-        // QR
-        // --------------------------------------------
 
         if (
           qrExist === "yes" &&
@@ -2190,10 +2193,6 @@ function updateQRPagination() {
     "";
 
 
-  // --------------------------------------------
-  // PREVIOUS
-  // --------------------------------------------
-
   const previousButton =
     createPaginationButton(
       "‹",
@@ -2219,10 +2218,6 @@ function updateQRPagination() {
     previousButton
   );
 
-
-  // --------------------------------------------
-  // PAGE NUMBERS
-  // --------------------------------------------
 
   const totalPagesToShow =
     Math.min(
@@ -2315,10 +2310,6 @@ function updateQRPagination() {
 
   }
 
-
-  // --------------------------------------------
-  // NEXT
-  // --------------------------------------------
 
   const nextButton =
     createPaginationButton(
@@ -2458,36 +2449,6 @@ function createSelectedQR() {
 
 }
 
-// ==================================================
-// BUILD QR URL
-// ==================================================
-
-function buildQRUrl(
-  pointId
-) {
-
-  const cleanPointId =
-    String(
-      pointId ||
-      ""
-    ).trim();
-
-
-  if (
-    !cleanPointId
-  ) {
-
-    return "";
-
-  }
-
-
-  return (
-    `${QR_BASE_URL}` +
-    `?pointId=${encodeURIComponent(cleanPointId)}`
-  );
-
-}
 
 // ==================================================
 // CREATE QR NODE
@@ -2511,15 +2472,8 @@ function createQRNode(
     "";
 
 
-  const cleanPointId =
-    String(
-      pointId ||
-      ""
-    ).trim();
-
-
   if (
-    !cleanPointId
+    !pointId
   ) {
 
     qrBox.textContent =
@@ -2545,7 +2499,7 @@ function createQRNode(
 
   const qrUrl =
     buildQRUrl(
-      cleanPointId
+      pointId
     );
 
 
@@ -2583,18 +2537,8 @@ function createQRNode(
     );
 
 
-    console.log(
-      "GGN QR Generated:",
-      {
-
-        pointId:
-          cleanPointId,
-
-        url:
-          qrUrl
-
-      }
-    );
+    qrBox.dataset.qrUrl =
+      qrUrl;
 
 
     return true;
@@ -2825,7 +2769,10 @@ function renderQRPreview(
         "A4 Portrait 3 × 3",
 
       qrData:
-        "pointId"
+        "URL + pointId",
+
+      qrBaseUrl:
+        QR_BASE_URL
 
     }
   );
@@ -2925,6 +2872,282 @@ function getQRPreviewCards() {
 
 
 // ==================================================
+// CREATE PRINT CARD SNAPSHOT
+// ==================================================
+
+function createQRPrintCardSnapshot(
+  sourceCard,
+  index
+) {
+
+  const printCard =
+    document.createElement(
+      "article"
+    );
+
+
+  printCard.className =
+    "ggn-qr-print-card";
+
+
+  printCard.dataset.pointId =
+    sourceCard.dataset.pointId ||
+    "";
+
+
+  // ==================================================
+  // LOCK GRID POSITION
+  // ==================================================
+
+  const column =
+    (
+      index %
+      QR_PAGE_COLUMNS
+    ) + 1;
+
+
+  const row =
+    (
+      Math.floor(
+        index /
+        QR_PAGE_COLUMNS
+      ) %
+      QR_PAGE_ROWS
+    ) + 1;
+
+
+  printCard.style.gridColumn =
+    String(
+      column
+    );
+
+
+  printCard.style.gridRow =
+    String(
+      row
+    );
+
+
+  // ==================================================
+  // QR
+  // ==================================================
+
+  const sourceQR =
+    sourceCard.querySelector(
+      ".qr-preview-code"
+    );
+
+
+  const printQR =
+    document.createElement(
+      "div"
+    );
+
+
+  printQR.className =
+    "ggn-qr-print-code";
+
+
+  if (
+    sourceQR
+  ) {
+
+    const sourceCanvas =
+      sourceQR.querySelector(
+        "canvas"
+      );
+
+
+    const sourceImage =
+      sourceQR.querySelector(
+        "img"
+      );
+
+
+    if (
+      sourceCanvas
+    ) {
+
+      try {
+
+        const image =
+          document.createElement(
+            "img"
+          );
+
+
+        image.src =
+          sourceCanvas.toDataURL(
+            "image/png"
+          );
+
+
+        image.alt =
+          "QR Code";
+
+
+        printQR.appendChild(
+          image
+        );
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          "GGN QR: Cannot snapshot canvas:",
+          error
+        );
+
+
+        const canvas =
+          sourceCanvas.cloneNode(
+            true
+          );
+
+
+        printQR.appendChild(
+          canvas
+        );
+
+      }
+
+    } else if (
+      sourceImage
+    ) {
+
+      const image =
+        document.createElement(
+          "img"
+        );
+
+
+      image.src =
+        sourceImage.src;
+
+
+      image.alt =
+        "QR Code";
+
+
+      printQR.appendChild(
+        image
+      );
+
+    }
+
+  }
+
+
+  // ==================================================
+  // POINT ID
+  // ==================================================
+
+  const sourcePointId =
+    sourceCard.querySelector(
+      ".qr-preview-point-id"
+    );
+
+
+  const pointId =
+    document.createElement(
+      "div"
+    );
+
+
+  pointId.className =
+    "ggn-qr-print-point-id";
+
+
+  pointId.textContent =
+    sourcePointId
+      ? sourcePointId.textContent
+      : sourceCard.dataset.pointId ||
+        "-";
+
+
+  // ==================================================
+  // LOCATION
+  // ==================================================
+
+  const sourceLocation =
+    sourceCard.querySelector(
+      ".qr-preview-location"
+    );
+
+
+  const location =
+    document.createElement(
+      "div"
+    );
+
+
+  location.className =
+    "ggn-qr-print-location";
+
+
+  location.textContent =
+    sourceLocation
+      ? sourceLocation.textContent
+      : "-";
+
+
+  // ==================================================
+  // ZONE
+  // ==================================================
+
+  const sourceZone =
+    sourceCard.querySelector(
+      ".qr-preview-zone"
+    );
+
+
+  const zone =
+    document.createElement(
+      "div"
+    );
+
+
+  zone.className =
+    "ggn-qr-print-zone";
+
+
+  zone.textContent =
+    sourceZone
+      ? sourceZone.textContent
+      : "-";
+
+
+  // ==================================================
+  // APPEND
+  // ==================================================
+
+  printCard.appendChild(
+    printQR
+  );
+
+
+  printCard.appendChild(
+    pointId
+  );
+
+
+  printCard.appendChild(
+    location
+  );
+
+
+  printCard.appendChild(
+    zone
+  );
+
+
+  return printCard;
+
+}
+
+
+// ==================================================
 // CREATE PRINT ROOT
 // ==================================================
 
@@ -2998,39 +3221,17 @@ function createQRPrintRoot(
       i++
     ) {
 
-      // --------------------------------------------
-      // IMPORTANT
-      // สร้างสำเนา Card
-      // ไม่ย้าย Card ตัวจริงจาก Preview
-      // --------------------------------------------
+      const printIndex =
+        i -
+        start;
+
 
       const printCard =
-        cards[i].cloneNode(
-          true
+        createQRPrintCardSnapshot(
+          cards[i],
+          printIndex
         );
 
-
-      printCard.className =
-        "qr-preview-card";
-
-
-      // --------------------------------------------
-      // รักษา pointId เดิม
-      // --------------------------------------------
-
-      if (
-        cards[i].dataset.pointId
-      ) {
-
-        printCard.dataset.pointId =
-          cards[i].dataset.pointId;
-
-      }
-
-
-      // --------------------------------------------
-      // เพิ่มเข้า Print Page
-      // --------------------------------------------
 
       page.appendChild(
         printCard
@@ -3087,14 +3288,6 @@ async function prepareQRPrint(
   injectQRPrintStyles();
 
 
-  qrPrintState.originalParent =
-    null;
-
-
-  qrPrintState.originalCards =
-    [];
-
-
   qrPrintState.active =
     true;
 
@@ -3132,11 +3325,6 @@ function restoreQRAfterPrint() {
     qrPrintState.printRoot;
 
 
-  // --------------------------------------------
-  // ลบเฉพาะ Print Clone
-  // Preview ตัวจริงไม่ถูกแตะต้อง
-  // --------------------------------------------
-
   if (
     printRoot &&
     printRoot.parentNode
@@ -3153,12 +3341,6 @@ function restoreQRAfterPrint() {
       active:
         false,
 
-      originalParent:
-        null,
-
-      originalCards:
-        [],
-
       printRoot:
         null
 
@@ -3166,7 +3348,7 @@ function restoreQRAfterPrint() {
 
 
   console.log(
-    "GGN QR: Print UI restored."
+    "GGN QR: Print Snapshot removed. Preview remains unchanged."
   );
 
 }
@@ -3210,6 +3392,10 @@ async function printQRLocations(
 
   }
 
+
+  // ==================================================
+  // CREATE PREVIEW FIRST
+  // ==================================================
 
   renderQRPreview(
     locations
@@ -3293,6 +3479,10 @@ async function printQRLocations(
   }
 
 
+  // ==================================================
+  // PREPARE PRINT SNAPSHOT
+  // ==================================================
+
   try {
 
     const prepared =
@@ -3344,7 +3534,13 @@ async function printQRLocations(
           QR_CARDS_PER_PAGE,
 
         pages:
-          pageCount
+          pageCount,
+
+        order:
+          "DOM order locked by gridColumn/gridRow",
+
+        qrData:
+          "URL + pointId"
 
       }
     );
@@ -3853,7 +4049,7 @@ console.log(
 );
 
 console.log(
-  "GGN QR Management V4.0 START"
+  "GGN QR Management V4.1 START"
 );
 
 console.log(
@@ -3880,6 +4076,11 @@ console.log(
     "undefined"
     ? "OK"
     : "MISSING"
+);
+
+console.log(
+  "QR Base URL:",
+  QR_BASE_URL
 );
 
 console.log(
