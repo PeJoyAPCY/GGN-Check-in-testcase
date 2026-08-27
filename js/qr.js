@@ -3000,63 +3000,95 @@ function findPreviewCardByPointId(
 
 // ==================================================
 // WAIT FOR PREVIEW QR
+//
+// V5.8
+//
+// รอ QR ที่อยู่ใน Preview ให้พร้อมจริง
 // ==================================================
 
-function waitForPreviewQR(
-  card
-) {
+function waitForPreviewQR(card) {
 
-  return new Promise(
-    function(resolve) {
+  return new Promise(function(resolve) {
 
-      if (!card) {
+    if (!card) {
 
-        resolve(false);
+      resolve(false);
 
-        return;
+      return;
 
-      }
+    }
 
 
-      const qrCanvas =
-        card.querySelector(
-          ".qr-preview-code canvas"
-        );
+    const qrCanvas =
+      card.querySelector(
+        ".qr-preview-code canvas"
+      );
 
 
-      const qrImg =
-        card.querySelector(
-          ".qr-preview-code img"
-        );
+    const qrImg =
+      card.querySelector(
+        ".qr-preview-code img"
+      );
 
 
-      if (!qrCanvas && !qrImg) {
+    /*
+     * ---------------------------------------------
+     * Canvas
+     * ---------------------------------------------
+     */
 
-        resolve(false);
+    if (qrCanvas) {
 
-        return;
+      let attempts = 0;
 
-      }
+      const checkCanvas = function() {
+
+        attempts++;
 
 
-      if (qrCanvas) {
+        if (
+          qrCanvas.width > 0 &&
+          qrCanvas.height > 0
+        ) {
+
+          resolve(true);
+
+          return;
+
+        }
+
+
+        if (attempts >= 20) {
+
+          resolve(false);
+
+          return;
+
+        }
+
 
         setTimeout(
-          function() {
-
-            resolve(
-              qrCanvas.width > 0 &&
-              qrCanvas.height > 0
-            );
-
-          },
-          100
+          checkCanvas,
+          50
         );
 
-        return;
+      };
 
-      }
 
+      checkCanvas();
+
+      return;
+
+    }
+
+
+    /*
+     * ---------------------------------------------
+     * IMG
+     * ---------------------------------------------
+     */
+
+    if (qrImg) {
 
       if (
         qrImg.complete &&
@@ -3073,53 +3105,76 @@ function waitForPreviewQR(
       let done = false;
 
 
-      const finish =
+      const finish = function(success) {
+
+        if (done) {
+
+          return;
+
+        }
+
+
+        done = true;
+
+        resolve(success);
+
+      };
+
+
+      qrImg.onload =
         function() {
 
-          if (done) {
-
-            return;
-
-          }
-
-
-          done = true;
-
-          resolve(true);
+          finish(
+            qrImg.naturalWidth > 0
+          );
 
         };
 
 
-      qrImg.onload =
-        finish;
-
-
       qrImg.onerror =
-        finish;
+        function() {
+
+          finish(false);
+
+        };
 
 
       setTimeout(
-        finish,
-        1000
+        function() {
+
+          finish(
+            qrImg.complete &&
+            qrImg.naturalWidth > 0
+          );
+
+        },
+        3000
       );
 
+
+      return;
+
     }
-  );
+
+
+    resolve(false);
+
+  });
 
 }
-
 
 // ==================================================
 // SNAPSHOT CARD
 //
-// V5.7
+// V5.8
 //
-// Snapshot Card จาก Preview
+// Snapshot จาก Preview โดยตรง
 //
 // ไม่สร้าง QR ใหม่
+// ไม่เปลี่ยนสัดส่วน Card
 //
-// Snapshot ต้องรักษา
-// อัตราส่วน Card 57:88
+// Card:
+// 57 × 88 mm
 // ==================================================
 
 async function snapshotQRCard(
@@ -3135,7 +3190,9 @@ async function snapshotQRCard(
 
 
   /*
+   * ---------------------------------------------
    * Cache
+   * ---------------------------------------------
    */
 
   if (
@@ -3150,7 +3207,9 @@ async function snapshotQRCard(
 
 
   /*
-   * รอ QR
+   * ---------------------------------------------
+   * รอ Preview QR
+   * ---------------------------------------------
    */
 
   const qrReady =
@@ -3162,7 +3221,7 @@ async function snapshotQRCard(
   if (!qrReady) {
 
     console.warn(
-      "GGN QR V5.7: Preview QR ยังไม่พร้อม",
+      "GGN QR V5.8: Preview QR ยังไม่พร้อม",
       pointId
     );
 
@@ -3174,7 +3233,7 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * อ่านขนาด Preview
+   * อ่านขนาด Card จริงจาก Preview
    * ---------------------------------------------
    */
 
@@ -3198,9 +3257,7 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * ตรวจสอบ Aspect Ratio
-   *
-   * Card ต้องเป็น 57:88
+   * ตรวจ Aspect Ratio
    * ---------------------------------------------
    */
 
@@ -3222,11 +3279,11 @@ async function snapshotQRCard(
 
 
   console.log(
-    "GGN QR V5.7 Snapshot Ratio:",
+    "GGN QR V5.8 Snapshot:",
     {
       pointId,
-      width,
-      height,
+      previewWidth: width,
+      previewHeight: height,
       expectedRatio,
       actualRatio,
       ratioDifference
@@ -3236,7 +3293,7 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * Clone Card
+   * Clone Preview
    * ---------------------------------------------
    */
 
@@ -3246,13 +3303,10 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * QR Canvas
+   * เปลี่ยน Canvas เป็น PNG IMG
    *
-   * cloneNode canvas
-   * ไม่เก็บ bitmap
-   *
-   * จึงแปลง Canvas เดิม
-   * เป็น IMG ก่อน
+   * เพราะ cloneNode(canvas)
+   * จะไม่เก็บ bitmap เดิม
    * ---------------------------------------------
    */
 
@@ -3291,6 +3345,17 @@ async function snapshotQRCard(
         qrDataUrl;
 
 
+      qrImage.alt =
+        pointId;
+
+
+      /*
+       * สำคัญ
+       *
+       * ใช้ขนาดเดียวกับ Canvas เดิม
+       * ไม่สร้าง QR ใหม่
+       */
+
       qrImage.style.display =
         "block";
 
@@ -3301,14 +3366,6 @@ async function snapshotQRCard(
 
       qrImage.style.height =
         "100%";
-
-
-      qrImage.style.objectFit =
-        "contain";
-
-
-      qrImage.style.objectPosition =
-        "center";
 
 
       qrImage.style.margin =
@@ -3323,20 +3380,27 @@ async function snapshotQRCard(
         "0";
 
 
-      qrImage.setAttribute(
-        "alt",
-        pointId
-      );
+      qrImage.style.boxSizing =
+        "border-box";
+
+
+      qrImage.style.objectFit =
+        "contain";
+
+
+      qrImage.style.objectPosition =
+        "center";
 
 
       clonedCanvas.replaceWith(
         qrImage
       );
 
+
     } catch (error) {
 
       console.error(
-        "GGN QR V5.7: ไม่สามารถอ่าน QR Canvas ได้",
+        "GGN QR V5.8: อ่าน Preview Canvas ไม่สำเร็จ",
         error
       );
 
@@ -3350,9 +3414,9 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * Clone Size
+   * กำหนดขนาด Clone
    *
-   * ใช้ขนาดจริงจาก Preview
+   * ต้องเท่ากับ Preview 1:1
    * ---------------------------------------------
    */
 
@@ -3364,7 +3428,27 @@ async function snapshotQRCard(
     `${height}px`;
 
 
+  clone.style.minWidth =
+    `${width}px`;
+
+
+  clone.style.minHeight =
+    `${height}px`;
+
+
+  clone.style.maxWidth =
+    `${width}px`;
+
+
+  clone.style.maxHeight =
+    `${height}px`;
+
+
   clone.style.margin =
+    "0";
+
+
+  clone.style.padding =
     "0";
 
 
@@ -3374,7 +3458,7 @@ async function snapshotQRCard(
 
   /*
    * ---------------------------------------------
-   * SVG Snapshot
+   * SVG
    * ---------------------------------------------
    */
 
@@ -3411,6 +3495,10 @@ async function snapshotQRCard(
           style="
             width:${width}px;
             height:${height}px;
+            min-width:${width}px;
+            min-height:${height}px;
+            max-width:${width}px;
+            max-height:${height}px;
             margin:0;
             padding:0;
             box-sizing:border-box;
@@ -3457,11 +3545,11 @@ async function snapshotQRCard(
      * ---------------------------------------------
      * High Resolution
      *
-     * 3× จาก Preview
+     * 4× Preview
      * ---------------------------------------------
      */
 
-    const scale = 3;
+    const scale = 4;
 
 
     const canvas =
@@ -3493,6 +3581,12 @@ async function snapshotQRCard(
     }
 
 
+    /*
+     * ---------------------------------------------
+     * White Background
+     * ---------------------------------------------
+     */
+
     context.fillStyle =
       "#ffffff";
 
@@ -3505,6 +3599,15 @@ async function snapshotQRCard(
     );
 
 
+    /*
+     * ---------------------------------------------
+     * Pixel Mapping
+     *
+     * Preview และ Snapshot
+     * ใช้สัดส่วนเดียวกัน
+     * ---------------------------------------------
+     */
+
     context.imageSmoothingEnabled =
       true;
 
@@ -3512,16 +3615,6 @@ async function snapshotQRCard(
     context.imageSmoothingQuality =
       "high";
 
-
-    /*
-     * ------------------------------------------------
-     * วาด Snapshot ตามสัดส่วนเดิม
-     *
-     * ไม่ stretch แยกแกน
-     *
-     * เพราะ Canvas มีขนาดเดียวกับ Preview
-     * ------------------------------------------------
-     */
 
     context.drawImage(
       image,
@@ -3532,15 +3625,54 @@ async function snapshotQRCard(
     );
 
 
+    /*
+     * ---------------------------------------------
+     * PNG
+     * ---------------------------------------------
+     */
+
     const dataUrl =
       canvas.toDataURL(
         "image/png"
       );
 
 
+    if (
+      !dataUrl ||
+      dataUrl.length < 100
+    ) {
+
+      throw new Error(
+        "Snapshot PNG ไม่สมบูรณ์"
+      );
+
+    }
+
+
+    /*
+     * ---------------------------------------------
+     * Cache
+     * ---------------------------------------------
+     */
+
     qrSnapshotCache.set(
       pointId,
       dataUrl
+    );
+
+
+    console.log(
+      "GGN QR V5.8 Snapshot สำเร็จ:",
+      {
+        pointId,
+        width,
+        height,
+        scale,
+        outputWidth:
+          canvas.width,
+        outputHeight:
+          canvas.height
+      }
     );
 
 
@@ -3549,7 +3681,7 @@ async function snapshotQRCard(
   } catch (error) {
 
     console.error(
-      "GGN QR V5.7 Snapshot Error:",
+      "GGN QR V5.8 Snapshot Error:",
       error
     );
 
@@ -3565,7 +3697,6 @@ async function snapshotQRCard(
   }
 
 }
-
 
 // ==================================================
 // LOAD IMAGE
@@ -3606,11 +3737,10 @@ function loadImage(
 
 }
 
-
 // ==================================================
 // BUILD PRINT CARD
 //
-// V5.7
+// V5.8
 //
 // ใช้ Snapshot จาก Preview
 //
@@ -3644,7 +3774,7 @@ async function createQRPrintCardFromPreview(
   if (!previewCard) {
 
     console.warn(
-      "GGN QR V5.7: ไม่พบ Preview Card",
+      "GGN QR V5.8: ไม่พบ Preview Card",
       pointId
     );
 
@@ -3655,7 +3785,9 @@ async function createQRPrintCardFromPreview(
 
 
   /*
-   * Snapshot
+   * ---------------------------------------------
+   * Snapshot Preview
+   * ---------------------------------------------
    */
 
   const snapshot =
@@ -3673,13 +3805,9 @@ async function createQRPrintCardFromPreview(
 
 
   /*
-   * ------------------------------------------------
-   * Print Container
-   *
-   * Container มีหน้าที่จัดตำแหน่งเท่านั้น
-   *
-   * ไม่สร้างเนื้อหา Card ใหม่
-   * ------------------------------------------------
+   * ---------------------------------------------
+   * Print Card
+   * ---------------------------------------------
    */
 
   const printCard =
@@ -3700,8 +3828,20 @@ async function createQRPrintCardFromPreview(
     `${QR_CARD_HEIGHT_MM}mm`;
 
 
-  printCard.style.boxSizing =
-    "border-box";
+  printCard.style.minWidth =
+    `${QR_CARD_WIDTH_MM}mm`;
+
+
+  printCard.style.minHeight =
+    `${QR_CARD_HEIGHT_MM}mm`;
+
+
+  printCard.style.maxWidth =
+    `${QR_CARD_WIDTH_MM}mm`;
+
+
+  printCard.style.maxHeight =
+    `${QR_CARD_HEIGHT_MM}mm`;
 
 
   printCard.style.margin =
@@ -3712,8 +3852,18 @@ async function createQRPrintCardFromPreview(
     "0";
 
 
+  printCard.style.boxSizing =
+    "border-box";
+
+
+  printCard.style.overflow =
+    "hidden";
+
+
   /*
-   * Snapshot Image
+   * ---------------------------------------------
+   * Snapshot
+   * ---------------------------------------------
    */
 
   const image =
@@ -3726,45 +3876,44 @@ async function createQRPrintCardFromPreview(
     "ggn-qr-snapshot";
 
 
-  image.alt =
-    pointId;
-
-
   image.src =
     snapshot;
+
+
+  image.alt =
+    pointId;
 
 
   image.draggable =
     false;
 
 
+  image.style.display =
+    "block";
+
+
   image.style.width =
-    `${QR_CARD_WIDTH_MM}mm`;
+    "100%";
 
 
   image.style.height =
-    `${QR_CARD_HEIGHT_MM}mm`;
+    "100%";
 
 
-  /*
-   * สำคัญ:
-   *
-   * ไม่ใช้ object-fit: fill
-   *
-   * เพราะต้องรักษาอัตราส่วน
-   * ของ Snapshot
-   */
-
-  image.style.objectFit =
-    "contain";
+  image.style.minWidth =
+    "100%";
 
 
-  image.style.objectPosition =
-    "center";
+  image.style.minHeight =
+    "100%";
 
 
-  image.style.display =
-    "block";
+  image.style.maxWidth =
+    "100%";
+
+
+  image.style.maxHeight =
+    "100%";
 
 
   image.style.margin =
@@ -3781,6 +3930,23 @@ async function createQRPrintCardFromPreview(
 
   image.style.boxSizing =
     "border-box";
+
+
+  /*
+   * สำคัญ
+   *
+   * Snapshot เป็น Card สำเร็จรูป
+   *
+   * ดังนั้นไม่ให้ Browser
+   * คำนวณเนื้อหาภายในใหม่
+   */
+
+  image.style.objectFit =
+    "fill";
+
+
+  image.style.objectPosition =
+    "center";
 
 
   printCard.appendChild(
@@ -4007,104 +4173,55 @@ async function buildQRPrintArea(
 
 // ==================================================
 // WAIT FOR PRINT IMAGES
+//
+// V5.8
 // ==================================================
 
 function waitForQRPrintImages() {
 
-  return new Promise(
-    function(resolve) {
+  return new Promise(function(resolve, reject) {
 
-      if (!qrPrintArea) {
+    if (!qrPrintArea) {
 
-        resolve();
+      resolve();
 
-        return;
+      return;
 
-      }
-
-
-      const images =
-        Array.from(
-          qrPrintArea.querySelectorAll(
-            ".ggn-qr-snapshot"
-          )
-        );
+    }
 
 
-      if (
-        images.length === 0
-      ) {
-
-        resolve();
-
-        return;
-
-      }
+    const images =
+      Array.from(
+        qrPrintArea.querySelectorAll(
+          ".ggn-qr-snapshot"
+        )
+      );
 
 
-      const promises =
-        images.map(
-          function(image) {
+    if (
+      images.length === 0
+    ) {
 
-            if (
-              image.complete &&
-              image.naturalWidth > 0
-            ) {
+      resolve();
 
-              return Promise.resolve();
+      return;
 
-            }
+    }
 
 
-            return new Promise(
-              function(
-                imageResolve
-              ) {
-
-                let done = false;
+    let completed = 0;
 
 
-                const finish =
-                  function() {
+    const finishOne =
+      function() {
 
-                    if (done) {
-
-                      return;
-
-                    }
+        completed++;
 
 
-                    done = true;
-
-                    imageResolve();
-
-                  };
-
-
-                image.onload =
-                  finish;
-
-
-                image.onerror =
-                  finish;
-
-
-                setTimeout(
-                  finish,
-                  3000
-                );
-
-              }
-            );
-
-          }
-        );
-
-
-      Promise.all(
-        promises
-      ).then(
-        function() {
+        if (
+          completed >=
+          images.length
+        ) {
 
           requestAnimationFrame(
             function() {
@@ -4121,10 +4238,62 @@ function waitForQRPrintImages() {
           );
 
         }
-      );
 
-    }
-  );
+      };
+
+
+    images.forEach(
+      function(image) {
+
+        if (
+          image.complete &&
+          image.naturalWidth > 0
+        ) {
+
+          finishOne();
+
+          return;
+
+        }
+
+
+        let done = false;
+
+
+        const finish =
+          function() {
+
+            if (done) {
+
+              return;
+
+            }
+
+
+            done = true;
+
+            finishOne();
+
+          };
+
+
+        image.onload =
+          finish;
+
+
+        image.onerror =
+          finish;
+
+
+        setTimeout(
+          finish,
+          5000
+        );
+
+      }
+    );
+
+  });
 
 }
 
