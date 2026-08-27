@@ -2963,7 +2963,7 @@ function createQRPrintRoot(
     let pageIndex =
       0;
     pageIndex <
-      pageCount;
+    pageCount;
     pageIndex++
   ) {
 
@@ -2994,12 +2994,46 @@ function createQRPrintRoot(
       let i =
         start;
       i <
-        end;
+      end;
       i++
     ) {
 
+      // --------------------------------------------
+      // IMPORTANT
+      // สร้างสำเนา Card
+      // ไม่ย้าย Card ตัวจริงจาก Preview
+      // --------------------------------------------
+
+      const printCard =
+        cards[i].cloneNode(
+          true
+        );
+
+
+      printCard.className =
+        "qr-preview-card";
+
+
+      // --------------------------------------------
+      // รักษา pointId เดิม
+      // --------------------------------------------
+
+      if (
+        cards[i].dataset.pointId
+      ) {
+
+        printCard.dataset.pointId =
+          cards[i].dataset.pointId;
+
+      }
+
+
+      // --------------------------------------------
+      // เพิ่มเข้า Print Page
+      // --------------------------------------------
+
       page.appendChild(
-        cards[i]
+        printCard
       );
 
     }
@@ -3050,28 +3084,15 @@ async function prepareQRPrint(
   }
 
 
-  const firstCard =
-    cards[0];
-
-
-  if (
-    !firstCard
-  ) {
-
-    return false;
-
-  }
-
-
   injectQRPrintStyles();
 
 
   qrPrintState.originalParent =
-    firstCard.parentNode;
+    null;
 
 
   qrPrintState.originalCards =
-    cards.slice();
+    [];
 
 
   qrPrintState.active =
@@ -3111,32 +3132,10 @@ function restoreQRAfterPrint() {
     qrPrintState.printRoot;
 
 
-  const originalParent =
-    qrPrintState.originalParent;
-
-
-  const originalCards =
-    qrPrintState.originalCards;
-
-
-  if (
-    originalParent &&
-    originalCards &&
-    originalCards.length
-  ) {
-
-    originalCards.forEach(
-      card => {
-
-        originalParent.appendChild(
-          card
-        );
-
-      }
-    );
-
-  }
-
+  // --------------------------------------------
+  // ลบเฉพาะ Print Clone
+  // Preview ตัวจริงไม่ถูกแตะต้อง
+  // --------------------------------------------
 
   if (
     printRoot &&
