@@ -1,23 +1,27 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKOUT.JS
-// Version 3.0
+// Version 3.2
 //
 // หน้าที่:
 // - Check-out
 // - ชื่อ
-// - Preview
+// - Preview แสดงทันที
+// - ใช้ Point Verification จาก APP.JS V4.2
+// - ใช้ Promise / Request เดียวร่วมกับระบบ
+// - ใช้ Cache จาก APP.JS
 // - ส่งข้อมูล
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
 //
 // รูปแบบ Preview / Telegram:
 //
-// 🔴 CHECK-OUT
-//
+// 🔴 Check out - ออกงาน
+// ━━━━━━━━━━━━━━━━━━━━━
 // 📍 จุด: [Location]
 // 👤 ผู้ปฏิบัติงาน: [ชื่อ]
 // 🕐 เวลา: [เวลา]
+// ━━━━━━━━━━━━━━━━━━━━━
 //
 // IMPORTANT:
 // - Point ID ใช้ภายในระบบ
@@ -27,6 +31,16 @@
 // - ไม่มี jobType
 // - ไม่มี extraText
 // - ไม่มีหมายเหตุ
+//
+// V3.2:
+//
+// - ไม่ตรวจ Point ซ้ำเอง
+// - ไม่สร้าง Promise ตรวจ Point เอง
+// - ใช้ loadLocationByPoint() จาก APP.JS V4.2
+// - ใช้ Verification Result จาก APP.JS
+// - รองรับ Promise เดียวของระบบ
+// - Preview ไม่รอ Location
+// - Location อัปเดตเมื่อ Backend ตรวจสอบสำเร็จ
 // ==================================================
 
 
@@ -64,38 +78,7 @@ async function initializeCheckout() {
 
 
   // ==================================================
-  // QR LOCATION VERIFICATION
-  // ==================================================
-
-    try {
-
-      if (
-        typeof POINT_ID !== "undefined" &&
-        POINT_ID
-      ) {
-
-        if (
-          typeof loadLocationByPoint === "function"
-        ) {
-
-          await loadLocationByPoint();
-
-        }
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "GGN Check-out Point Verification Error:",
-        error
-      );
-
-    }
-
-
-  // ==================================================
-  // CURRENT LOCATION
+  // CURRENT ZONE
   // ==================================================
 
   function getCheckoutZone() {
@@ -121,24 +104,37 @@ async function initializeCheckout() {
   }
 
 
+  // ==================================================
+  // CURRENT LOCATION
+  // ==================================================
+
   function getCheckoutLocation() {
 
     if (
       typeof getCurrentLocation === "function"
     ) {
 
-      return (
-        getCurrentLocation() ||
-        "-"
-      );
+      const location =
+        getCurrentLocation();
+
+
+      if (location) {
+
+        return location;
+
+      }
 
     }
 
 
-    return "-";
+    return "";
 
   }
 
+
+  // ==================================================
+  // CURRENT POINT ID
+  // ==================================================
 
   function getCheckoutPointId() {
 
@@ -158,7 +154,10 @@ async function initializeCheckout() {
       typeof POINT_ID !== "undefined"
     ) {
 
-      return POINT_ID;
+      return (
+        POINT_ID ||
+        ""
+      );
 
     }
 
@@ -169,9 +168,68 @@ async function initializeCheckout() {
 
 
   // ==================================================
+  // GET VERIFICATION RESULT
+  //
+  // V3.2
+  //
+  // ใช้ผลจาก APP.JS V4.2
+  //
+  // ไม่สร้าง Verification State ใหม่
+  // ==================================================
+
+  function getCheckoutVerificationResult() {
+
+    if (
+      typeof getLocationVerificationResult ===
+      "function"
+    ) {
+
+      return (
+        getLocationVerificationResult()
+      );
+
+    }
+
+
+    return null;
+
+  }
+
+
+  // ==================================================
+  // CHECK VERIFIED
+  //
+  // V3.2
+  //
+  // อ่านสถานะจาก APP.JS
+  // ==================================================
+
+  function isCheckoutLocationVerified() {
+
+    if (
+      typeof isLocationVerified ===
+      "function"
+    ) {
+
+      return (
+        isLocationVerified()
+      );
+
+    }
+
+
+    return false;
+
+  }
+
+
+  // ==================================================
   // PREVIEW
   //
-  // รูปแบบเดียวกับ Telegram
+  // สำคัญ:
+  // Preview ต้องขึ้นทันที
+  //
+  // ไม่รอ Location
   // ==================================================
 
   function updatePreviewText() {
@@ -185,6 +243,15 @@ async function initializeCheckout() {
       getCheckoutLocation();
 
 
+    const displayLocation =
+      location ||
+      (
+        getCheckoutPointId()
+          ? "กำลังตรวจสอบ..."
+          : "-"
+      );
+
+
     const now =
       new Date();
 
@@ -195,21 +262,176 @@ async function initializeCheckout() {
       );
 
 
-    previewText.textContent =
+    if (previewText) {
 
-      "🔴 CHECK-OUT\n\n" +
+      previewText.textContent =
 
-      `📍 จุด: ${location}\n` +
+        "🔴 Check out - ออกงาน\n" +
 
-      `👤 ผู้ปฏิบัติงาน: ${name}\n` +
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
 
-      `🕐 เวลา: ${nowStr}`;
+        `📍 จุด: ${displayLocation}\n` +
+
+        `👤 ผู้ปฏิบัติงาน: ${name}\n` +
+
+        `🕐 เวลา: ${nowStr}\n` +
+
+        "━━━━━━━━━━━━━━━━━━━━━";
+
+    }
+
+  }
+
+
+  // ==================================================
+  // UPDATE LOCATION PREVIEW
+  //
+  // เรียกหลัง APP.JS
+  // ตรวจสอบ Point สำเร็จ
+  // ==================================================
+
+  function updateLocationPreview() {
+
+    updatePreviewText();
+
+  }
+
+
+  // ==================================================
+  // POINT VERIFICATION
+  //
+  // V3.2
+  //
+  // IMPORTANT:
+  //
+  // Checkout ไม่สร้าง Request เอง
+  //
+  // ใช้ Promise จาก APP.JS V4.2
+  //
+  // ถ้า APP.JS เริ่ม Request ไปแล้ว
+  // จะได้รับ Promise เดิม
+  //
+  // ถ้า APP.JS ตรวจเสร็จแล้ว
+  // จะได้รับผลที่ตรวจแล้วทันที
+  // ==================================================
+
+  function ensurePointVerification() {
+
+    const pointId =
+      getCheckoutPointId();
+
+
+    // ----------------------------------------------
+    // ไม่มี Point ID
+    // ----------------------------------------------
+
+    if (!pointId) {
+
+      return Promise.resolve(
+        false
+      );
+
+    }
+
+
+    // ----------------------------------------------
+    // ถ้า APP.JS ตรวจสำเร็จแล้ว
+    // ----------------------------------------------
+
+    if (
+      isCheckoutLocationVerified()
+    ) {
+
+      updateLocationPreview();
+
+
+      return Promise.resolve(
+        true
+      );
+
+    }
+
+
+    // ----------------------------------------------
+    // ใช้ Promise จาก APP.JS
+    // ----------------------------------------------
+
+    if (
+      typeof loadLocationByPoint !==
+      "function"
+    ) {
+
+      console.warn(
+        "GGN: loadLocationByPoint() ไม่พบ"
+      );
+
+
+      return Promise.resolve(
+        false
+      );
+
+    }
+
+
+    return loadLocationByPoint()
+
+      .then(
+        function(success) {
+
+          updateLocationPreview();
+
+
+          if (success !== true) {
+
+            return false;
+
+          }
+
+
+          const result =
+            getCheckoutVerificationResult();
+
+
+          if (
+            !result ||
+            result.success !== true ||
+            result.active !== true
+          ) {
+
+            return false;
+
+          }
+
+
+          return true;
+
+        }
+      )
+
+      .catch(
+        function(error) {
+
+          console.error(
+            "GGN Check-out Point Verification Error:",
+            error
+          );
+
+
+          updateLocationPreview();
+
+
+          return false;
+
+        }
+      );
 
   }
 
 
   // ==================================================
   // INPUT EVENT
+  //
+  // Preview เปลี่ยนทันทีเมื่อพิมพ์ชื่อ
   // ==================================================
 
   fullname.addEventListener(
@@ -228,18 +450,6 @@ async function initializeCheckout() {
       fullname.value.trim();
 
 
-    const zone =
-      getCheckoutZone();
-
-
-    const location =
-      getCheckoutLocation();
-
-
-    const pointId =
-      getCheckoutPointId();
-
-
     // ==================================================
     // VALIDATE NAME
     // ==================================================
@@ -249,7 +459,9 @@ async function initializeCheckout() {
       status.textContent =
         "❌ กรุณากรอกชื่อ-นามสกุล";
 
+
       fullname.focus();
+
 
       return;
 
@@ -261,35 +473,116 @@ async function initializeCheckout() {
       status.textContent =
         "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
 
+
       fullname.focus();
+
 
       return;
 
     }
+
+
+    // ==================================================
+    // POINT ID
+    // ==================================================
+
+    const pointId =
+      getCheckoutPointId();
+
+
+    if (!pointId) {
+
+      status.textContent =
+        "❌ ไม่พบรหัสจุดตรวจ";
+
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // ENSURE POINT VERIFICATION
+    //
+    // V3.2
+    //
+    // ใช้ Promise เดียวจาก APP.JS
+    // ==================================================
+
+    if (
+      !isCheckoutLocationVerified()
+    ) {
+
+      status.textContent =
+        "⏳ กำลังตรวจสอบจุดตรวจ กรุณารอสักครู่...";
+
+
+      const verified =
+        await ensurePointVerification();
+
+
+      if (!verified) {
+
+        status.textContent =
+          "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
+
+
+        return;
+
+      }
+
+    }
+
+
+    // ==================================================
+    // VERIFICATION RESULT
+    // ==================================================
+
+    const verificationResult =
+      getCheckoutVerificationResult();
+
+
+    if (
+      !verificationResult ||
+      verificationResult.success !== true ||
+      verificationResult.active !== true
+    ) {
+
+      status.textContent =
+        "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
+
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // CURRENT DATA
+    //
+    // อ่านหลัง Verification
+    // เพื่อให้ได้ข้อมูลจาก Backend ล่าสุด
+    // ==================================================
+
+    const zone =
+      getCheckoutZone();
+
+
+    const location =
+      getCheckoutLocation();
 
 
     // ==================================================
     // VALIDATE LOCATION
     // ==================================================
 
-    if (!location || location === "-") {
+    if (
+      !location
+    ) {
 
       status.textContent =
         "❌ ไม่พบจุดตรวจ";
 
-      return;
-
-    }
-
-
-    // ==================================================
-    // VALIDATE POINT
-    // ==================================================
-
-    if (!pointId) {
-
-      status.textContent =
-        "❌ ไม่พบรหัสจุดตรวจ";
 
       return;
 
@@ -300,10 +593,14 @@ async function initializeCheckout() {
     // VALIDATE ZONE
     // ==================================================
 
-    if (!zone || zone === "-") {
+    if (
+      !zone ||
+      zone === "-"
+    ) {
 
       status.textContent =
         "❌ ไม่พบเขตของจุดตรวจ";
+
 
       return;
 
@@ -318,6 +615,7 @@ async function initializeCheckout() {
 
       status.textContent =
         "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
+
 
       return;
 
@@ -337,7 +635,7 @@ async function initializeCheckout() {
       // ==================================================
       // PAYLOAD
       //
-      // ส่งเฉพาะข้อมูลที่ Backend จำเป็นต้องใช้
+      // ไม่เปลี่ยนจาก V3.1
       // ==================================================
 
       const payload = {
@@ -411,6 +709,12 @@ async function initializeCheckout() {
 
   // ==================================================
   // REQUEST
+  //
+  // ใช้สำหรับส่ง Check-out เท่านั้น
+  //
+  // ไม่เกี่ยวกับ Point Verification
+  //
+  // Point Verification ใช้ APP.JS
   // ==================================================
 
   async function sendRequest(payload) {
@@ -500,9 +804,90 @@ async function initializeCheckout() {
 
   // ==================================================
   // INITIAL PREVIEW
+  //
+  // สำคัญ:
+  // ทำก่อนตรวจสอบ Point
   // ==================================================
 
   updatePreviewText();
+
+
+  // ==================================================
+  // START POINT VERIFICATION
+  //
+  // V3.2
+  //
+  // ไม่สร้าง Request ใหม่
+  //
+  // ใช้ Promise จาก APP.JS V4.2
+  // ==================================================
+
+  if (
+    typeof POINT_ID !== "undefined" &&
+    POINT_ID
+  ) {
+
+    status.textContent =
+      "⏳ กำลังตรวจสอบจุดตรวจ...";
+
+
+    ensurePointVerification()
+
+      .then(
+        function(success) {
+
+          updateLocationPreview();
+
+
+          if (!success) {
+
+            status.textContent =
+              "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
+
+
+            return;
+
+          }
+
+
+          /*
+           * ตรวจสำเร็จ
+           *
+           * ไม่ต้องแสดงข้อความ
+           */
+
+          if (
+            status.textContent ===
+            "⏳ กำลังตรวจสอบจุดตรวจ..."
+          ) {
+
+            status.textContent =
+              "";
+
+          }
+
+        }
+      )
+
+      .catch(
+        function(error) {
+
+          console.error(
+            "GGN Check-out Verification Error:",
+            error
+          );
+
+
+          status.textContent =
+            "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
+
+
+          updateLocationPreview();
+
+        }
+      );
+
+  }
 
 }
 

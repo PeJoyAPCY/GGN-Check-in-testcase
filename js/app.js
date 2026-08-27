@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // APP.JS
-// Version 4.0
+// Version 4.2
 //
 // หน้าที่:
 // - Common Function
@@ -11,6 +11,8 @@
 // - Index Page
 // - QR Point ID
 // - ตรวจสอบจุดตรวจจาก Backend
+// - Cache Promise การตรวจสอบ Point
+// - ใช้ Request เดียวร่วมกันทั้งระบบ
 // - ส่ง Point ID ต่อระหว่างหน้า
 // - Dashboard / QR Management Navigation
 //
@@ -19,8 +21,7 @@
 // - ไม่แก้ API
 // - ไม่แก้ฐานข้อมูล
 // - รักษา Logic Check-in / Check-out เดิม
-// - รองรับ dashboard.html
-// - รองรับ qr.html
+// - Check-in / Check-out ใช้ผล Point Verification เดียวกัน
 // ==================================================
 
 
@@ -77,6 +78,39 @@ let currentZone =
 
 let currentLocation =
   "";
+
+
+// ==================================================
+// POINT VERIFICATION STATE
+//
+// V4.2
+//
+// จุดสำคัญ:
+//
+// Promise เดียว
+// ↓
+// API Request เดียว
+// ↓
+// ทุกหน้าที่เรียกใช้ผลเดียวกัน
+//
+// ป้องกัน:
+// app.js
+// + checkin.js
+// + checkout.js
+//
+// ยิง locationByPoint ซ้ำ
+// ==================================================
+
+let locationPromise =
+  null;
+
+
+let locationVerified =
+  false;
+
+
+let locationVerificationResult =
+  null;
 
 
 // ==================================================
@@ -142,6 +176,46 @@ function getCurrentPointId() {
 
 
 // ==================================================
+// GET LOCATION VERIFICATION RESULT
+//
+// V4.2
+//
+// ให้ Check-in / Check-out
+// อ่านผลการตรวจสอบล่าสุดได้
+//
+// คืนค่า:
+// {
+//   success,
+//   pointId,
+//   zone,
+//   location,
+//   active
+// }
+//
+// หรือ null
+// ==================================================
+
+function getLocationVerificationResult() {
+
+  return locationVerificationResult;
+
+}
+
+
+// ==================================================
+// CHECK LOCATION VERIFIED
+// ==================================================
+
+function isLocationVerified() {
+
+  return (
+    locationVerified === true
+  );
+
+}
+
+
+// ==================================================
 // ZONE DISPLAY
 // ==================================================
 
@@ -188,19 +262,94 @@ function updateLocationDisplay() {
 
 
 // ==================================================
-// LOAD LOCATION BY POINT ID
+// LOAD LOCATION BY POINT
+//
+// V4.2
+//
+// IMPORTANT:
+//
+// Function นี้สามารถถูกเรียกหลายครั้งได้
+//
+// แต่จะยิง API เพียงครั้งเดียว
+//
+// ครั้งแรก:
+// loadLocationByPoint()
+// ↓
+// สร้าง Promise
+// ↓
+// fetch()
+// ↓
+// เก็บ Promise ไว้
+//
+// ครั้งต่อไป:
+// loadLocationByPoint()
+// ↓
+// คืน Promise เดิม
+//
+// ดังนั้น:
+//
+// app.js
+// checkin.js
+// checkout.js
+//
+// ใช้ Request เดียวกัน
 // ==================================================
 
-async function loadLocationByPoint() {
+function loadLocationByPoint() {
+
+  // ==================================================
+  // ไม่มี Point ID
+  // ==================================================
 
   if (!POINT_ID) {
 
     updateLocationDisplay();
 
-    return true;
+    return Promise.resolve(
+      true
+    );
 
   }
 
+
+  // ==================================================
+  // ถ้าตรวจสอบสำเร็จแล้ว
+  //
+  // ไม่ต้อง Request ใหม่
+  // ==================================================
+
+  if (
+    locationVerified === true &&
+    locationVerificationResult
+  ) {
+
+    return Promise.resolve(
+      true
+    );
+
+  }
+
+
+  // ==================================================
+  // ถ้ามี Request อยู่แล้ว
+  //
+  // ใช้ Promise เดิม
+  // ==================================================
+
+  if (locationPromise) {
+
+    console.log(
+      "⚡ GGN Location Promise Reuse"
+    );
+
+    return locationPromise;
+
+  }
+
+
+  // ==================================================
+  // ตรวจสอบ URL
+  // ==================================================
 
   if (!GOOGLE_APPS_SCRIPT_URL) {
 
@@ -211,10 +360,17 @@ async function loadLocationByPoint() {
 
     }
 
-    return false;
+
+    return Promise.resolve(
+      false
+    );
 
   }
 
+
+  // ==================================================
+  // แสดงสถานะ
+  // ==================================================
 
   if (zoneTitle) {
 
@@ -224,167 +380,255 @@ async function loadLocationByPoint() {
   }
 
 
-  try {
+  // ==================================================
+  // CREATE SINGLE PROMISE
+  // ==================================================
 
-    const apiUrl =
-      `${GOOGLE_APPS_SCRIPT_URL}` +
-      `?action=locationByPoint` +
-      `&pointId=${encodeURIComponent(POINT_ID)}`;
+  locationPromise =
+    (async function() {
 
+      try {
 
-    console.log(
-      "GGN Location API:",
-      apiUrl
-    );
-
-
-    const response =
-      await fetch(
-        apiUrl
-      );
+        const apiUrl =
+          `${GOOGLE_APPS_SCRIPT_URL}` +
+          `?action=locationByPoint` +
+          `&pointId=${encodeURIComponent(POINT_ID)}`;
 
 
-    if (!response.ok) {
-
-      throw new Error(
-        `HTTP ${response.status}`
-      );
-
-    }
+        console.log(
+          "⚡ GGN Location API Request:",
+          apiUrl
+        );
 
 
-    const result =
-      await response.json();
+        const startTime =
+          performance.now();
 
 
-    console.log(
-      "GGN Location Result:",
-      result
-    );
+        // ==================================================
+        // REQUEST
+        // ==================================================
+
+        const response =
+          await fetch(
+            apiUrl
+          );
 
 
-    if (
-      !result ||
-      result.success !== true
-    ) {
+        if (!response.ok) {
 
-      throw new Error(
-        result &&
-        result.message
-          ? result.message
-          : "ไม่พบข้อมูลจุดตรวจ"
-      );
+          throw new Error(
+            `HTTP ${response.status}`
+          );
 
-    }
+        }
 
 
-    const data =
-      result.data || {};
+        const result =
+          await response.json();
 
 
-    const returnedPointId =
-      String(
-        data.pointId ||
-        POINT_ID
-      ).trim();
+        const elapsed =
+          Math.round(
+            performance.now() -
+            startTime
+          );
 
 
-    const returnedZone =
-      String(
-        data.zone ||
-        ""
-      ).trim();
+        console.log(
+          `⚡ GGN Location Response: ${elapsed} ms`
+        );
 
 
-    const returnedLocation =
-      String(
-        data.location ||
-        ""
-      ).trim();
+        console.log(
+          "GGN Location Result:",
+          result
+        );
 
 
-    const active =
-      data.active === true;
+        // ==================================================
+        // VALIDATE RESPONSE
+        // ==================================================
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : "ไม่พบข้อมูลจุดตรวจ"
+          );
+
+        }
 
 
-    if (!active) {
-
-      throw new Error(
-        "จุดตรวจนี้ถูกปิดใช้งาน"
-      );
-
-    }
+        const data =
+          result.data || {};
 
 
-    if (!returnedZone) {
-
-      throw new Error(
-        "Backend ไม่ส่งข้อมูล zone"
-      );
-
-    }
+        const returnedPointId =
+          String(
+            data.pointId ||
+            POINT_ID
+          ).trim();
 
 
-    if (!returnedLocation) {
-
-      throw new Error(
-        "Backend ไม่ส่งข้อมูล location"
-      );
-
-    }
+        const returnedZone =
+          String(
+            data.zone ||
+            ""
+          ).trim();
 
 
-    currentZone =
-      returnedZone;
+        const returnedLocation =
+          String(
+            data.location ||
+            ""
+          ).trim();
 
 
-    currentLocation =
-      returnedLocation;
+        const active =
+          data.active === true;
 
 
-    updateLocationDisplay();
+        // ==================================================
+        // VALIDATE ACTIVE
+        // ==================================================
+
+        if (!active) {
+
+          throw new Error(
+            "จุดตรวจนี้ถูกปิดใช้งาน"
+          );
+
+        }
 
 
-    console.log(
-      "GGN Point Verified:",
-      {
-        pointId:
-          returnedPointId,
+        // ==================================================
+        // VALIDATE ZONE
+        // ==================================================
 
-        zone:
-          currentZone,
+        if (!returnedZone) {
 
-        location:
-          currentLocation,
+          throw new Error(
+            "Backend ไม่ส่งข้อมูล zone"
+          );
 
-        active:
-          active
+        }
+
+
+        // ==================================================
+        // VALIDATE LOCATION
+        // ==================================================
+
+        if (!returnedLocation) {
+
+          throw new Error(
+            "Backend ไม่ส่งข้อมูล location"
+          );
+
+        }
+
+
+        // ==================================================
+        // SAVE CURRENT DATA
+        // ==================================================
+
+        currentZone =
+          returnedZone;
+
+
+        currentLocation =
+          returnedLocation;
+
+
+        // ==================================================
+        // SAVE VERIFICATION RESULT
+        // ==================================================
+
+        locationVerificationResult = {
+
+          success:
+            true,
+
+          pointId:
+            returnedPointId,
+
+          zone:
+            returnedZone,
+
+          location:
+            returnedLocation,
+
+          active:
+            true
+
+        };
+
+
+        locationVerified =
+          true;
+
+
+        // ==================================================
+        // UPDATE DISPLAY
+        // ==================================================
+
+        updateLocationDisplay();
+
+
+        // ==================================================
+        // LOG
+        // ==================================================
+
+        console.log(
+          "⚡ GGN Point Verified:",
+          locationVerificationResult
+        );
+
+
+        return true;
+
+
+      } catch (error) {
+
+        console.error(
+          "GGN Location Error:",
+          error
+        );
+
+
+        locationVerified =
+          false;
+
+
+        locationVerificationResult =
+          null;
+
+
+        if (zoneTitle) {
+
+          zoneTitle.textContent =
+            "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
+
+        }
+
+
+        return false;
+
       }
-    );
+
+    })();
 
 
-    return true;
+  // ==================================================
+  // RETURN SINGLE PROMISE
+  // ==================================================
 
-
-  } catch (error) {
-
-    console.error(
-      "GGN Location Error:",
-      error
-    );
-
-
-    if (zoneTitle) {
-
-      zoneTitle.textContent =
-        "❌ ไม่สามารถตรวจสอบจุดตรวจได้";
-
-    }
-
-
-    return false;
-
-  }
+  return locationPromise;
 
 }
 
@@ -423,6 +667,7 @@ function initializeManagementNavigation() {
 
           event.preventDefault();
 
+
           if (
             currentPage === "dashboard.html"
           ) {
@@ -430,6 +675,7 @@ function initializeManagementNavigation() {
             return;
 
           }
+
 
           window.location.href =
             "./dashboard.html";
@@ -462,6 +708,7 @@ function initializeManagementNavigation() {
 
           event.preventDefault();
 
+
           if (
             currentPage === "qr.html"
           ) {
@@ -469,6 +716,7 @@ function initializeManagementNavigation() {
             return;
 
           }
+
 
           window.location.href =
             "./qr.html";
@@ -483,8 +731,6 @@ function initializeManagementNavigation() {
   /*
    * ----------------------------------------------
    * Mobile Bottom Navigation
-   *
-   * ใช้ data-menu-target
    * ----------------------------------------------
    */
 
@@ -740,11 +986,7 @@ async function startApplication() {
 
   /*
    * ----------------------------------------------
-   * Management Pages
-   * ----------------------------------------------
-   *
-   * ต้องเริ่ม Navigation ก่อน
-   * เพื่อให้ Dashboard ↔ QR ใช้งานได้
+   * MANAGEMENT PAGES
    * ----------------------------------------------
    */
 
@@ -771,9 +1013,15 @@ async function startApplication() {
     currentPage === "index.html"
   ) {
 
+    /*
+     * เริ่มตรวจ Point ทันที
+     *
+     * ไม่ block การเตรียมหน้า
+     */
+
     if (POINT_ID) {
 
-      await loadLocationByPoint();
+      loadLocationByPoint();
 
     } else {
 
@@ -799,15 +1047,29 @@ async function startApplication() {
     currentPage === "checkin.html"
   ) {
 
+    /*
+     * V4.2
+     *
+     * ไม่ await
+     *
+     * เพื่อไม่ block หน้า Check-in
+     *
+     * checkin.js จะเรียก
+     * loadLocationByPoint()
+     *
+     * และได้รับ Promise เดียวกัน
+     */
+
     if (POINT_ID) {
 
-      await loadLocationByPoint();
+      loadLocationByPoint();
 
     } else {
 
       updateLocationDisplay();
 
     }
+
 
     return;
 
@@ -824,15 +1086,25 @@ async function startApplication() {
     currentPage === "checkout.html"
   ) {
 
+    /*
+     * V4.2
+     *
+     * ไม่ await
+     *
+     * ให้หน้า Checkout ขึ้นทันที
+     * แล้ว Location ค่อยมา
+     */
+
     if (POINT_ID) {
 
-      await loadLocationByPoint();
+      loadLocationByPoint();
 
     } else {
 
       updateLocationDisplay();
 
     }
+
 
     return;
 

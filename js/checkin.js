@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKIN.JS
-// Version 3.0
+// Version 3.2
 //
 // หน้าที่:
 // - Check-in
@@ -13,6 +13,20 @@
 // - ส่งข้อมูล
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
+//
+// V3.2 PERFORMANCE
+//
+// IMPORTANT CHANGE:
+// - Preview แสดงทันที
+// - ไม่รอ Location ก่อนเริ่มหน้า
+// - ไม่สร้าง Location Request เอง
+// - ใช้ loadLocationByPoint() จาก app.js V4.2
+// - ใช้ Promise เดียวกับ App
+// - ไม่ยิง Point API ซ้ำ
+// - ถ้า Location ยังโหลดอยู่ตอนกดส่ง
+//   → รอ Promise เดิม
+// - เมื่อ Backend ตอบกลับ
+//   → Update Preview ทันที
 //
 // PREVIEW / TELEGRAM:
 //
@@ -80,34 +94,15 @@ async function initializeCheckin() {
 
 
   // ==================================================
-  // QR LOCATION VERIFICATION
+  // LOCATION STATE
+  //
+  // V3.2
+  //
+  // ใช้สถานะจาก App เป็นหลัก
   // ==================================================
 
-      try {
-
-      if (
-        typeof POINT_ID !== "undefined" &&
-        POINT_ID
-      ) {
-
-        if (
-          typeof loadLocationByPoint === "function"
-        ) {
-
-          await loadLocationByPoint();
-
-        }
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "GGN Check-in Point Verification Error:",
-        error
-      );
-
-    }
+  let locationError =
+    false;
 
 
   // ==================================================
@@ -149,13 +144,13 @@ async function initializeCheckin() {
 
       return (
         getCurrentLocation() ||
-        "-"
+        ""
       );
 
     }
 
 
-    return "-";
+    return "";
 
   }
 
@@ -182,7 +177,10 @@ async function initializeCheckin() {
       typeof POINT_ID !== "undefined"
     ) {
 
-      return POINT_ID;
+      return (
+        POINT_ID ||
+        ""
+      );
 
     }
 
@@ -193,16 +191,12 @@ async function initializeCheckin() {
 
 
   // ==================================================
-  // STATE
-  // ==================================================
-
-  let photo = null;
-
-
-  // ==================================================
   // PREVIEW TEXT
   //
-  // ต้องตรงกับ Telegram Caption
+  // สำคัญ:
+  //
+  // ฟังก์ชันนี้ต้องทำงานได้ทันที
+  // โดยไม่ต้องรอ Location
   // ==================================================
 
   function updatePreviewText() {
@@ -216,6 +210,11 @@ async function initializeCheckin() {
       getCheckinLocation();
 
 
+    const displayLocation =
+      location ||
+      "กำลังค้นหาจุดตรวจ...";
+
+
     const now =
       new Date();
 
@@ -226,17 +225,29 @@ async function initializeCheckin() {
       );
 
 
-    previewText.textContent =
+    if (previewText) {
 
-      "🟢 CHECK-IN\n\n" +
+      previewText.textContent =
 
-      `📍 จุด: ${location}\n` +
+        "🟢 CHECK-IN\n\n" +
 
-      `👤 ผู้ปฏิบัติงาน: ${name}\n` +
+        `📍 จุด: ${displayLocation}\n` +
 
-      `🕐 เวลา: ${nowStr}`;
+        `👤 ผู้ปฏิบัติงาน: ${name}\n` +
+
+        `🕐 เวลา: ${nowStr}`;
+
+    }
 
   }
+
+
+  // ==================================================
+  // STATE
+  // ==================================================
+
+  let photo =
+    null;
 
 
   // ==================================================
@@ -307,7 +318,9 @@ async function initializeCheckin() {
           photo =
             null;
 
+
           updatePreview();
+
 
           return;
 
@@ -317,6 +330,10 @@ async function initializeCheckin() {
         const file =
           files[0];
 
+
+        // ----------------------------------------------
+        // HEIC
+        // ----------------------------------------------
 
         if (
           file.type === "image/heic" ||
@@ -339,10 +356,15 @@ async function initializeCheckin() {
 
           updatePreview();
 
+
           return;
 
         }
 
+
+        // ----------------------------------------------
+        // SAVE PHOTO
+        // ----------------------------------------------
 
         photo =
           file;
@@ -397,6 +419,7 @@ async function initializeCheckin() {
               canvas.width =
                 img.naturalWidth;
 
+
               canvas.height =
                 img.naturalHeight;
 
@@ -437,6 +460,7 @@ async function initializeCheckin() {
                         "ไม่สามารถประมวลผลรูปภาพได้"
                       )
                     );
+
 
                     return;
 
@@ -541,6 +565,310 @@ async function initializeCheckin() {
 
 
   // ==================================================
+  // LOCATION REQUEST
+  //
+  // V3.2
+  //
+  // ไม่สร้าง Request ใหม่
+  //
+  // ใช้ loadLocationByPoint()
+  // จาก app.js V4.2
+  //
+  // app.js เป็นผู้จัดการ Promise
+  // ==================================================
+
+  function startLocationVerification() {
+
+    const pointId =
+      getCheckinPointId();
+
+
+    if (!pointId) {
+
+      locationError =
+        true;
+
+
+      updatePreviewText();
+
+
+      return null;
+
+    }
+
+
+    if (
+      typeof loadLocationByPoint !== "function"
+    ) {
+
+      console.warn(
+        "GGN: loadLocationByPoint() ไม่พบ"
+      );
+
+
+      locationError =
+        true;
+
+
+      updatePreviewText();
+
+
+      return null;
+
+    }
+
+
+    /*
+     * สำคัญ:
+     *
+     * ไม่ await
+     *
+     * และไม่สร้าง fetch ใหม่
+     *
+     * loadLocationByPoint()
+     * จะคืน Promise เดิมจาก app.js
+     */
+
+    const promise =
+      loadLocationByPoint();
+
+
+    if (
+      !promise ||
+      typeof promise.then !== "function"
+    ) {
+
+      console.warn(
+        "GGN: loadLocationByPoint() ไม่คืน Promise"
+      );
+
+
+      locationError =
+        true;
+
+
+      updatePreviewText();
+
+
+      return null;
+
+    }
+
+
+    promise.then(
+      success => {
+
+        if (!success) {
+
+          locationError =
+            true;
+
+
+          updatePreviewText();
+
+
+          return;
+
+        }
+
+
+        const loadedLocation =
+          getCheckinLocation();
+
+
+        const loadedZone =
+          getCheckinZone();
+
+
+        if (
+          loadedLocation &&
+          loadedLocation !== "-"
+        ) {
+
+          locationError =
+            false;
+
+
+          console.log(
+            "⚡ GGN Check-in Location Ready:",
+            {
+
+              pointId:
+                pointId,
+
+              zone:
+                loadedZone,
+
+              location:
+                loadedLocation
+
+            }
+          );
+
+
+          /*
+           * Location มาแล้ว
+           *
+           * Update Preview ทันที
+           */
+
+          updatePreviewText();
+
+
+        } else {
+
+          locationError =
+            true;
+
+
+          console.warn(
+            "GGN Check-in: ไม่พบ Location",
+            pointId
+          );
+
+
+          updatePreviewText();
+
+        }
+
+      }
+    ).catch(
+      error => {
+
+        locationError =
+          true;
+
+
+        console.error(
+          "GGN Check-in Point Verification Error:",
+          error
+        );
+
+
+        updatePreviewText();
+
+      }
+    );
+
+
+    return promise;
+
+  }
+
+
+  // ==================================================
+  // WAIT FOR LOCATION
+  //
+  // V3.2
+  //
+  // ใช้ Promise เดิมจาก app.js
+  //
+  // ไม่มี Request ใหม่
+  // ==================================================
+
+  async function waitForLocation() {
+
+    const pointId =
+      getCheckinPointId();
+
+
+    if (!pointId) {
+
+      throw new Error(
+        "ไม่พบรหัสจุดตรวจ"
+      );
+
+    }
+
+
+    /*
+     * ถ้ามีผลตรวจสอบสำเร็จแล้ว
+     * ไม่ต้องรอ
+     */
+
+    if (
+      typeof isLocationVerified === "function" &&
+      isLocationVerified()
+    ) {
+
+      return true;
+
+    }
+
+
+    /*
+     * ขอ Promise เดิมจาก App
+     */
+
+    if (
+      typeof loadLocationByPoint !== "function"
+    ) {
+
+      throw new Error(
+        "ไม่พบระบบตรวจสอบจุดตรวจ"
+      );
+
+    }
+
+
+    const result =
+      await loadLocationByPoint();
+
+
+    if (!result) {
+
+      throw new Error(
+        "ไม่สามารถตรวจสอบจุดตรวจได้"
+      );
+
+    }
+
+
+    const location =
+      getCheckinLocation();
+
+
+    const zone =
+      getCheckinZone();
+
+
+    if (
+      !location ||
+      location === "-"
+    ) {
+
+      throw new Error(
+        "ไม่พบจุดตรวจ"
+      );
+
+    }
+
+
+    if (
+      !zone ||
+      zone === "-"
+    ) {
+
+      throw new Error(
+        "ไม่พบเขตของจุดตรวจ"
+      );
+
+    }
+
+
+    locationError =
+      false;
+
+
+    updatePreviewText();
+
+
+    return true;
+
+  }
+
+
+  // ==================================================
   // SEND
   // ==================================================
 
@@ -548,14 +876,6 @@ async function initializeCheckin() {
 
     const name =
       fullname.value.trim();
-
-
-    const zone =
-      getCheckinZone();
-
-
-    const location =
-      getCheckinLocation();
 
 
     const pointId =
@@ -571,7 +891,9 @@ async function initializeCheckin() {
       status.textContent =
         "❌ กรุณากรอกชื่อ-นามสกุล";
 
+
       fullname.focus();
+
 
       return;
 
@@ -583,24 +905,9 @@ async function initializeCheckin() {
       status.textContent =
         "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
 
+
       fullname.focus();
 
-      return;
-
-    }
-
-
-    // ==================================================
-    // VALIDATE LOCATION
-    // ==================================================
-
-    if (
-      !location ||
-      location === "-"
-    ) {
-
-      status.textContent =
-        "❌ ไม่พบจุดตรวจ";
 
       return;
 
@@ -616,22 +923,6 @@ async function initializeCheckin() {
       status.textContent =
         "❌ ไม่พบรหัสจุดตรวจ";
 
-      return;
-
-    }
-
-
-    // ==================================================
-    // VALIDATE ZONE
-    // ==================================================
-
-    if (
-      !zone ||
-      zone === "-"
-    ) {
-
-      status.textContent =
-        "❌ ไม่พบเขตของจุดตรวจ";
 
       return;
 
@@ -647,6 +938,7 @@ async function initializeCheckin() {
       status.textContent =
         "❌ กรุณาถ่ายรูปหรือเลือกรูปภาพ";
 
+
       return;
 
     }
@@ -661,6 +953,7 @@ async function initializeCheckin() {
       status.textContent =
         "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
 
+
       return;
 
     }
@@ -671,6 +964,67 @@ async function initializeCheckin() {
 
 
     try {
+
+      // ==================================================
+      // VERIFY LOCATION
+      //
+      // ถ้ายังไม่เสร็จ
+      // → รอ Promise เดิม
+      //
+      // ไม่ยิง API ใหม่
+      // ==================================================
+
+      status.textContent =
+        "⏳ กำลังตรวจสอบจุดตรวจ...";
+
+
+      await waitForLocation();
+
+
+      // ==================================================
+      // GET VERIFIED DATA
+      // ==================================================
+
+      const zone =
+        getCheckinZone();
+
+
+      const location =
+        getCheckinLocation();
+
+
+      // ==================================================
+      // FINAL VALIDATION
+      // ==================================================
+
+      if (
+        locationError ||
+        !location ||
+        location === "-"
+      ) {
+
+        throw new Error(
+          "ไม่พบจุดตรวจ"
+        );
+
+      }
+
+
+      if (
+        !zone ||
+        zone === "-"
+      ) {
+
+        throw new Error(
+          "ไม่พบเขตของจุดตรวจ"
+        );
+
+      }
+
+
+      // ==================================================
+      // PROCESS IMAGE
+      // ==================================================
 
       status.textContent =
         "⏳ กำลังประมวลผลรูปภาพ...";
@@ -723,6 +1077,10 @@ async function initializeCheckin() {
         payload
       );
 
+
+      // ==================================================
+      // SEND
+      // ==================================================
 
       status.textContent =
         "⏳ กำลังส่งข้อมูล...";
@@ -859,6 +1217,7 @@ async function initializeCheckin() {
 
     updatePreview();
 
+
     updatePreviewText();
 
   }
@@ -876,9 +1235,33 @@ async function initializeCheckin() {
 
   // ==================================================
   // INITIAL PREVIEW
+  //
+  // สำคัญ:
+  //
+  // Preview ขึ้นก่อน Location
   // ==================================================
 
   updatePreviewText();
+
+
+  // ==================================================
+  // BACKGROUND LOCATION VERIFICATION
+  //
+  // V3.2
+  //
+  // ไม่ await
+  //
+  // ใช้ Promise เดียวกับ app.js
+  // ==================================================
+
+  if (
+    typeof POINT_ID !== "undefined" &&
+    POINT_ID
+  ) {
+
+    startLocationVerification();
+
+  }
 
 }
 
