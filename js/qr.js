@@ -70,6 +70,12 @@ const QR_CARDS_PER_PAGE =
 const QR_CODE_SIZE_PX =
   180;
 
+// ==================================================
+// QR URL
+// ==================================================
+
+const QR_BASE_URL =
+  "https://pejoyapcy.github.io/GGN-Check-in-testcase/index.html";
 
 // ==================================================
 // ELEMENTS
@@ -2452,6 +2458,36 @@ function createSelectedQR() {
 
 }
 
+// ==================================================
+// BUILD QR URL
+// ==================================================
+
+function buildQRUrl(
+  pointId
+) {
+
+  const cleanPointId =
+    String(
+      pointId ||
+      ""
+    ).trim();
+
+
+  if (
+    !cleanPointId
+  ) {
+
+    return "";
+
+  }
+
+
+  return (
+    `${QR_BASE_URL}` +
+    `?pointId=${encodeURIComponent(cleanPointId)}`
+  );
+
+}
 
 // ==================================================
 // CREATE QR NODE
@@ -2475,8 +2511,15 @@ function createQRNode(
     "";
 
 
+  const cleanPointId =
+    String(
+      pointId ||
+      ""
+    ).trim();
+
+
   if (
-    !pointId
+    !cleanPointId
   ) {
 
     qrBox.textContent =
@@ -2500,6 +2543,24 @@ function createQRNode(
   }
 
 
+  const qrUrl =
+    buildQRUrl(
+      cleanPointId
+    );
+
+
+  if (
+    !qrUrl
+  ) {
+
+    qrBox.textContent =
+      "สร้าง URL ไม่สำเร็จ";
+
+    return false;
+
+  }
+
+
   try {
 
     new QRCode(
@@ -2507,7 +2568,7 @@ function createQRNode(
       {
 
         text:
-          pointId,
+          qrUrl,
 
         width:
           QR_CODE_SIZE_PX,
@@ -2517,6 +2578,20 @@ function createQRNode(
 
         correctLevel:
           QRCode.CorrectLevel.H
+
+      }
+    );
+
+
+    console.log(
+      "GGN QR Generated:",
+      {
+
+        pointId:
+          cleanPointId,
+
+        url:
+          qrUrl
 
       }
     );
