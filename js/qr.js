@@ -1,11 +1,11 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 5.6
+// Version 5.7
 //
 // QR MANAGEMENT + PRINT
 //
-// V5.6
+// V5.7
 //
 // PRINT ARCHITECTURE
 //
@@ -23,25 +23,25 @@
 // - สร้าง QR Code
 // - แสดง QR Preview
 // - พิมพ์ QR
-// - A4 Landscape
-// - 4 × 2 = 8 QR / หน้า
-// - QR Card ขนาดจริง 57 × 82 mm
+// - A4 Portrait
+// - 3 × 3 = 9 QR / หน้า
+// - QR Card ขนาดจริง 57 × 88 mm
 //
 // --------------------------------------------------
 //
-// V5.6 IMPORTANT
+// V5.7 IMPORTANT
 //
 // PAPER
-// - A4 Landscape
-// - 297 × 210 mm
+// - A4 Portrait
+// - 210 × 297 mm
 //
 // QR CARD
-// - 57 × 82 mm
+// - 57 × 88 mm
 // - แนวตั้ง
 //
 // LAYOUT
-// - 4 columns × 2 rows
-// - 8 QR / A4
+// - 3 columns × 3 rows
+// - 9 QR / A4
 //
 // CARD CONTENT
 // - Border
@@ -77,15 +77,16 @@
 //
 // 1. อ่าน Card จาก Preview
 // 2. อ่าน QR Bitmap จาก Preview
-// 3. แปลง Card เป็น Snapshot
+// 3. Snapshot Card ทั้งก้อน
 // 4. ใช้ Snapshot เป็น IMG
-// 5. วาง IMG ใน A4
+// 5. วาง IMG ลง A4
 //
 // จะไม่:
 // - สร้าง QR ใหม่ตอนพิมพ์
 // - regenerate QR
 // - เปลี่ยน pointId
 // - เปลี่ยน QR Data
+// - ยืด Snapshot ด้วย object-fit: fill
 //
 // --------------------------------------------------
 //
@@ -200,26 +201,50 @@ const refreshQrBtn =
 // PRINT CONSTANTS
 // ==================================================
 //
-// A4 Landscape
-// 297 × 210 mm
+// A4 Portrait
+// 210 × 297 mm
 //
 // QR Card
-// 57 × 82 mm
+// 57 × 88 mm
 //
-// 4 × 2 = 8 Cards
+// 3 × 3 = 9 Cards
+//
+// Horizontal:
+//
+// 57 × 3 = 171 mm
+//
+// Remaining:
+//
+// 210 - 171 = 39 mm
+//
+// Left / Right:
+//
+// 19.5 mm
+//
+// Vertical:
+//
+// 88 × 3 = 264 mm
+//
+// Remaining:
+//
+// 297 - 264 = 33 mm
+//
+// Top / Bottom:
+//
+// 16.5 mm
 // ==================================================
 
 const QR_CARD_WIDTH_MM = 57;
 
-const QR_CARD_HEIGHT_MM = 82;
+const QR_CARD_HEIGHT_MM = 88;
 
-const A4_WIDTH_MM = 297;
+const A4_WIDTH_MM = 210;
 
-const A4_HEIGHT_MM = 210;
+const A4_HEIGHT_MM = 297;
 
-const QR_COLUMNS = 4;
+const QR_COLUMNS = 3;
 
-const QR_ROWS = 2;
+const QR_ROWS = 3;
 
 const ITEMS_PER_PAGE =
   QR_COLUMNS * QR_ROWS;
@@ -2074,7 +2099,7 @@ function createSelectedQR() {
 //
 // Card ใน Preview:
 // - แนวตั้ง
-// - 57 × 82 mm
+// - 57 × 88 mm
 // - QR
 // - Point ID
 // - Location
@@ -2126,9 +2151,10 @@ function renderQRPreview(
 
       /*
        * ------------------------------------------------
-       * กำหนดขนาด Card ใน Preview
+       * Card Preview
        *
-       * เพื่อให้ Preview มีสัดส่วนเดียวกับ Print
+       * ขนาดจริง:
+       * 57 × 88 mm
        * ------------------------------------------------
        */
 
@@ -2167,9 +2193,7 @@ function renderQRPreview(
       /*
        * QR DATA
        *
-       * QR ไม่เก็บแค่ pointId
-       *
-       * แต่ชี้ไปที่:
+       * QR ชี้ไปที่:
        *
        * index.html?pointId=...
        */
@@ -2362,11 +2386,12 @@ function clearQRPreview() {
 
 
 // ==================================================
-// PRINT STYLE V5.6
+// PRINT STYLE V5.7
 //
-// A4 Landscape
-// Card 57 × 82 mm
-// 4 × 2
+// A4 Portrait
+// Card 57 × 88 mm
+// 3 × 3
+// 9 QR / หน้า
 // ==================================================
 
 function injectQRPrintStyle() {
@@ -2508,7 +2533,7 @@ function injectQRPrintStyle() {
 
 
     /* ================================================
-       A4 LANDSCAPE PAGE
+       A4 PORTRAIT PAGE
        ================================================ */
 
     .ggn-qr-print-page {
@@ -2566,8 +2591,7 @@ function injectQRPrintStyle() {
     /* ================================================
        PRINT CARD
        
-       ขนาดจริง:
-       57 × 82 mm
+       Card container
        ================================================ */
 
     .ggn-qr-print-card {
@@ -2586,29 +2610,21 @@ function injectQRPrintStyle() {
 
       max-height: ${QR_CARD_HEIGHT_MM}mm;
 
-      border: 1px solid #cccccc;
+      margin: 0;
 
-      border-radius: 3mm;
-
-      display: flex;
-
-      flex-direction: column;
-
-      align-items: center;
-
-      justify-content: center;
-
-      text-align: center;
-
-      padding: 4mm;
+      padding: 0;
 
       overflow: hidden;
 
       background: #ffffff;
 
+      border: 0;
+
       break-inside: avoid;
 
       page-break-inside: avoid;
+
+      display: block;
 
     }
 
@@ -2617,6 +2633,10 @@ function injectQRPrintStyle() {
        SNAPSHOT IMAGE
        
        Snapshot เป็น Card ทั้งใบ
+       
+       ห้าม stretch ด้วย object-fit: fill
+       
+       ใช้ขนาดจริงตามอัตราส่วน 57:88
        ================================================ */
 
     .ggn-qr-snapshot {
@@ -2635,7 +2655,7 @@ function injectQRPrintStyle() {
 
       max-height: ${QR_CARD_HEIGHT_MM}mm;
 
-      object-fit: fill;
+      object-fit: contain;
 
       object-position: center center;
 
@@ -2656,7 +2676,7 @@ function injectQRPrintStyle() {
 
     @page {
 
-      size: A4 landscape;
+      size: A4 portrait;
 
       margin: 0;
 
@@ -2823,7 +2843,7 @@ function injectQRPrintStyle() {
       body.ggn-qr-print-active
       .ggn-qr-print-card {
 
-        display: flex !important;
+        display: block !important;
 
         visibility: visible !important;
 
@@ -2838,6 +2858,10 @@ function injectQRPrintStyle() {
         min-height: ${QR_CARD_HEIGHT_MM}mm !important;
 
         max-height: ${QR_CARD_HEIGHT_MM}mm !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
 
         overflow: hidden !important;
 
@@ -2859,15 +2883,23 @@ function injectQRPrintStyle() {
 
         min-width: ${QR_CARD_WIDTH_MM}mm !important;
 
-        max-width: ${QR_CARD_WIDTH_MM}mm !important;
-
         min-height: ${QR_CARD_HEIGHT_MM}mm !important;
+
+        max-width: ${QR_CARD_WIDTH_MM}mm !important;
 
         max-height: ${QR_CARD_HEIGHT_MM}mm !important;
 
-        object-fit: fill !important;
+        object-fit: contain !important;
 
         object-position: center center !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        border: 0 !important;
+
+        box-sizing: border-box !important;
 
       }
 
@@ -3080,11 +3112,14 @@ function waitForPreviewQR(
 // ==================================================
 // SNAPSHOT CARD
 //
-// V5.6
+// V5.7
 //
 // Snapshot Card จาก Preview
 //
 // ไม่สร้าง QR ใหม่
+//
+// Snapshot ต้องรักษา
+// อัตราส่วน Card 57:88
 // ==================================================
 
 async function snapshotQRCard(
@@ -3127,7 +3162,7 @@ async function snapshotQRCard(
   if (!qrReady) {
 
     console.warn(
-      "GGN QR V5.6: Preview QR ยังไม่พร้อม",
+      "GGN QR V5.7: Preview QR ยังไม่พร้อม",
       pointId
     );
 
@@ -3159,6 +3194,44 @@ async function snapshotQRCard(
       1,
       Math.round(rect.height)
     );
+
+
+  /*
+   * ---------------------------------------------
+   * ตรวจสอบ Aspect Ratio
+   *
+   * Card ต้องเป็น 57:88
+   * ---------------------------------------------
+   */
+
+  const expectedRatio =
+    QR_CARD_WIDTH_MM /
+    QR_CARD_HEIGHT_MM;
+
+
+  const actualRatio =
+    width /
+    height;
+
+
+  const ratioDifference =
+    Math.abs(
+      actualRatio -
+      expectedRatio
+    );
+
+
+  console.log(
+    "GGN QR V5.7 Snapshot Ratio:",
+    {
+      pointId,
+      width,
+      height,
+      expectedRatio,
+      actualRatio,
+      ratioDifference
+    }
+  );
 
 
   /*
@@ -3263,7 +3336,7 @@ async function snapshotQRCard(
     } catch (error) {
 
       console.error(
-        "GGN QR V5.6: ไม่สามารถอ่าน QR Canvas ได้",
+        "GGN QR V5.7: ไม่สามารถอ่าน QR Canvas ได้",
         error
       );
 
@@ -3278,6 +3351,8 @@ async function snapshotQRCard(
   /*
    * ---------------------------------------------
    * Clone Size
+   *
+   * ใช้ขนาดจริงจาก Preview
    * ---------------------------------------------
    */
 
@@ -3321,6 +3396,7 @@ async function snapshotQRCard(
       width="${width}"
       height="${height}"
       viewBox="0 0 ${width} ${height}"
+      preserveAspectRatio="none"
     >
 
       <foreignObject
@@ -3437,6 +3513,16 @@ async function snapshotQRCard(
       "high";
 
 
+    /*
+     * ------------------------------------------------
+     * วาด Snapshot ตามสัดส่วนเดิม
+     *
+     * ไม่ stretch แยกแกน
+     *
+     * เพราะ Canvas มีขนาดเดียวกับ Preview
+     * ------------------------------------------------
+     */
+
     context.drawImage(
       image,
       0,
@@ -3463,7 +3549,7 @@ async function snapshotQRCard(
   } catch (error) {
 
     console.error(
-      "GGN QR V5.6 Snapshot Error:",
+      "GGN QR V5.7 Snapshot Error:",
       error
     );
 
@@ -3524,10 +3610,12 @@ function loadImage(
 // ==================================================
 // BUILD PRINT CARD
 //
-// ใช้ Snapshot IMG
+// V5.7
+//
+// ใช้ Snapshot จาก Preview
 //
 // Card จริง:
-// 57 × 82 mm
+// 57 × 88 mm
 // ==================================================
 
 async function createQRPrintCardFromPreview(
@@ -3556,7 +3644,7 @@ async function createQRPrintCardFromPreview(
   if (!previewCard) {
 
     console.warn(
-      "GGN QR V5.6: ไม่พบ Preview Card",
+      "GGN QR V5.7: ไม่พบ Preview Card",
       pointId
     );
 
@@ -3585,7 +3673,13 @@ async function createQRPrintCardFromPreview(
 
 
   /*
-   * Print Card
+   * ------------------------------------------------
+   * Print Container
+   *
+   * Container มีหน้าที่จัดตำแหน่งเท่านั้น
+   *
+   * ไม่สร้างเนื้อหา Card ใหม่
+   * ------------------------------------------------
    */
 
   const printCard =
@@ -3608,6 +3702,14 @@ async function createQRPrintCardFromPreview(
 
   printCard.style.boxSizing =
     "border-box";
+
+
+  printCard.style.margin =
+    "0";
+
+
+  printCard.style.padding =
+    "0";
 
 
   /*
@@ -3644,8 +3746,17 @@ async function createQRPrintCardFromPreview(
     `${QR_CARD_HEIGHT_MM}mm`;
 
 
+  /*
+   * สำคัญ:
+   *
+   * ไม่ใช้ object-fit: fill
+   *
+   * เพราะต้องรักษาอัตราส่วน
+   * ของ Snapshot
+   */
+
   image.style.objectFit =
-    "fill";
+    "contain";
 
 
   image.style.objectPosition =
@@ -3685,11 +3796,14 @@ async function createQRPrintCardFromPreview(
 // ==================================================
 // BUILD PRINT AREA
 //
-// 4 × 2
-// 8 QR / A4 Landscape
+// 3 × 3
+// 9 QR / A4 Portrait
 //
 // Card:
-// 57 × 82 mm
+// 57 × 88 mm
+//
+// A4:
+// 210 × 297 mm
 // ==================================================
 
 async function buildQRPrintArea(
@@ -3830,7 +3944,7 @@ async function buildQRPrintArea(
 
 
   console.log(
-    "GGN QR V5.6 Print Area:",
+    "GGN QR V5.7 Print Area:",
     {
       requested:
         locations.length,
@@ -3845,13 +3959,19 @@ async function buildQRPrintArea(
         ITEMS_PER_PAGE,
 
       layout:
-        "A4 Landscape / 4 × 2",
+        "A4 Portrait / 3 × 3",
 
       paper:
         `${A4_WIDTH_MM} × ${A4_HEIGHT_MM} mm`,
 
       card:
         `${QR_CARD_WIDTH_MM} × ${QR_CARD_HEIGHT_MM} mm`,
+
+      marginHorizontal:
+        "19.5 mm",
+
+      marginVertical:
+        "16.5 mm",
 
       source:
         "Preview Card Snapshot",
@@ -4167,7 +4287,7 @@ async function startQRPrint(
 
 
     console.log(
-      "GGN QR V5.6 Print Check:",
+      "GGN QR V5.7 Print Check:",
       {
         expected:
           locations.length,
@@ -4179,13 +4299,19 @@ async function startQRPrint(
           renderedImages.length,
 
         paper:
-          "A4 Landscape",
+          "A4 Portrait",
+
+        paperSize:
+          "210 × 297 mm",
 
         cardSize:
-          "57 × 82 mm",
+          "57 × 88 mm",
 
         layout:
-          "4 × 2 / 8 QR"
+          "3 × 3 / 9 QR",
+
+        margins:
+          "19.5 mm horizontal / 16.5 mm vertical"
       }
     );
 
@@ -4229,7 +4355,7 @@ async function startQRPrint(
   } catch (error) {
 
     console.error(
-      "GGN QR V5.6 Print Error:",
+      "GGN QR V5.7 Print Error:",
       error
     );
 
@@ -4331,7 +4457,7 @@ function printSelectedQR() {
 
   startQRPrint(
     selectedLocations,
-    `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด — 8 QR / A4 แนวนอน`
+    `🖨️ เตรียมพิมพ์ ${selectedLocations.length} จุด — 9 QR / A4 แนวตั้ง`
   );
 
 }
@@ -4383,7 +4509,8 @@ function printAllQR() {
    * ------------------------------------------------
    * Print All ต้องมี Preview ครบทุกจุด
    *
-   * ดังนั้นสร้าง Preview ใหม่จาก Active ทั้งหมด
+   * ดังนั้นสร้าง Preview ใหม่
+   * จาก Active ทั้งหมด
    * ก่อนเริ่มพิมพ์
    * ------------------------------------------------
    */
@@ -4416,7 +4543,7 @@ function printAllQR() {
 
   startQRPrint(
     activeLocations,
-    `🖨️ เตรียมพิมพ์จุด Active ทั้งหมด ${activeLocations.length} จุด — 8 QR / A4 แนวนอน`
+    `🖨️ เตรียมพิมพ์จุด Active ทั้งหมด ${activeLocations.length} จุด — 9 QR / A4 แนวตั้ง`
   );
 
 }
