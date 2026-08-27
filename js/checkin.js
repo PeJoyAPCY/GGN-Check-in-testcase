@@ -83,35 +83,31 @@ async function initializeCheckin() {
   // QR LOCATION VERIFICATION
   // ==================================================
 
-  try {
-
-    if (
-      typeof POINT_ID !== "undefined" &&
-      POINT_ID
-    ) {
-
-      status.textContent =
-        "⏳ กำลังตรวจสอบจุดตรวจ...";
-
+      try {
 
       if (
-        typeof loadLocationByPoint === "function"
+        typeof POINT_ID !== "undefined" &&
+        POINT_ID
       ) {
 
-        await loadLocationByPoint();
+        if (
+          typeof loadLocationByPoint === "function"
+        ) {
+
+          await loadLocationByPoint();
+
+        }
 
       }
 
+    } catch (error) {
+
+      console.error(
+        "GGN Check-in Point Verification Error:",
+        error
+      );
+
     }
-
-  } catch (error) {
-
-    console.error(
-      "GGN Check-in Point Verification Error:",
-      error
-    );
-
-  }
 
 
   // ==================================================
