@@ -1,113 +1,36 @@
 // ==================================================
 // GGN CHECK-IN
 // QR.JS
-// Version 5.9
-//
-// QR MANAGEMENT + PRINT
-//
-// V5.9
-//
-// PRINT ARCHITECTURE
-//
-// --------------------------------------------------
+// Version 3.1
 //
 // หน้าที่:
 // - QR Management
 // - โหลดรายการจุดตรวจจาก API
-// - Search
-// - Filter Zone
-// - Filter Active / Inactive
-// - Filter QR Status
-// - Pagination
+// - แสดงรายการจุดตรวจ
 // - เลือกจุด
-// - สร้าง QR Code
+// - เลือกทั้งหมด / ยกเลิกทั้งหมด
+// - สร้าง QR Code จาก pointId
 // - แสดง QR Preview
-// - พิมพ์ QR
+// - พิมพ์ QR Card จริง
 // - A4 Portrait
-// - 3 × 3 = 9 QR / หน้า
-// - QR Card ขนาดจริง 57 × 88 mm
+// - 3 คอลัมน์ × 3 แถว
+// - Card ขนาด 57 × 88 mm
+// - QR Code ขนาดใหญ่
 //
-// --------------------------------------------------
+// STRUCTURE:
+// - zone     = เขต
+// - location = จุดตรวจ
+// - pointId  = ข้อมูลภายใน QR
 //
-// V5.9 IMPORTANT
-//
-// PRINT
-//
-// Preview = ต้นฉบับจริง
-//
-// เมื่อกด "สร้าง QR"
-// จะสร้าง Card ใน #qrPreviewGrid
-//
-// เมื่อกด "พิมพ์"
-//
-// 1. อ่าน Card จาก Preview
-// 2. ใช้ QR ที่อยู่ใน Preview เดิม
-// 3. สร้าง Snapshot ของ Card ทั้งใบ
-// 4. ใช้ Snapshot เป็น IMG
-// 5. วาง IMG ลง A4
-// 6. พิมพ์
-//
-// IMPORTANT
-//
-// - ไม่สร้าง QR ใหม่ตอนพิมพ์
-// - ไม่ regenerate QR
-// - ไม่เปลี่ยน pointId
-// - ไม่เปลี่ยน QR Data
-// - ไม่อ่าน QR Data ใหม่จาก Backend
-// - ไม่ใช้ originalCanvas.toDataURL()
-// - ป้องกันปัญหา Tainted Canvas จาก V5.8
-//
-// --------------------------------------------------
-//
-// PAPER
-//
-// - A4 Portrait
-// - 210 × 297 mm
-//
-// QR CARD
-//
-// - 57 × 88 mm
-// - แนวตั้ง
-//
-// LAYOUT
-//
-// - 3 columns × 3 rows
-// - 9 QR / A4
-//
-// CARD CONTENT
-//
-// - Border
-// - QR Code
-// - Point ID
-// - Location
-// - Zone
-//
-// --------------------------------------------------
-//
-// QR LINK
-//
-// QR จะเปิด:
-//
-// index.html?pointId=POINT_ID
-//
-// ตัวอย่าง:
-//
-// index.html?pointId=ZONE1-001
-//
-// โดยใช้ URL ของระบบปัจจุบันเป็น Base URL
-//
-// --------------------------------------------------
-//
-// IMPORTANT
-//
+// IMPORTANT:
+// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
 // - ไม่แก้ Backend
 // - ไม่แก้ API
-// - ไม่แก้ Database
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-// - API Action = qrManagement
-//
+// - QR Management ทำงานเฉพาะ qr.html
+// - QR Data = pointId
+// - PRINT ใช้ Preview Card ตัวจริง
+// - ไม่ใช้ html2canvas
 // ==================================================
-
 
 
 // ==================================================
@@ -115,7 +38,6 @@
 // ==================================================
 
 if (
-  typeof currentPage === "undefined" ||
   currentPage !== "qr.html"
 ) {
 
@@ -126,6 +48,22 @@ if (
 } else {
 
 
+// ==================================================
+// CONSTANTS
+// ==================================================
+
+const QR_CARD_WIDTH_MM = 57;
+const QR_CARD_HEIGHT_MM = 88;
+
+const QR_PAGE_COLUMNS = 3;
+const QR_PAGE_ROWS = 3;
+
+const QR_CARDS_PER_PAGE =
+  QR_PAGE_COLUMNS *
+  QR_PAGE_ROWS;
+
+const QR_CODE_SIZE_PX = 180;
+
 
 // ==================================================
 // ELEMENTS
@@ -134,332 +72,428 @@ if (
 const qrStatus =
   getElement("qrStatus");
 
-const qrPageTotal =
-  getElement("qrPageTotal");
 
-const qrSearchInput =
-  getElement("qrSearchInput");
+const qrLocationList =
+  getElement("qrLocationList");
 
-const qrZoneFilter =
-  getElement("qrZoneFilter");
-
-const qrStatusFilter =
-  getElement("qrStatusFilter");
-
-const qrExistFilter =
-  getElement("qrExistFilter");
-
-const clearQrFilterBtn =
-  getElement("clearQrFilterBtn");
 
 const qrTotalCount =
   getElement("qrTotalCount");
 
+
 const qrActiveCount =
   getElement("qrActiveCount");
 
-const qrHasQrCount =
-  getElement("qrHasQrCount");
 
 const qrSelectedCount =
   getElement("qrSelectedCount");
 
-const selectAllQrCheckbox =
-  getElement("selectAllQrCheckbox");
-
-const qrPageSize =
-  getElement("qrPageSize");
-
-const qrLocationTableBody =
-  getElement("qrLocationTableBody");
-
-const qrPaginationInfo =
-  getElement("qrPaginationInfo");
-
-const qrPagination =
-  getElement("qrPagination");
-
-const clearAllQrBtn =
-  getElement("clearAllQrBtn");
-
-const createQrBtn =
-  getElement("createQrBtn");
-
-const printSelectedQrBtn =
-  getElement("printSelectedQrBtn");
-
-const printAllQrBtn =
-  getElement("printAllQrBtn");
-
-const qrPreviewSection =
-  getElement("qrPreviewSection");
-
-const qrPreviewCount =
-  getElement("qrPreviewCount");
 
 const qrPreviewGrid =
   getElement("qrPreviewGrid");
 
-const qrPrintArea =
-  getElement("qrPrintArea");
+
+const qrPreviewCount =
+  getElement("qrPreviewCount");
+
+
+const selectAllQrBtn =
+  getElement("selectAllQrBtn");
+
+
+const clearAllQrBtn =
+  getElement("clearAllQrBtn");
+
+
+const createQrBtn =
+  getElement("createQrBtn");
+
+
+const printSelectedQrBtn =
+  getElement("printSelectedQrBtn");
+
+
+const printAllQrBtn =
+  getElement("printAllQrBtn");
+
 
 const refreshQrBtn =
   getElement("refreshQrBtn");
-
-
-
-// ==================================================
-// PRINT CONSTANTS
-// ==================================================
-//
-// A4 Portrait
-// 210 × 297 mm
-//
-// QR Card
-// 57 × 88 mm
-//
-// 3 × 3 = 9 Cards
-//
-// Horizontal:
-//
-// 57 × 3 = 171 mm
-//
-// Remaining:
-//
-// 210 - 171 = 39 mm
-//
-// Left / Right:
-//
-// 19.5 mm
-//
-// Vertical:
-//
-// 88 × 3 = 264 mm
-//
-// Remaining:
-//
-// 297 - 264 = 33 mm
-//
-// Top / Bottom:
-//
-// 16.5 mm
-// ==================================================
-
-const QR_CARD_WIDTH_MM = 57;
-
-const QR_CARD_HEIGHT_MM = 88;
-
-const A4_WIDTH_MM = 210;
-
-const A4_HEIGHT_MM = 297;
-
-const QR_COLUMNS = 3;
-
-const QR_ROWS = 3;
-
-const ITEMS_PER_PAGE =
-  QR_COLUMNS * QR_ROWS;
-
-
-
-// ==================================================
-// SNAPSHOT CONSTANTS
-// ==================================================
-//
-// ใช้ Pixel เป็นฐานสำหรับ Snapshot
-//
-// Card Preview ที่พบจากการทดสอบ:
-//
-// 57 mm × 88 mm
-//
-// Browser render โดยประมาณ:
-//
-// 215 × 333 px
-//
-// V5.9 จะ snapshot จาก DOM Card
-// โดยไม่แตะ original QR canvas โดยตรง
-//
-// ==================================================
-
-const QR_SNAPSHOT_SCALE = 2;
-
-
-
-// ==================================================
-// QR LINK BASE
-// ==================================================
-//
-// QR ต้องเปิด index.html
-// และส่ง pointId ไปด้วย
-//
-// ตัวอย่าง:
-//
-// https://domain.com/index.html?pointId=ABC001
-//
-// ใช้ path ของระบบปัจจุบัน
-// ไม่ hard-code domain
-// ==================================================
-
-function getQRBaseURL() {
-
-  try {
-
-    const currentURL =
-      new URL(
-        window.location.href
-      );
-
-
-    currentURL.pathname =
-      currentURL.pathname.replace(
-        /\/[^/]*$/,
-        "/index.html"
-      );
-
-
-    currentURL.search = "";
-
-    currentURL.hash = "";
-
-
-    return currentURL.toString();
-
-  } catch (error) {
-
-    console.warn(
-      "GGN QR: ไม่สามารถสร้าง Base URL ได้",
-      error
-    );
-
-
-    return "index.html";
-  }
-}
-
-
-
-// ==================================================
-// BUILD QR URL
-// ==================================================
-
-function buildQRUrl(
-  pointId
-) {
-
-  const cleanPointId =
-    String(
-      pointId || ""
-    ).trim();
-
-
-  if (!cleanPointId) {
-    return "";
-  }
-
-
-  try {
-
-    const baseURL =
-      getQRBaseURL();
-
-
-    const url =
-      new URL(
-        baseURL,
-        window.location.href
-      );
-
-
-    url.searchParams.set(
-      "pointId",
-      cleanPointId
-    );
-
-
-    return url.toString();
-
-  } catch (error) {
-
-    console.warn(
-      "GGN QR: สร้าง QR URL ไม่สำเร็จ",
-      error
-    );
-
-
-    return (
-      "index.html?pointId=" +
-      encodeURIComponent(
-        cleanPointId
-      )
-    );
-  }
-}
-
 
 
 // ==================================================
 // STATE
 // ==================================================
 
-let qrLocations = [];
+let qrLocations =
+  [];
 
 let selectedPointIds =
   new Set();
-
-
-
-// ==================================================
-// FILTER STATE
-// ==================================================
-
-let qrSearchKeyword = "";
-
-let qrZoneValue = "";
-
-let qrStatusValue = "";
-
-let qrExistValue = "";
-
-
-
-// ==================================================
-// PAGINATION STATE
-// ==================================================
-
-let qrCurrentPage = 1;
-
-let qrCurrentPageSize = 25;
-
-
-
-// ==================================================
-// EVENT GUARD
-// ==================================================
-
-let qrEventsInitialized = false;
-
 
 
 // ==================================================
 // PRINT STATE
 // ==================================================
 
-let qrPrintStyleInjected = false;
+let qrPrintState = {
 
-let qrIsPrinting = false;
+  active:
+    false,
 
+  originalParent:
+    null,
+
+  originalNextSibling:
+    null,
+
+  printRoot:
+    null
+
+};
 
 
 // ==================================================
-// PREVIEW SNAPSHOT CACHE
+// PRINT STYLE
 //
-// key = pointId
-// value = data URL
+// สร้าง CSS สำหรับการพิมพ์โดยตรง
+// ไม่พึ่ง html2canvas
 // ==================================================
 
-const qrSnapshotCache =
-  new Map();
+function injectQRPrintStyles() {
 
+  if (
+    document.getElementById(
+      "ggnQrPrintStyles"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const style =
+    document.createElement(
+      "style"
+    );
+
+
+  style.id =
+    "ggnQrPrintStyles";
+
+
+  style.textContent = `
+
+    /* =========================================
+       GGN QR PRINT
+       A4 Portrait
+       3 × 3
+       Card 57 × 88 mm
+       ========================================= */
+
+    @page {
+
+      size: A4 portrait;
+
+      margin: 0;
+
+    }
+
+
+    @media print {
+
+      html,
+      body {
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        width: 210mm !important;
+
+        min-width: 210mm !important;
+
+        background: #fff !important;
+
+      }
+
+
+      body * {
+
+        visibility: hidden !important;
+
+      }
+
+
+      #ggnQrPrintRoot,
+      #ggnQrPrintRoot * {
+
+        visibility: visible !important;
+
+      }
+
+
+      #ggnQrPrintRoot {
+
+        position: absolute !important;
+
+        left: 0 !important;
+
+        top: 0 !important;
+
+        width: 210mm !important;
+
+        height: 297mm !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        background: #fff !important;
+
+        overflow: hidden !important;
+
+      }
+
+
+      .ggn-qr-print-page {
+
+        width: 210mm !important;
+
+        height: 297mm !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        display: grid !important;
+
+        grid-template-columns:
+          57mm 57mm 57mm !important;
+
+        grid-template-rows:
+          88mm 88mm 88mm !important;
+
+        column-gap: 0 !important;
+
+        row-gap: 0 !important;
+
+        justify-content: center !important;
+
+        align-content: center !important;
+
+        box-sizing: border-box !important;
+
+        page-break-after: always !important;
+
+        break-after: page !important;
+
+      }
+
+
+      .ggn-qr-print-page:last-child {
+
+        page-break-after: auto !important;
+
+        break-after: auto !important;
+
+      }
+
+
+      .qr-preview-card {
+
+        width: 57mm !important;
+
+        height: 88mm !important;
+
+        min-width: 57mm !important;
+
+        max-width: 57mm !important;
+
+        min-height: 88mm !important;
+
+        max-height: 88mm !important;
+
+        box-sizing: border-box !important;
+
+        margin: 0 !important;
+
+        padding: 3mm !important;
+
+        overflow: hidden !important;
+
+        display: flex !important;
+
+        flex-direction: column !important;
+
+        align-items: center !important;
+
+        justify-content: flex-start !important;
+
+        background: #fff !important;
+
+        border: 0.35mm solid #000 !important;
+
+        border-radius: 0 !important;
+
+        box-shadow: none !important;
+
+        break-inside: avoid !important;
+
+        page-break-inside: avoid !important;
+
+      }
+
+
+      .qr-preview-code {
+
+        width: 46mm !important;
+
+        height: 46mm !important;
+
+        min-width: 46mm !important;
+
+        min-height: 46mm !important;
+
+        max-width: 46mm !important;
+
+        max-height: 46mm !important;
+
+        margin: 0 auto 2mm auto !important;
+
+        padding: 0 !important;
+
+        display: flex !important;
+
+        align-items: center !important;
+
+        justify-content: center !important;
+
+        overflow: hidden !important;
+
+      }
+
+
+      .qr-preview-code canvas,
+      .qr-preview-code img {
+
+        display: block !important;
+
+        width: 46mm !important;
+
+        height: 46mm !important;
+
+        max-width: 46mm !important;
+
+        max-height: 46mm !important;
+
+        object-fit: contain !important;
+
+        image-rendering: auto !important;
+
+      }
+
+
+      .qr-preview-point-id {
+
+        width: 100% !important;
+
+        margin: 0 0 1.5mm 0 !important;
+
+        padding: 0 !important;
+
+        text-align: center !important;
+
+        font-size: 5mm !important;
+
+        line-height: 1.05 !important;
+
+        font-weight: 700 !important;
+
+        color: #000 !important;
+
+        white-space: nowrap !important;
+
+        overflow: hidden !important;
+
+        text-overflow: ellipsis !important;
+
+      }
+
+
+      .qr-preview-location {
+
+        width: 100% !important;
+
+        margin: 0 0 1.5mm 0 !important;
+
+        padding: 0 !important;
+
+        text-align: center !important;
+
+        font-size: 3.4mm !important;
+
+        line-height: 1.2 !important;
+
+        font-weight: 600 !important;
+
+        color: #000 !important;
+
+        overflow: hidden !important;
+
+        display: -webkit-box !important;
+
+        -webkit-line-clamp: 2 !important;
+
+        -webkit-box-orient: vertical !important;
+
+      }
+
+
+      .qr-preview-zone {
+
+        width: 100% !important;
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        text-align: center !important;
+
+        font-size: 3.3mm !important;
+
+        line-height: 1.15 !important;
+
+        font-weight: 600 !important;
+
+        color: #000 !important;
+
+        white-space: nowrap !important;
+
+        overflow: hidden !important;
+
+        text-overflow: ellipsis !important;
+
+      }
+
+
+      .qr-empty-state {
+
+        display: none !important;
+
+      }
+
+    }
+
+  `;
+
+
+  document.head.appendChild(
+    style
+  );
+
+}
 
 
 // ==================================================
@@ -468,13 +502,10 @@ const qrSnapshotCache =
 
 async function loadQRManagement() {
 
-  if (!qrLocationTableBody) {
-
-    console.warn(
-      "GGN QR: ไม่พบ #qrLocationTableBody"
-    );
+  if (!qrLocationList) {
 
     return;
+
   }
 
 
@@ -483,49 +514,15 @@ async function loadQRManagement() {
   );
 
 
-  showQRTableLoading();
+  showQRLoading();
 
 
   try {
 
-    if (
-      typeof GOOGLE_APPS_SCRIPT_URL ===
-        "undefined" ||
-      !GOOGLE_APPS_SCRIPT_URL
-    ) {
-
-      throw new Error(
-        "ไม่พบ GOOGLE_APPS_SCRIPT_URL"
-      );
-    }
-
-
-    const url =
-      `${GOOGLE_APPS_SCRIPT_URL}?action=qrManagement`;
-
-
-    console.log(
-      "GGN QR: Request",
-      url
-    );
-
-
     const response =
       await fetch(
-        url,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
+        `${GOOGLE_APPS_SCRIPT_URL}?action=qrManagement`
       );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `HTTP ${response.status}`
-      );
-    }
 
 
     const result =
@@ -547,8 +544,9 @@ async function loadQRManagement() {
         result &&
         result.message
           ? result.message
-          : "Backend ไม่ส่งข้อมูลสำเร็จ"
+          : "ไม่สามารถโหลด QR Management ได้"
       );
+
     }
 
 
@@ -564,36 +562,25 @@ async function loadQRManagement() {
         : [];
 
 
-    qrLocations =
-      qrLocations.map(
-        normalizeLocation
-      );
-
-
     selectedPointIds =
       new Set();
 
 
-    qrSnapshotCache.clear();
+    renderQRLocations(
+      qrLocations
+    );
 
-
-    qrCurrentPage = 1;
-
-
-    buildZoneFilter();
 
     updateQRSummary();
 
-    renderQRTable();
 
     clearQRPreview();
-
-    clearQRPrintArea();
 
 
     setQRStatus(
       `✅ โหลดข้อมูลสำเร็จ ${qrLocations.length} จุด`
     );
+
 
   } catch (error) {
 
@@ -603,670 +590,234 @@ async function loadQRManagement() {
     );
 
 
-    qrLocations = [];
+    qrLocations =
+      [];
+
 
     selectedPointIds =
       new Set();
 
-    qrSnapshotCache.clear();
+
+    renderQRLocations(
+      []
+    );
 
 
     updateQRSummary();
 
-    renderQRTable();
 
     clearQRPreview();
-
-    clearQRPrintArea();
 
 
     setQRStatus(
       "❌ โหลดข้อมูลไม่สำเร็จ" +
       (
-        error &&
         error.message
           ? `: ${error.message}`
           : ""
       )
     );
+
   }
+
 }
 
 
+// ==================================================
+// SHOW LOADING
+// ==================================================
+
+function showQRLoading() {
+
+  if (!qrLocationList) {
+
+    return;
+
+  }
+
+
+  qrLocationList.innerHTML =
+
+    `<div class="qr-empty-state">
+      ⏳ กำลังโหลดรายการจุดตรวจ...
+    </div>`;
+
+}
+
 
 // ==================================================
-// NORMALIZE LOCATION
+// RENDER LOCATIONS
 // ==================================================
 
-function normalizeLocation(
-  location
+function renderQRLocations(
+  locations
 ) {
 
-  if (
-    !location ||
-    typeof location !== "object"
-  ) {
+  if (!qrLocationList) {
 
-    return {};
-  }
-
-
-  const normalized = {
-    ...location
-  };
-
-
-  normalized.pointId =
-    String(
-      location.pointId || ""
-    ).trim();
-
-
-  normalized.zone =
-    String(
-      location.zone || ""
-    ).trim();
-
-
-  normalized.location =
-    String(
-      location.location || ""
-    ).trim();
-
-
-  normalized.active =
-    normalizeBoolean(
-      location.active
-    );
-
-
-  return normalized;
-}
-
-
-
-// ==================================================
-// NORMALIZE BOOLEAN
-// ==================================================
-
-function normalizeBoolean(
-  value
-) {
-
-  if (value === true) {
-    return true;
-  }
-
-
-  if (
-    value === false ||
-    value === null ||
-    typeof value === "undefined"
-  ) {
-
-    return false;
-  }
-
-
-  if (
-    typeof value === "string"
-  ) {
-
-    const text =
-      value
-        .trim()
-        .toLowerCase();
-
-
-    return (
-      text === "true" ||
-      text === "1" ||
-      text === "yes" ||
-      text === "active" ||
-      text === "ใช้งาน" ||
-      text === "เปิด"
-    );
-  }
-
-
-  if (
-    typeof value === "number"
-  ) {
-
-    return value === 1;
-  }
-
-
-  return false;
-}
-
-
-
-// ==================================================
-// SHOW TABLE LOADING
-// ==================================================
-
-function showQRTableLoading() {
-
-  if (!qrLocationTableBody) {
     return;
+
   }
 
 
-  qrLocationTableBody.innerHTML =
-    `
-    <tr>
-      <td
-        colspan="7"
-        class="qr-table-loading"
-      >
-        ⏳ กำลังโหลดรายการจุดตรวจ...
-      </td>
-    </tr>
-    `;
-}
-
-
-
-// ==================================================
-// BUILD ZONE FILTER
-// ==================================================
-
-function buildZoneFilter() {
-
-  if (!qrZoneFilter) {
-    return;
-  }
-
-
-  const currentValue =
-    qrZoneValue;
-
-
-  qrZoneFilter.innerHTML =
-    `
-    <option value="">
-      ทุกเขต
-    </option>
-    `;
-
-
-  const zones =
-    [
-      ...new Set(
-        qrLocations
-          .map(
-            location =>
-              String(
-                location.zone || ""
-              ).trim()
-          )
-          .filter(
-            zone => zone !== ""
-          )
-      )
-    ];
-
-
-  zones.sort(
-    function(a, b) {
-
-      return a.localeCompare(
-        b,
-        "th"
-      );
-    }
-  );
-
-
-  zones.forEach(
-    function(zone) {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value = zone;
-
-      option.textContent = zone;
-
-
-      qrZoneFilter.appendChild(
-        option
-      );
-    }
-  );
-
-
-  const exists =
-    Array.from(
-      qrZoneFilter.options
-    ).some(
-      option =>
-        option.value ===
-        currentValue
-    );
-
-
-  qrZoneFilter.value =
-    exists
-      ? currentValue
-      : "";
-
-
-  qrZoneValue =
-    qrZoneFilter.value;
-}
-
-
-
-// ==================================================
-// FILTER
-// ==================================================
-
-function getFilteredLocations() {
-
-  let locations =
-    [...qrLocations];
-
-
-  const keyword =
-    String(
-      qrSearchKeyword || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (keyword) {
-
-    locations =
-      locations.filter(
-        function(location) {
-
-          const pointId =
-            String(
-              location.pointId || ""
-            ).toLowerCase();
-
-
-          const zone =
-            String(
-              location.zone || ""
-            ).toLowerCase();
-
-
-          const locationName =
-            String(
-              location.location || ""
-            ).toLowerCase();
-
-
-          return (
-            pointId.includes(keyword) ||
-            zone.includes(keyword) ||
-            locationName.includes(keyword)
-          );
-        }
-      );
-  }
-
-
-  if (qrZoneValue) {
-
-    locations =
-      locations.filter(
-        function(location) {
-
-          return (
-            String(
-              location.zone || ""
-            ).trim() ===
-            qrZoneValue
-          );
-        }
-      );
-  }
-
-
-  if (qrStatusValue === "active") {
-
-    locations =
-      locations.filter(
-        location =>
-          location.active === true
-      );
-  }
-
-
-  if (qrStatusValue === "inactive") {
-
-    locations =
-      locations.filter(
-        location =>
-          location.active !== true
-      );
-  }
-
-
-  if (qrExistValue === "yes") {
-
-    locations =
-      locations.filter(
-        location =>
-          locationHasQR(location)
-      );
-  }
-
-
-  if (qrExistValue === "no") {
-
-    locations =
-      locations.filter(
-        location =>
-          !locationHasQR(location)
-      );
-  }
-
-
-  return locations;
-}
-
-
-
-// ==================================================
-// DETECT QR STATUS
-// ==================================================
-
-function locationHasQR(
-  location
-) {
-
-  if (
-    !location ||
-    typeof location !== "object"
-  ) {
-
-    return false;
-  }
-
-
-  const values = [
-
-    location.hasQr,
-
-    location.hasQR,
-
-    location.qr,
-
-    location.qrCode,
-
-    location.qrUrl,
-
-    location.qrData,
-
-    location.qrGenerated
-
-  ];
-
-
-  return values.some(
-    function(value) {
-
-      if (value === true) {
-        return true;
-      }
-
-
-      if (
-        typeof value === "string"
-      ) {
-
-        return (
-          value.trim() !== ""
-        );
-      }
-
-
-      return false;
-    }
-  );
-}
-
-
-
-// ==================================================
-// CURRENT PAGE
-// ==================================================
-
-function getCurrentPageLocations() {
-
-  const filtered =
-    getFilteredLocations();
-
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filtered.length /
-        qrCurrentPageSize
-      )
-    );
-
-
-  if (
-    qrCurrentPage >
-    totalPages
-  ) {
-
-    qrCurrentPage =
-      totalPages;
-  }
-
-
-  const start =
-    (
-      qrCurrentPage - 1
-    ) *
-    qrCurrentPageSize;
-
-
-  return filtered.slice(
-    start,
-    start + qrCurrentPageSize
-  );
-}
-
-
-
-// ==================================================
-// RENDER TABLE
-// ==================================================
-
-function renderQRTable() {
-
-  if (!qrLocationTableBody) {
-    return;
-  }
-
-
-  const filtered =
-    getFilteredLocations();
-
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filtered.length /
-        qrCurrentPageSize
-      )
-    );
-
-
-  if (
-    qrCurrentPage >
-    totalPages
-  ) {
-
-    qrCurrentPage =
-      totalPages;
-  }
-
-
-  const pageLocations =
-    getCurrentPageLocations();
-
-
-  qrLocationTableBody.innerHTML =
+  qrLocationList.innerHTML =
     "";
 
 
   if (
-    pageLocations.length === 0
+    !Array.isArray(
+      locations
+    ) ||
+    locations.length === 0
   ) {
 
-    const row =
-      document.createElement(
-        "tr"
-      );
+    qrLocationList.innerHTML =
 
-
-    const cell =
-      document.createElement(
-        "td"
-      );
-
-
-    cell.colSpan = 7;
-
-    cell.className =
-      "qr-table-loading";
-
-
-    cell.textContent =
-      filtered.length === 0
-        ? "⚪ ไม่พบจุดตรวจตามเงื่อนไขที่ค้นหา"
-        : "⚪ ไม่มีรายการในหน้านี้";
-
-
-    row.appendChild(cell);
-
-    qrLocationTableBody.appendChild(
-      row
-    );
-
-
-    updatePagination(
-      filtered.length
-    );
-
-
-    updatePageSelectAll();
-
+      `<div class="qr-empty-state">
+        ⚪ ไม่พบข้อมูลจุดตรวจ
+      </div>`;
 
     return;
+
   }
 
 
-  pageLocations.forEach(
-    function(location) {
+  const listHeader =
+    document.createElement(
+      "div"
+    );
 
-      qrLocationTableBody.appendChild(
-        createLocationRow(location)
+
+  listHeader.className =
+    "qr-list-header";
+
+
+  const headerTitle =
+    document.createElement(
+      "h3"
+    );
+
+
+  headerTitle.textContent =
+    "📍 รายการจุดตรวจ";
+
+
+  const headerCount =
+    document.createElement(
+      "span"
+    );
+
+
+  headerCount.className =
+    "qr-list-count";
+
+
+  headerCount.textContent =
+    `${locations.length} จุด`;
+
+
+  listHeader.appendChild(
+    headerTitle
+  );
+
+
+  listHeader.appendChild(
+    headerCount
+  );
+
+
+  qrLocationList.appendChild(
+    listHeader
+  );
+
+
+  const grid =
+    document.createElement(
+      "div"
+    );
+
+
+  grid.className =
+    "qr-location-grid";
+
+
+  locations.forEach(
+    location => {
+
+      grid.appendChild(
+        createQRLocationCard(
+          location
+        )
       );
+
     }
   );
 
 
-  updatePagination(
-    filtered.length
+  qrLocationList.appendChild(
+    grid
   );
 
-
-  updatePageSelectAll();
-
-  updateQRSummary();
 }
 
 
-
 // ==================================================
-// CREATE LOCATION ROW
+// CREATE LOCATION CARD
 // ==================================================
 
-function createLocationRow(
+function createQRLocationCard(
   location
 ) {
 
-  const row =
+  const card =
     document.createElement(
-      "tr"
+      "article"
     );
 
 
-  const pointId =
-    String(
-      location.pointId || ""
-    ).trim();
-
-
-  const zone =
-    String(
-      location.zone || ""
-    ).trim();
-
-
-  const locationName =
-    String(
-      location.location || ""
-    ).trim();
+  card.className =
+    "qr-location-card";
 
 
   const isActive =
     location.active === true;
 
 
-  const hasQR =
-    locationHasQR(location);
+  const pointId =
+    String(
+      location.pointId ||
+      ""
+    ).trim();
 
 
-  const isSelected =
-    selectedPointIds.has(pointId);
+  card.classList.add(
+    isActive
+      ? "qr-location-active"
+      : "qr-location-inactive"
+  );
 
 
-  if (isSelected) {
+  if (
+    selectedPointIds.has(
+      pointId
+    )
+  ) {
 
-    row.classList.add(
-      "qr-row-selected"
+    card.classList.add(
+      "qr-location-selected"
     );
+
   }
 
 
-  if (!isActive) {
-
-    row.classList.add(
-      "qr-row-inactive"
-    );
-  }
-
-
-
-  // ==================================================
-  // CHECKBOX
-  // ==================================================
-
-  const checkCell =
+  const checkboxWrapper =
     document.createElement(
-      "td"
+      "label"
     );
 
 
-  checkCell.className =
-    "qr-col-check";
+  checkboxWrapper.className =
+    "qr-checkbox-wrapper";
 
 
   const checkbox =
@@ -1288,11 +839,14 @@ function createLocationRow(
 
 
   checkbox.checked =
-    isSelected;
+    selectedPointIds.has(
+      pointId
+    );
 
 
   checkbox.disabled =
-    !isActive || !pointId;
+    !isActive ||
+    !pointId;
 
 
   checkbox.addEventListener(
@@ -1306,282 +860,152 @@ function createLocationRow(
         location,
         checkbox.checked
       );
+
     }
   );
 
 
-  checkCell.appendChild(
+  checkboxWrapper.appendChild(
     checkbox
   );
 
 
-  row.appendChild(
-    checkCell
+  card.appendChild(
+    checkboxWrapper
   );
 
 
-
-  // ==================================================
-  // POINT
-  // ==================================================
-
-  const pointCell =
+  const header =
     document.createElement(
-      "td"
+      "div"
     );
 
 
-  pointCell.className =
-    "qr-col-point";
+  header.className =
+    "qr-location-header";
 
 
-  const pointStrong =
+  const pointIdElement =
     document.createElement(
       "strong"
     );
 
 
-  pointStrong.textContent =
-    pointId || "-";
+  pointIdElement.className =
+    "qr-location-point-id";
 
 
-  pointCell.appendChild(
-    pointStrong
-  );
+  pointIdElement.textContent =
+    pointId ||
+    "-";
 
 
-  row.appendChild(
-    pointCell
-  );
-
-
-
-  // ==================================================
-  // ZONE
-  // ==================================================
-
-  const zoneCell =
-    document.createElement(
-      "td"
-    );
-
-
-  zoneCell.className =
-    "qr-col-zone";
-
-
-  zoneCell.textContent =
-    zone || "-";
-
-
-  row.appendChild(
-    zoneCell
-  );
-
-
-
-  // ==================================================
-  // LOCATION
-  // ==================================================
-
-  const locationCell =
-    document.createElement(
-      "td"
-    );
-
-
-  locationCell.className =
-    "qr-col-location";
-
-
-  locationCell.textContent =
-    locationName || "-";
-
-
-  row.appendChild(
-    locationCell
-  );
-
-
-
-  // ==================================================
-  // ACTIVE STATUS
-  // ==================================================
-
-  const statusCell =
-    document.createElement(
-      "td"
-    );
-
-
-  statusCell.className =
-    "qr-col-status";
-
-
-  const statusBadge =
+  const activeStatus =
     document.createElement(
       "span"
     );
 
 
-  statusBadge.className =
+  activeStatus.className =
+    "qr-location-active-status";
+
+
+  activeStatus.textContent =
     isActive
-      ? "qr-status-badge active"
-      : "qr-status-badge inactive";
+      ? "ACTIVE"
+      : "INACTIVE";
 
 
-  statusBadge.textContent =
+  header.appendChild(
+    pointIdElement
+  );
+
+
+  header.appendChild(
+    activeStatus
+  );
+
+
+  card.appendChild(
+    header
+  );
+
+
+  const zone =
+    document.createElement(
+      "div"
+    );
+
+
+  zone.className =
+    "qr-location-zone";
+
+
+  zone.textContent =
+    location.zone
+      ? `📍 ${location.zone}`
+      : "📍 -";
+
+
+  card.appendChild(
+    zone
+  );
+
+
+  const locationName =
+    document.createElement(
+      "div"
+    );
+
+
+  locationName.className =
+    "qr-location-name";
+
+
+  locationName.textContent =
+    location.location ||
+    "-";
+
+
+  card.appendChild(
+    locationName
+  );
+
+
+  const qrInfo =
+    document.createElement(
+      "div"
+    );
+
+
+  qrInfo.className =
+    "qr-location-info";
+
+
+  qrInfo.textContent =
     isActive
-      ? "Active"
-      : "Inactive";
+      ? "📱 พร้อมสร้าง QR Code"
+      : "⛔ จุดนี้ถูกปิดใช้งาน";
 
 
-  statusCell.appendChild(
-    statusBadge
+  card.appendChild(
+    qrInfo
   );
 
 
-  row.appendChild(
-    statusCell
-  );
-
-
-
-  // ==================================================
-  // QR STATUS
-  // ==================================================
-
-  const qrCell =
-    document.createElement(
-      "td"
-    );
-
-
-  qrCell.className =
-    "qr-col-qr";
-
-
-  const qrBadge =
-    document.createElement(
-      "span"
-    );
-
-
-  qrBadge.className =
-    hasQR
-      ? "qr-status-badge qr-has"
-      : "qr-status-badge qr-none";
-
-
-  qrBadge.textContent =
-    hasQR
-      ? "มี QR"
-      : "ยังไม่มี QR";
-
-
-  qrCell.appendChild(
-    qrBadge
-  );
-
-
-  row.appendChild(
-    qrCell
-  );
-
-
-
-  // ==================================================
-  // ACTION
-  // ==================================================
-
-  const actionCell =
-    document.createElement(
-      "td"
-    );
-
-
-  actionCell.className =
-    "qr-col-action";
-
-
-  const actionButton =
-    document.createElement(
-      "button"
-    );
-
-
-  actionButton.type =
-    "button";
-
-
-  actionButton.className =
-    "qr-card-action-button";
-
-
-  actionButton.textContent =
-    "📱 สร้าง QR";
-
-
-  actionButton.disabled =
-    !isActive || !pointId;
-
-
-  actionButton.addEventListener(
-    "click",
-    function(event) {
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-
-      if (
-        !isActive ||
-        !pointId
-      ) {
-
-        return;
-      }
-
-
-      selectedPointIds =
-        new Set([pointId]);
-
-
-      renderQRTable();
-
-      updateQRSummary();
-
-      createSelectedQR();
-    }
-  );
-
-
-  actionCell.appendChild(
-    actionButton
-  );
-
-
-  row.appendChild(
-    actionCell
-  );
-
-
-
-  // ==================================================
-  // ROW CLICK
-  // ==================================================
-
-  row.addEventListener(
+  card.addEventListener(
     "click",
     function(event) {
 
       if (
         event.target === checkbox ||
-        event.target.closest("button")
+        event.target.closest(
+          ".qr-checkbox-wrapper"
+        )
       ) {
 
         return;
+
       }
 
 
@@ -1591,24 +1015,30 @@ function createLocationRow(
       ) {
 
         return;
+
       }
+
+
+      checkbox.checked =
+        !checkbox.checked;
 
 
       handleLocationSelection(
         location,
-        !selectedPointIds.has(pointId)
+        checkbox.checked
       );
+
     }
   );
 
 
-  return row;
+  return card;
+
 }
 
 
-
 // ==================================================
-// HANDLE SELECTION
+// HANDLE LOCATION SELECTION
 // ==================================================
 
 function handleLocationSelection(
@@ -1618,12 +1048,15 @@ function handleLocationSelection(
 
   const pointId =
     String(
-      location.pointId || ""
+      location.pointId ||
+      ""
     ).trim();
 
 
   if (!pointId) {
+
     return;
+
   }
 
 
@@ -1632,6 +1065,7 @@ function handleLocationSelection(
   ) {
 
     return;
+
   }
 
 
@@ -1646,305 +1080,69 @@ function handleLocationSelection(
     selectedPointIds.delete(
       pointId
     );
+
   }
 
 
-  renderQRTable();
+  updateQRCheckboxes();
+
 
   updateQRSummary();
+
 }
 
 
-
 // ==================================================
-// UPDATE SELECT ALL
+// UPDATE CHECKBOXES
 // ==================================================
 
-function updatePageSelectAll() {
+function updateQRCheckboxes() {
 
-  if (!selectAllQrCheckbox) {
+  if (!qrLocationList) {
+
     return;
+
   }
 
 
-  const pageLocations =
-    getCurrentPageLocations();
-
-
-  const selectable =
-    pageLocations.filter(
-      function(location) {
-
-        return (
-          location.active === true &&
-          String(
-            location.pointId || ""
-          ).trim() !== ""
-        );
-      }
+  const checkboxes =
+    qrLocationList.querySelectorAll(
+      ".qr-location-checkbox"
     );
 
 
-  if (
-    selectable.length === 0
-  ) {
+  checkboxes.forEach(
+    checkbox => {
 
-    selectAllQrCheckbox.checked =
-      false;
-
-
-    selectAllQrCheckbox.indeterminate =
-      false;
-
-
-    selectAllQrCheckbox.disabled =
-      true;
-
-
-    return;
-  }
-
-
-  selectAllQrCheckbox.disabled =
-    false;
-
-
-  const selectedCount =
-    selectable.filter(
-      function(location) {
-
-        return selectedPointIds.has(
-          String(
-            location.pointId
-          ).trim()
+      checkbox.checked =
+        selectedPointIds.has(
+          checkbox.value
         );
+
+
+      const card =
+        checkbox.closest(
+          ".qr-location-card"
+        );
+
+
+      if (card) {
+
+        card.classList.toggle(
+          "qr-location-selected",
+          checkbox.checked
+        );
+
       }
-    ).length;
 
-
-  selectAllQrCheckbox.checked =
-    selectedCount ===
-    selectable.length;
-
-
-  selectAllQrCheckbox.indeterminate =
-    selectedCount > 0 &&
-    selectedCount <
-      selectable.length;
-}
-
-
-
-// ==================================================
-// TOGGLE CURRENT PAGE
-// ==================================================
-
-function toggleSelectCurrentPage() {
-
-  const pageLocations =
-    getCurrentPageLocations();
-
-
-  const selectable =
-    pageLocations.filter(
-      function(location) {
-
-        return (
-          location.active === true &&
-          String(
-            location.pointId || ""
-          ).trim() !== ""
-        );
-      }
-    );
-
-
-  if (
-    selectable.length === 0
-  ) {
-
-    return;
-  }
-
-
-  const allSelected =
-    selectable.every(
-      function(location) {
-
-        return selectedPointIds.has(
-          String(
-            location.pointId
-          ).trim()
-        );
-      }
-    );
-
-
-  selectable.forEach(
-    function(location) {
-
-      const pointId =
-        String(
-          location.pointId
-        ).trim();
-
-
-      if (allSelected) {
-
-        selectedPointIds.delete(
-          pointId
-        );
-
-      } else {
-
-        selectedPointIds.add(
-          pointId
-        );
-      }
     }
   );
 
-
-  renderQRTable();
-
-  updateQRSummary();
 }
 
 
-
 // ==================================================
-// SELECT ALL ACTIVE
-// ==================================================
-
-function selectAllQR() {
-
-  selectedPointIds =
-    new Set(
-      qrLocations
-        .filter(
-          function(location) {
-
-            return (
-              location.active === true &&
-              String(
-                location.pointId || ""
-              ).trim() !== ""
-            );
-          }
-        )
-        .map(
-          function(location) {
-
-            return String(
-              location.pointId
-            ).trim();
-          }
-        )
-    );
-
-
-  renderQRTable();
-
-  updateQRSummary();
-
-
-  setQRStatus(
-    `☑️ เลือกจุด Active ทั้งหมด ${selectedPointIds.size} จุด`
-  );
-}
-
-
-
-// ==================================================
-// CLEAR ALL
-// ==================================================
-
-function clearAllQR() {
-
-  selectedPointIds =
-    new Set();
-
-
-  if (selectAllQrCheckbox) {
-
-    selectAllQrCheckbox.checked =
-      false;
-
-
-    selectAllQrCheckbox.indeterminate =
-      false;
-  }
-
-
-  renderQRTable();
-
-  updateQRSummary();
-
-  clearQRPreview();
-
-  clearQRPrintArea();
-
-
-  setQRStatus(
-    "⬜ ยกเลิกการเลือกทั้งหมดแล้ว"
-  );
-}
-
-
-
-// ==================================================
-// GET SELECTED
-// ==================================================
-
-function getSelectedLocations() {
-
-  return qrLocations.filter(
-    function(location) {
-
-      const pointId =
-        String(
-          location.pointId || ""
-        ).trim();
-
-
-      return (
-        location.active === true &&
-        pointId !== "" &&
-        selectedPointIds.has(pointId)
-      );
-    }
-  );
-}
-
-
-
-// ==================================================
-// GET ACTIVE
-// ==================================================
-
-function getActiveLocations() {
-
-  return qrLocations.filter(
-    function(location) {
-
-      const pointId =
-        String(
-          location.pointId || ""
-        ).trim();
-
-
-      return (
-        location.active === true &&
-        pointId !== ""
-      );
-    }
-  );
-}
-
-
-
-// ==================================================
-// SUMMARY
+// UPDATE SUMMARY
 // ==================================================
 
 function updateQRSummary() {
@@ -1960,13 +1158,6 @@ function updateQRSummary() {
     ).length;
 
 
-  const hasQR =
-    qrLocations.filter(
-      location =>
-        locationHasQR(location)
-    ).length;
-
-
   const selected =
     selectedPointIds.size;
 
@@ -1975,6 +1166,7 @@ function updateQRSummary() {
 
     qrTotalCount.textContent =
       total;
+
   }
 
 
@@ -1982,13 +1174,7 @@ function updateQRSummary() {
 
     qrActiveCount.textContent =
       active;
-  }
 
-
-  if (qrHasQrCount) {
-
-    qrHasQrCount.textContent =
-      hasQR;
   }
 
 
@@ -1996,13 +1182,7 @@ function updateQRSummary() {
 
     qrSelectedCount.textContent =
       selected;
-  }
 
-
-  if (qrPageTotal) {
-
-    qrPageTotal.textContent =
-      total;
   }
 
 
@@ -2010,6 +1190,7 @@ function updateQRSummary() {
 
     qrPreviewCount.textContent =
       `${selected} จุด`;
+
   }
 
 
@@ -2017,6 +1198,7 @@ function updateQRSummary() {
 
     createQrBtn.disabled =
       selected === 0;
+
   }
 
 
@@ -2024,6 +1206,7 @@ function updateQRSummary() {
 
     printSelectedQrBtn.disabled =
       selected === 0;
+
   }
 
 
@@ -2031,16 +1214,111 @@ function updateQRSummary() {
 
     printAllQrBtn.disabled =
       active === 0;
+
   }
 
-
-  if (clearAllQrBtn) {
-
-    clearAllQrBtn.disabled =
-      selected === 0;
-  }
 }
 
+
+// ==================================================
+// SELECT ALL
+// ==================================================
+
+function selectAllQR() {
+
+  selectedPointIds =
+    new Set(
+
+      qrLocations
+
+        .filter(
+          location =>
+            location.active === true
+        )
+
+        .map(
+          location =>
+            String(
+              location.pointId ||
+              ""
+            ).trim()
+        )
+
+        .filter(
+          pointId =>
+            pointId !== ""
+        )
+
+    );
+
+
+  updateQRCheckboxes();
+
+
+  updateQRSummary();
+
+
+  setQRStatus(
+    `☑️ เลือกจุด Active ทั้งหมด ${selectedPointIds.size} จุด`
+  );
+
+}
+
+
+// ==================================================
+// CLEAR ALL
+// ==================================================
+
+function clearAllQR() {
+
+  selectedPointIds =
+    new Set();
+
+
+  updateQRCheckboxes();
+
+
+  updateQRSummary();
+
+
+  clearQRPreview();
+
+
+  setQRStatus(
+    "⬜ ยกเลิกการเลือกทั้งหมดแล้ว"
+  );
+
+}
+
+
+// ==================================================
+// GET SELECTED LOCATIONS
+// ==================================================
+
+function getSelectedLocations() {
+
+  return qrLocations.filter(
+    location => {
+
+      const pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
+
+
+      return (
+        location.active === true &&
+        pointId &&
+        selectedPointIds.has(
+          pointId
+        )
+      );
+
+    }
+  );
+
+}
 
 
 // ==================================================
@@ -2062,6 +1340,7 @@ function createSelectedQR() {
     );
 
     return;
+
   }
 
 
@@ -2080,6 +1359,7 @@ function createSelectedQR() {
 
 
     return;
+
   }
 
 
@@ -2091,24 +1371,103 @@ function createSelectedQR() {
   setQRStatus(
     `✅ สร้าง QR สำเร็จ ${selectedLocations.length} จุด`
   );
+
+
+  console.log(
+    "GGN QR Created:",
+    selectedLocations
+  );
+
 }
 
+
+// ==================================================
+// CREATE SINGLE QR CODE
+// ==================================================
+
+function createQRNode(
+  qrBox,
+  pointId
+) {
+
+  if (
+    !qrBox
+  ) {
+
+    return false;
+
+  }
+
+
+  qrBox.innerHTML =
+    "";
+
+
+  if (!pointId) {
+
+    qrBox.textContent =
+      "ไม่มี pointId";
+
+    return false;
+
+  }
+
+
+  try {
+
+    new QRCode(
+      qrBox,
+      {
+
+        text:
+          pointId,
+
+        width:
+          QR_CODE_SIZE_PX,
+
+        height:
+          QR_CODE_SIZE_PX,
+
+        correctLevel:
+          QRCode.CorrectLevel.H
+
+      }
+    );
+
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "GGN QR creation error:",
+      error
+    );
+
+
+    qrBox.textContent =
+      "สร้าง QR ไม่สำเร็จ";
+
+
+    return false;
+
+  }
+
+}
 
 
 // ==================================================
 // RENDER QR PREVIEW
 //
-// Preview เป็นต้นฉบับจริง
+// Card = 57 × 88 mm
 //
-// Card ใน Preview:
-//
-// - แนวตั้ง
-// - 57 × 88 mm
-// - QR
+// ภายใน:
+// - QR Code ใหญ่
 // - Point ID
 // - Location
 // - Zone
 //
+// QR DATA = pointId
 // ==================================================
 
 function renderQRPreview(
@@ -2116,30 +1475,35 @@ function renderQRPreview(
 ) {
 
   if (!qrPreviewGrid) {
+
     return;
+
   }
+
+
+  injectQRPrintStyles();
 
 
   qrPreviewGrid.innerHTML =
     "";
 
 
-  qrSnapshotCache.clear();
-
-
   if (
-    !locations ||
+    !Array.isArray(
+      locations
+    ) ||
     locations.length === 0
   ) {
 
     clearQRPreview();
 
     return;
+
   }
 
 
   locations.forEach(
-    function(location) {
+    location => {
 
       const card =
         document.createElement(
@@ -2151,28 +1515,16 @@ function renderQRPreview(
         "qr-preview-card";
 
 
-      // ------------------------------------------------
-      // Card Preview
-      //
-      // ขนาดจริง:
-      // 57 × 88 mm
-      // ------------------------------------------------
-
-      card.style.width =
-        `${QR_CARD_WIDTH_MM}mm`;
+      card.dataset.pointId =
+        String(
+          location.pointId ||
+          ""
+        ).trim();
 
 
-      card.style.height =
-        `${QR_CARD_HEIGHT_MM}mm`;
-
-
-      card.style.boxSizing =
-        "border-box";
-
-
-      // ------------------------------------------------
-      // QR BOX
-      // ------------------------------------------------
+      // ==================================================
+      // QR CODE
+      // ==================================================
 
       const qrBox =
         document.createElement(
@@ -2186,72 +1538,20 @@ function renderQRPreview(
 
       const pointId =
         String(
-          location.pointId || ""
+          location.pointId ||
+          ""
         ).trim();
 
 
-      // ------------------------------------------------
-      // QR DATA
-      //
-      // QR ชี้ไปที่:
-      //
-      // index.html?pointId=...
-      // ------------------------------------------------
-
-      const qrData =
-        buildQRUrl(
-          pointId
-        );
+      createQRNode(
+        qrBox,
+        pointId
+      );
 
 
-      // เก็บ QR Data ไว้กับ Card
-      // เพื่อให้ Print ตรวจสอบได้
-      // โดยไม่ต้องสร้าง QR ใหม่
-      card.dataset.pointId =
-        pointId;
-
-
-      card.dataset.qrData =
-        qrData;
-
-
-      if (!pointId) {
-
-        qrBox.textContent =
-          "ไม่มี Point ID";
-
-      } else {
-
-        try {
-
-          new QRCode(
-            qrBox,
-            {
-              text: qrData,
-              width: 180,
-              height: 180,
-              correctLevel:
-                QRCode.CorrectLevel.H
-            }
-          );
-
-        } catch (error) {
-
-          console.error(
-            "GGN QR creation error:",
-            error
-          );
-
-
-          qrBox.textContent =
-            "สร้าง QR ไม่สำเร็จ";
-        }
-      }
-
-
-      // ------------------------------------------------
+      // ==================================================
       // POINT ID
-      // ------------------------------------------------
+      // ==================================================
 
       const pointIdElement =
         document.createElement(
@@ -2264,51 +1564,56 @@ function renderQRPreview(
 
 
       pointIdElement.textContent =
-        pointId || "-";
+        pointId ||
+        "-";
 
 
-
-      // ------------------------------------------------
+      // ==================================================
       // LOCATION
-      // ------------------------------------------------
+      // ==================================================
 
-      const locationElement =
+      const locationName =
         document.createElement(
           "div"
         );
 
 
-      locationElement.className =
+      locationName.className =
         "qr-preview-location";
 
 
-      locationElement.textContent =
-        location.location || "-";
+      locationName.textContent =
+        location.location ||
+        "-";
 
 
+      locationName.title =
+        location.location ||
+        "-";
 
-      // ------------------------------------------------
+
+      // ==================================================
       // ZONE
-      // ------------------------------------------------
+      // ==================================================
 
-      const zoneElement =
+      const zone =
         document.createElement(
           "div"
         );
 
 
-      zoneElement.className =
+      zone.className =
         "qr-preview-zone";
 
 
-      zoneElement.textContent =
-        location.zone || "-";
+      zone.textContent =
+        location.zone ||
+        "-";
 
 
-
-      // ------------------------------------------------
+      // ==================================================
       // APPEND
-      // ------------------------------------------------
+      // ==================================================
 
       card.appendChild(
         qrBox
@@ -2321,18 +1626,19 @@ function renderQRPreview(
 
 
       card.appendChild(
-        locationElement
+        locationName
       );
 
 
       card.appendChild(
-        zoneElement
+        zone
       );
 
 
       qrPreviewGrid.appendChild(
         card
       );
+
     }
   );
 
@@ -2341,2431 +1647,574 @@ function renderQRPreview(
 
     qrPreviewCount.textContent =
       `${locations.length} จุด`;
+
   }
 
 
-  if (qrPreviewSection) {
+  console.log(
+    "GGN QR Preview:",
+    {
+      count:
+        locations.length,
 
-    qrPreviewSection.scrollIntoView(
-      {
-        behavior: "smooth",
-        block: "start"
-      }
-    );
-  }
+      cardWidth:
+        `${QR_CARD_WIDTH_MM} mm`,
+
+      cardHeight:
+        `${QR_CARD_HEIGHT_MM} mm`,
+
+      layout:
+        "A4 Portrait 3 × 3",
+
+      qrData:
+        "pointId"
+
+    }
+  );
+
 }
 
 
-
 // ==================================================
-// CLEAR PREVIEW
+// CLEAR QR PREVIEW
 // ==================================================
 
 function clearQRPreview() {
 
   if (!qrPreviewGrid) {
+
     return;
+
   }
 
 
   qrPreviewGrid.innerHTML =
-    `
-    <div class="qr-empty-state">
+
+    `<div class="qr-empty-state">
       ยังไม่มี QR Code
-    </div>
-    `;
-
-
-  qrSnapshotCache.clear();
+    </div>`;
 
 
   if (qrPreviewCount) {
 
     qrPreviewCount.textContent =
       "0 จุด";
-  }
-}
 
-
-
-// ==================================================
-// PRINT STYLE V5.9
-//
-// A4 Portrait
-// Card 57 × 88 mm
-// 3 × 3
-// 9 QR / หน้า
-//
-// ==================================================
-
-function injectQRPrintStyle() {
-
-  if (qrPrintStyleInjected) {
-    return;
   }
 
-
-  const style =
-    document.createElement(
-      "style"
-    );
-
-
-  style.id =
-    "ggn-qr-print-style";
-
-
-  style.textContent = `
-
-    /* ================================================
-       NORMAL
-       ================================================ */
-
-    #qrPrintArea {
-      display: none;
-    }
-
-
-    /* ================================================
-       PRINT BODY
-       ================================================ */
-
-    body.ggn-qr-print-active {
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-    }
-
-
-    body.ggn-qr-print-active
-    .dashboard-header {
-      display: none !important;
-    }
-
-
-    body.ggn-qr-print-active
-    .dashboard-menu {
-      display: none !important;
-    }
-
-
-    body.ggn-qr-print-active
-    .dashboard-container {
-      display: block !important;
-      width: ${A4_WIDTH_MM}mm !important;
-      min-width: ${A4_WIDTH_MM}mm !important;
-      max-width: ${A4_WIDTH_MM}mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-    }
-
-
-    body.ggn-qr-print-active
-    .qr-management-view {
-      display: block !important;
-      width: ${A4_WIDTH_MM}mm !important;
-      min-width: ${A4_WIDTH_MM}mm !important;
-      max-width: ${A4_WIDTH_MM}mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-    }
-
-
-    body.ggn-qr-print-active
-    .qr-management-view
-    > *:not(#qrPrintArea) {
-      display: none !important;
-    }
-
-
-    /* ================================================
-       PRINT AREA
-       ================================================ */
-
-    body.ggn-qr-print-active
-    #qrPrintArea {
-      display: block !important;
-      visibility: visible !important;
-      width: ${A4_WIDTH_MM}mm !important;
-      min-width: ${A4_WIDTH_MM}mm !important;
-      max-width: ${A4_WIDTH_MM}mm !important;
-      height: auto !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-    }
-
-
-    /* ================================================
-       A4 PORTRAIT PAGE
-       ================================================ */
-
-    .ggn-qr-print-page {
-
-      box-sizing: border-box;
-
-      width: ${A4_WIDTH_MM}mm;
-
-      height: ${A4_HEIGHT_MM}mm;
-
-      padding: 0;
-
-      margin: 0;
-
-      display: grid;
-
-      grid-template-columns:
-        repeat(
-          ${QR_COLUMNS},
-          ${QR_CARD_WIDTH_MM}mm
-        );
-
-      grid-template-rows:
-        repeat(
-          ${QR_ROWS},
-          ${QR_CARD_HEIGHT_MM}mm
-        );
-
-      column-gap: 0;
-
-      row-gap: 0;
-
-      justify-content: center;
-
-      align-content: center;
-
-      align-items: center;
-
-      justify-items: center;
-
-      overflow: hidden;
-
-      background: #ffffff;
-
-      page-break-after: always;
-
-      break-after: page;
-    }
-
-
-    .ggn-qr-print-page:last-child {
-
-      page-break-after: auto;
-
-      break-after: auto;
-    }
-
-
-    /* ================================================
-       PRINT CARD
-       ================================================ */
-
-    .ggn-qr-print-card {
-
-      box-sizing: border-box;
-
-      width: ${QR_CARD_WIDTH_MM}mm;
-
-      height: ${QR_CARD_HEIGHT_MM}mm;
-
-      min-width: ${QR_CARD_WIDTH_MM}mm;
-
-      max-width: ${QR_CARD_WIDTH_MM}mm;
-
-      min-height: ${QR_CARD_HEIGHT_MM}mm;
-
-      max-height: ${QR_CARD_HEIGHT_MM}mm;
-
-      margin: 0;
-
-      padding: 0;
-
-      overflow: hidden;
-
-      background: #ffffff;
-
-      border: 0;
-
-      break-inside: avoid;
-
-      page-break-inside: avoid;
-
-      display: block;
-    }
-
-
-    /* ================================================
-       SNAPSHOT IMAGE
-       ================================================ */
-
-    .ggn-qr-snapshot {
-
-      display: block;
-
-      width: ${QR_CARD_WIDTH_MM}mm;
-
-      height: ${QR_CARD_HEIGHT_MM}mm;
-
-      min-width: ${QR_CARD_WIDTH_MM}mm;
-
-      min-height: ${QR_CARD_HEIGHT_MM}mm;
-
-      max-width: ${QR_CARD_WIDTH_MM}mm;
-
-      max-height: ${QR_CARD_HEIGHT_MM}mm;
-
-      object-fit: contain;
-
-      object-position: center center;
-
-      margin: 0;
-
-      padding: 0;
-
-      border: 0;
-
-      box-sizing: border-box;
-    }
-
-
-    /* ================================================
-       PAGE
-       ================================================ */
-
-    @page {
-
-      size: A4 portrait;
-
-      margin: 0;
-    }
-
-
-    /* ================================================
-       PRINT MEDIA
-       ================================================ */
-
-    @media print {
-
-      html {
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        height: ${A4_HEIGHT_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-      }
-
-
-      body {
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        min-width: ${A4_WIDTH_MM}mm !important;
-
-        max-width: ${A4_WIDTH_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-
-        background: #ffffff !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .dashboard-container {
-
-        display: block !important;
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        min-width: ${A4_WIDTH_MM}mm !important;
-
-        max-width: ${A4_WIDTH_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .qr-management-view {
-
-        display: block !important;
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        min-width: ${A4_WIDTH_MM}mm !important;
-
-        max-width: ${A4_WIDTH_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .qr-management-view
-      > *:not(#qrPrintArea) {
-
-        display: none !important;
-      }
-
-
-      body.ggn-qr-print-active
-      #qrPrintArea {
-
-        display: block !important;
-
-        visibility: visible !important;
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        min-width: ${A4_WIDTH_MM}mm !important;
-
-        max-width: ${A4_WIDTH_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .ggn-qr-print-page {
-
-        display: grid !important;
-
-        width: ${A4_WIDTH_MM}mm !important;
-
-        height: ${A4_HEIGHT_MM}mm !important;
-
-        padding: 0 !important;
-
-        margin: 0 !important;
-
-        grid-template-columns:
-          repeat(
-            ${QR_COLUMNS},
-            ${QR_CARD_WIDTH_MM}mm
-          ) !important;
-
-        grid-template-rows:
-          repeat(
-            ${QR_ROWS},
-            ${QR_CARD_HEIGHT_MM}mm
-          ) !important;
-
-        column-gap: 0 !important;
-
-        row-gap: 0 !important;
-
-        justify-content: center !important;
-
-        align-content: center !important;
-
-        align-items: center !important;
-
-        justify-items: center !important;
-
-        overflow: hidden !important;
-
-        page-break-after: always !important;
-
-        break-after: page !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .ggn-qr-print-page:last-child {
-
-        page-break-after: auto !important;
-
-        break-after: auto !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .ggn-qr-print-card {
-
-        display: block !important;
-
-        visibility: visible !important;
-
-        width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        min-width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        max-width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        min-height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        max-height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-
-        overflow: hidden !important;
-
-        box-sizing: border-box !important;
-      }
-
-
-      body.ggn-qr-print-active
-      .ggn-qr-snapshot {
-
-        display: block !important;
-
-        visibility: visible !important;
-
-        width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        min-width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        min-height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        max-width: ${QR_CARD_WIDTH_MM}mm !important;
-
-        max-height: ${QR_CARD_HEIGHT_MM}mm !important;
-
-        object-fit: contain !important;
-
-        object-position: center center !important;
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-
-        border: 0 !important;
-
-        box-sizing: border-box !important;
-      }
-    }
-  `;
-
-
-  document.head.appendChild(
-    style
-  );
-
-
-  qrPrintStyleInjected =
-    true;
 }
-
-
-
-// ==================================================
-// CLEAR PRINT AREA
-// ==================================================
-
-function clearQRPrintArea() {
-
-  if (!qrPrintArea) {
-    return;
-  }
-
-
-  qrPrintArea.innerHTML =
-    "";
-}
-
-
-
-// ==================================================
-// FIND PREVIEW CARD
-// ==================================================
-
-function findPreviewCardByPointId(
-  pointId
-) {
-
-  if (!qrPreviewGrid) {
-    return null;
-  }
-
-
-  const cards =
-    Array.from(
-      qrPreviewGrid.querySelectorAll(
-        ".qr-preview-card"
-      )
-    );
-
-
-  for (
-    const card of cards
-  ) {
-
-    const pointElement =
-      card.querySelector(
-        ".qr-preview-point-id"
-      );
-
-
-    if (!pointElement) {
-      continue;
-    }
-
-
-    const cardPointId =
-      String(
-        pointElement.textContent || ""
-      ).trim();
-
-
-    if (
-      cardPointId === pointId
-    ) {
-
-      return card;
-    }
-  }
-
-
-  return null;
-}
-
-
-
-// ==================================================
-// V5.9 SNAPSHOT HELPERS
-//
-// จุดสำคัญของ V5.9:
-//
-// ห้าม:
-//
-// originalCanvas.toDataURL()
-//
-// เพราะ V5.8 พบ:
-//
-// SecurityError:
-// Failed to execute 'toDataURL' on
-// 'HTMLCanvasElement':
-// Tainted canvases may not be exported.
-//
-// ดังนั้น V5.9 จะไม่ดึง Bitmap
-// จาก QR Canvas โดยตรง
-//
-// แต่จะ snapshot "Card Preview"
-// ที่ผู้ใช้เห็นอยู่แล้ว
-//
-// ==================================================
-
-
-
-// ==================================================
-// WAIT FOR IMAGE
-// ==================================================
-
-function waitForImage(
-  image
-) {
-
-  return new Promise(
-    function(resolve) {
-
-      if (!image) {
-
-        resolve();
-
-        return;
-      }
-
-
-      if (image.complete) {
-
-        resolve();
-
-        return;
-      }
-
-
-      image.addEventListener(
-        "load",
-        function() {
-
-          resolve();
-        },
-        {
-          once: true
-        }
-      );
-
-
-      image.addEventListener(
-        "error",
-        function() {
-
-          resolve();
-        },
-        {
-          once: true
-        }
-      );
-    }
-  );
-}
-
 
 
 // ==================================================
 // WAIT FOR QR RENDER
-// ==================================================
 //
-// รอให้ QR ที่สร้างใน Preview
-// render เสร็จสมบูรณ์ก่อน snapshot
-//
+// qrcodejs สร้าง canvas/img แบบ asynchronous
+// บาง browser ต้องรอ DOM render ก่อน print
 // ==================================================
 
-async function waitForQRRender(
-  card
-) {
+function waitForQRRender() {
 
-  if (!card) {
-    return;
-  }
-
-
-  const images =
-    Array.from(
-      card.querySelectorAll(
-        "img"
-      )
-    );
-
-
-  if (images.length > 0) {
-
-    await Promise.all(
-      images.map(
-        waitForImage
-      )
-    );
-  }
-
-
-  // ให้ Browser มีเวลา
-  // วาด DOM และ QR ให้เสร็จ
-  await new Promise(
-    function(resolve) {
+  return new Promise(
+    resolve => {
 
       requestAnimationFrame(
         function() {
 
           requestAnimationFrame(
-            resolve
+            function() {
+
+              resolve();
+
+            }
           );
+
         }
       );
-    }
-  );
-}
 
-
-
-// ==================================================
-// GET CARD DIMENSION
-// ==================================================
-
-function getPreviewCardDimension(
-  card
-) {
-
-  if (!card) {
-
-    return {
-      width: 0,
-      height: 0
-    };
-  }
-
-
-  const rect =
-    card.getBoundingClientRect();
-
-
-  return {
-
-    width:
-      Math.round(
-        rect.width
-      ),
-
-    height:
-      Math.round(
-        rect.height
-      )
-  };
-}
-
-
-
-// ==================================================
-// CLONE PREVIEW CARD
-// ==================================================
-//
-// Clone เฉพาะ Card
-// ไม่สร้าง QR ใหม่
-//
-// ==================================================
-
-function clonePreviewCard(
-  card
-) {
-
-  if (!card) {
-    return null;
-  }
-
-
-  const clone =
-    card.cloneNode(true);
-
-
-  clone.classList.add(
-    "ggn-qr-snapshot-source"
-  );
-
-
-  clone.style.width =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  clone.style.height =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  clone.style.minWidth =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  clone.style.minHeight =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  clone.style.maxWidth =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  clone.style.maxHeight =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  clone.style.margin =
-    "0";
-
-
-  clone.style.boxSizing =
-    "border-box";
-
-
-  return clone;
-}
-
-
-
-// ==================================================
-// COPY COMPUTED STYLE
-// ==================================================
-//
-// ใช้เพื่อให้ Snapshot
-// มีหน้าตาเหมือน Preview
-//
-// ==================================================
-
-function copyComputedStyle(
-  source,
-  target
-) {
-
-  if (
-    !source ||
-    !target
-  ) {
-
-    return;
-  }
-
-
-  const computed =
-    window.getComputedStyle(
-      source
-    );
-
-
-  const properties = [
-
-    "box-sizing",
-
-    "display",
-
-    "position",
-
-    "width",
-
-    "height",
-
-    "min-width",
-
-    "min-height",
-
-    "max-width",
-
-    "max-height",
-
-    "margin",
-
-    "padding",
-
-    "border",
-
-    "border-radius",
-
-    "background",
-
-    "background-color",
-
-    "background-image",
-
-    "color",
-
-    "font-family",
-
-    "font-size",
-
-    "font-weight",
-
-    "font-style",
-
-    "line-height",
-
-    "letter-spacing",
-
-    "text-align",
-
-    "text-transform",
-
-    "white-space",
-
-    "overflow",
-
-    "object-fit",
-
-    "object-position",
-
-    "align-items",
-
-    "justify-content",
-
-    "flex-direction",
-
-    "gap"
-
-  ];
-
-
-  properties.forEach(
-    function(property) {
-
-      const value =
-        computed.getPropertyValue(
-          property
-        );
-
-
-      if (value) {
-
-        target.style.setProperty(
-          property,
-          value
-        );
-      }
-    }
-  );
-}
-
-
-
-// ==================================================
-// COPY CARD STYLES RECURSIVELY
-// ==================================================
-
-function copyCardStyles(
-  source,
-  target
-) {
-
-  if (
-    !source ||
-    !target
-  ) {
-
-    return;
-  }
-
-
-  copyComputedStyle(
-    source,
-    target
-  );
-
-
-  const sourceChildren =
-    Array.from(
-      source.children
-    );
-
-
-  const targetChildren =
-    Array.from(
-      target.children
-    );
-
-
-  sourceChildren.forEach(
-    function(
-      sourceChild,
-      index
-    ) {
-
-      const targetChild =
-        targetChildren[index];
-
-
-      if (!targetChild) {
-        return;
-      }
-
-
-      copyComputedStyle(
-        sourceChild,
-        targetChild
-      );
-
-
-      copyCardStyles(
-        sourceChild,
-        targetChild
-      );
-    }
-  );
-}
-
-
-
-// ==================================================
-// PREPARE SNAPSHOT SOURCE
-// ==================================================
-//
-// เตรียม Card Preview ที่ clone แล้ว
-// ให้สามารถถูก rasterize ได้
-//
-// IMPORTANT:
-//
-// ไม่แตะ QR Canvas ต้นฉบับ
-//
-// ==================================================
-
-function prepareSnapshotSource(
-  card
-) {
-
-  const clone =
-    clonePreviewCard(
-      card
-    );
-
-
-  if (!clone) {
-    return null;
-  }
-
-
-  copyCardStyles(
-    card,
-    clone
-  );
-
-
-  // ------------------------------------------------
-  // QR Canvas
-  //
-  // ไม่เรียก toDataURL()
-  // ไม่อ่าน Bitmap
-  // ไม่ regenerate QR
-  // ------------------------------------------------
-
-  const originalCanvases =
-    Array.from(
-      card.querySelectorAll(
-        "canvas"
-      )
-    );
-
-
-  const cloneCanvases =
-    Array.from(
-      clone.querySelectorAll(
-        "canvas"
-      )
-    );
-
-
-  originalCanvases.forEach(
-    function(
-      originalCanvas,
-      index
-    ) {
-
-      const cloneCanvas =
-        cloneCanvases[index];
-
-
-      if (!cloneCanvas) {
-        return;
-      }
-
-
-      const width =
-        originalCanvas.width;
-
-
-      const height =
-        originalCanvas.height;
-
-
-      cloneCanvas.width =
-        width;
-
-
-      cloneCanvas.height =
-        height;
-
-
-      cloneCanvas.style.width =
-        originalCanvas.style.width;
-
-
-      cloneCanvas.style.height =
-        originalCanvas.style.height;
-
-
-      // ------------------------------------------------
-      // สำคัญ:
-      //
-      // ไม่ใช้:
-      //
-      // originalCanvas.toDataURL()
-      //
-      // ------------------------------------------------
-
-      cloneCanvas.dataset.ggnQrCanvas =
-        "preview-original";
     }
   );
 
-
-  return clone;
 }
 
 
-
 // ==================================================
-// BUILD SNAPSHOT STAGE
-// ==================================================
-//
-// สร้างพื้นที่ชั่วคราวนอกหน้าจอ
-//
+// GET PREVIEW CARDS
 // ==================================================
 
-function createSnapshotStage(
-  clone
+function getQRPreviewCards() {
+
+  if (!qrPreviewGrid) {
+
+    return [];
+
+  }
+
+
+  return Array.from(
+    qrPreviewGrid.querySelectorAll(
+      ".qr-preview-card"
+    )
+  );
+
+}
+
+
+// ==================================================
+// CREATE PRINT ROOT
+//
+// ไม่ clone Card
+// ใช้ Card ตัวจริงจาก Preview
+//
+// เหตุผล:
+// - canvas QR จะไม่หาย
+// - QR ที่เห็นใน Preview = QR ที่พิมพ์
+// ==================================================
+
+function createQRPrintRoot(
+  cards
 ) {
 
-  const stage =
+  const printRoot =
     document.createElement(
       "div"
     );
 
 
-  stage.className =
-    "ggn-qr-snapshot-stage";
+  printRoot.id =
+    "ggnQrPrintRoot";
 
 
-  stage.style.position =
-    "fixed";
-
-
-  stage.style.left =
-    "-100000px";
-
-
-  stage.style.top =
-    "0";
-
-
-  stage.style.width =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  stage.style.height =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  stage.style.minWidth =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  stage.style.minHeight =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  stage.style.maxWidth =
-    `${QR_CARD_WIDTH_MM}mm`;
-
-
-  stage.style.maxHeight =
-    `${QR_CARD_HEIGHT_MM}mm`;
-
-
-  stage.style.margin =
-    "0";
-
-
-  stage.style.padding =
-    "0";
-
-
-  stage.style.background =
-    "#ffffff";
-
-
-  stage.style.overflow =
-    "hidden";
-
-
-  stage.style.boxSizing =
-    "border-box";
-
-
-  stage.style.zIndex =
-    "-999999";
-
-
-  stage.appendChild(
-    clone
+  printRoot.setAttribute(
+    "aria-hidden",
+    "true"
   );
 
 
-  document.body.appendChild(
-    stage
-  );
+  const total =
+    cards.length;
 
 
-  return stage;
-}
-
-
-
-// ==================================================
-// FIND QR IMAGE IN PREVIEW
-// ==================================================
-//
-// qrcodejs บาง version จะมีทั้ง:
-//
-// - canvas
-// - img
-//
-// ถ้ามี IMG ที่เป็น Data URL
-// ให้ใช้ IMG เดิมของ Preview
-//
-// ไม่ regenerate QR
-//
-// ==================================================
-
-function findPreviewQRImage(
-  card
-) {
-
-  if (!card) {
-    return null;
-  }
-
-
-  const images =
-    Array.from(
-      card.querySelectorAll(
-        "img"
-      )
+  const pageCount =
+    Math.ceil(
+      total /
+      QR_CARDS_PER_PAGE
     );
 
 
   for (
-    const image of images
+    let pageIndex = 0;
+    pageIndex < pageCount;
+    pageIndex++
   ) {
 
-    const src =
-      String(
-        image.getAttribute(
-          "src"
-        ) || ""
-      ).trim();
-
-
-    if (
-      src.startsWith(
-        "data:image/"
-      )
-    ) {
-
-      return image;
-    }
-  }
-
-
-  return null;
-}
-
-
-
-// ==================================================
-// COPY PREVIEW QR IMAGE
-// ==================================================
-//
-// ถ้า Preview มี IMG QR
-// ให้ clone IMG เดิม
-//
-// ==================================================
-
-function preservePreviewQRImage(
-  originalCard,
-  clonedCard
-) {
-
-  const originalImage =
-    findPreviewQRImage(
-      originalCard
-    );
-
-
-  if (!originalImage) {
-
-    return false;
-  }
-
-
-  const clonedImages =
-    Array.from(
-      clonedCard.querySelectorAll(
-        "img"
-      )
-    );
-
-
-  const clonedImage =
-    clonedImages.find(
-      function(image) {
-
-        const src =
-          String(
-            image.getAttribute(
-              "src"
-            ) || ""
-          ).trim();
-
-
-        return (
-          src.startsWith(
-            "data:image/"
-          )
-        );
-      }
-    );
-
-
-  if (!clonedImage) {
-
-    return false;
-  }
-
-
-  clonedImage.src =
-    originalImage.src;
-
-
-  clonedImage.removeAttribute(
-    "crossorigin"
-  );
-
-
-  return true;
-}
-
-
-
-// ==================================================
-// SNAPSHOT USING HTML2CANVAS
-// ==================================================
-//
-// V5.9
-//
-// html2canvas ใช้ DOM Card
-// เป็นต้นฉบับ
-//
-// ไม่สร้าง QR ใหม่
-//
-// allowTaint = false
-// useCORS = true
-//
-// และจะไม่เรียก
-// originalCanvas.toDataURL()
-//
-// ==================================================
-
-async function snapshotPreviewCard(
-  card
-) {
-
-  if (!card) {
-
-    throw new Error(
-      "ไม่พบ QR Preview Card"
-    );
-  }
-
-
-  if (
-    typeof html2canvas ===
-    "undefined"
-  ) {
-
-    throw new Error(
-      "ไม่พบ html2canvas"
-    );
-  }
-
-
-  const pointId =
-    String(
-      card.dataset.pointId ||
-      card.querySelector(
-        ".qr-preview-point-id"
-      )?.textContent ||
-      ""
-    ).trim();
-
-
-  if (!pointId) {
-
-    throw new Error(
-      "ไม่พบ Point ID ใน Preview Card"
-    );
-  }
-
-
-  // ------------------------------------------------
-  // ถ้ามี Snapshot อยู่แล้ว
-  // ให้ใช้ Snapshot เดิม
-  // ------------------------------------------------
-
-  if (
-    qrSnapshotCache.has(
-      pointId
-    )
-  ) {
-
-    return qrSnapshotCache.get(
-      pointId
-    );
-  }
-
-
-  // ------------------------------------------------
-  // รอ QR Preview
-  // ------------------------------------------------
-
-  await waitForQRRender(
-    card
-  );
-
-
-  // ------------------------------------------------
-  // ตรวจสอบขนาด Card
-  // ------------------------------------------------
-
-  const dimension =
-    getPreviewCardDimension(
-      card
-    );
-
-
-  console.log(
-    "GGN QR V5.9: Preview Card",
-    {
-      pointId,
-      width: dimension.width,
-      height: dimension.height
-    }
-  );
-
-
-  if (
-    dimension.width <= 0 ||
-    dimension.height <= 0
-  ) {
-
-    throw new Error(
-      `Preview Card ${pointId} ไม่มีขนาด`
-    );
-  }
-
-
-  // ------------------------------------------------
-  // Clone Card
-  // ------------------------------------------------
-
-  const clone =
-    prepareSnapshotSource(
-      card
-    );
-
-
-  if (!clone) {
-
-    throw new Error(
-      `ไม่สามารถ Clone Preview Card ${pointId} ได้`
-    );
-  }
-
-
-  // ------------------------------------------------
-  // รักษา QR IMG เดิม
-  // ------------------------------------------------
-
-  const preserved =
-    preservePreviewQRImage(
-      card,
-      clone
-    );
-
-
-  console.log(
-    "GGN QR V5.9: Preserve QR Image",
-    {
-      pointId,
-      preserved
-    }
-  );
-
-
-  // ------------------------------------------------
-  // Snapshot Stage
-  // ------------------------------------------------
-
-  const stage =
-    createSnapshotStage(
-      clone
-    );
-
-
-  try {
-
-    await waitForQRRender(
-      clone
-    );
-
-
-    // ------------------------------------------------
-    // ใช้ html2canvas กับ Card Preview
-    //
-    // สำคัญ:
-    //
-    // ไม่แตะ originalCanvas.toDataURL()
-    // ------------------------------------------------
-
-    const canvas =
-      await html2canvas(
-        clone,
-        {
-          scale:
-            QR_SNAPSHOT_SCALE,
-
-          useCORS:
-            true,
-
-          allowTaint:
-            false,
-
-          backgroundColor:
-            "#ffffff",
-
-          logging:
-            false,
-
-          imageTimeout:
-            15000,
-
-          removeContainer:
-            true,
-
-          foreignObjectRendering:
-            false
-        }
+    const page =
+      document.createElement(
+        "section"
       );
 
 
-    // ------------------------------------------------
-    // ตรวจสอบ Snapshot Canvas
-    // ------------------------------------------------
+    page.className =
+      "ggn-qr-print-page";
 
-    if (!canvas) {
-
-      throw new Error(
-        `สร้าง Snapshot ${pointId} ไม่สำเร็จ`
-      );
-    }
-
-
-    if (
-      canvas.width <= 0 ||
-      canvas.height <= 0
-    ) {
-
-      throw new Error(
-        `Snapshot ${pointId} มีขนาดไม่ถูกต้อง`
-      );
-    }
-
-
-    console.log(
-      "GGN QR V5.9: Snapshot",
-      {
-        pointId,
-        width: canvas.width,
-        height: canvas.height
-      }
-    );
-
-
-    // ------------------------------------------------
-    // แปลง Snapshot Canvas
-    //
-    // Canvas นี้คือ Canvas ที่
-    // html2canvas สร้างขึ้นใหม่
-    //
-    // ไม่ใช่ QR Canvas ต้นฉบับ
-    // ------------------------------------------------
-
-    let dataURL = "";
-
-
-    try {
-
-      dataURL =
-        canvas.toDataURL(
-          "image/png"
-        );
-
-    } catch (error) {
-
-      console.error(
-        "GGN QR V5.9: Snapshot export failed",
-        {
-          pointId,
-          error
-        }
-      );
-
-
-      throw new Error(
-        `ไม่สามารถส่งออก Snapshot ของ ${pointId} ได้`
-      );
-    }
-
-
-    if (
-      !dataURL ||
-      !dataURL.startsWith(
-        "data:image/"
-      )
-    ) {
-
-      throw new Error(
-        `Snapshot ${pointId} ไม่ใช่ภาพที่ถูกต้อง`
-      );
-    }
-
-
-    // ------------------------------------------------
-    // Cache
-    // ------------------------------------------------
-
-    qrSnapshotCache.set(
-      pointId,
-      dataURL
-    );
-
-
-    return dataURL;
-
-  } finally {
-
-    if (stage) {
-
-      stage.remove();
-    }
-  }
-}
-
-
-// ==================================================
-// END OF PART 1/2
-// ==================================================
-
-
-// GGN CHECK-IN
-// QR.JS
-// Version 5.9
-//
-// PART 2/2
-//
-// CONTINUE FROM PART 1/2
-//
-// หน้าที่:
-// - Pagination
-// - Event Binding
-// - Preview Snapshot
-// - Print Snapshot
-// - A4 Portrait
-// - 3 × 3
-// - 57 × 88 mm
-// - Restore UI หลังพิมพ์
-//
-// IMPORTANT
-//
-// Preview = ต้นฉบับจริง
-//
-// Print จะใช้ Snapshot จาก Preview
-//
-// ไม่สร้าง QR ใหม่
-// ไม่เปลี่ยน pointId
-// ไม่เปลี่ยน QR Data
-// ไม่อ่าน QR ใหม่จาก Backend
-// ไม่ใช้ originalCanvas.toDataURL()
-//
-// ==================================================
-
-
-// ==================================================
-// PAGINATION
-// ==================================================
-
-function updatePagination(totalItems) {
-
-  if (!qrPaginationInfo || !qrPagination) {
-    return;
-  }
-
-  const total = Math.max(
-    0,
-    Number(totalItems) || 0
-  );
-
-  const pageSize = Math.max(
-    1,
-    Number(qrCurrentPageSize) || 25
-  );
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(total / pageSize)
-  );
-
-  if (qrCurrentPage > totalPages) {
-    qrCurrentPage = totalPages;
-  }
-
-  if (qrCurrentPage < 1) {
-    qrCurrentPage = 1;
-  }
-
-  if (total === 0) {
-
-    qrPaginationInfo.textContent =
-      "ไม่พบข้อมูล";
-
-  } else {
 
     const start =
-      ((qrCurrentPage - 1) * pageSize) + 1;
+      pageIndex *
+      QR_CARDS_PER_PAGE;
+
 
     const end =
       Math.min(
-        qrCurrentPage * pageSize,
+        start +
+        QR_CARDS_PER_PAGE,
         total
       );
 
-    qrPaginationInfo.textContent =
-      `${start}-${end} จาก ${total} จุด`;
+
+    for (
+      let i = start;
+      i < end;
+      i++
+    ) {
+
+      page.appendChild(
+        cards[i]
+      );
+
+    }
+
+
+    printRoot.appendChild(
+      page
+    );
+
   }
 
-  renderPaginationButtons(
-    totalPages
+
+  document.body.appendChild(
+    printRoot
   );
+
+
+  return printRoot;
+
 }
 
 
 // ==================================================
-// RENDER PAGINATION BUTTONS
+// PREPARE PRINT
 // ==================================================
 
-function renderPaginationButtons(totalPages) {
+async function prepareQRPrint(
+  cards
+) {
 
-  if (!qrPagination) {
-    return;
+  if (
+    qrPrintState.active
+  ) {
+
+    return false;
+
   }
 
-  qrPagination.innerHTML = "";
 
-  const createButton =
-    function(label, page, disabled, active) {
+  if (
+    !cards ||
+    cards.length === 0
+  ) {
 
-      const button =
-        document.createElement("button");
+    return false;
 
-      button.type = "button";
+  }
 
-      button.className =
-        "qr-pagination-button";
 
-      if (active) {
-        button.classList.add(
-          "active"
+  const firstCard =
+    cards[0];
+
+
+  if (!firstCard) {
+
+    return false;
+
+  }
+
+
+  injectQRPrintStyles();
+
+
+  qrPrintState.originalParent =
+    firstCard.parentNode;
+
+
+  /*
+   * Card ทุกใบอยู่ใน qrPreviewGrid
+   * เก็บตำแหน่งเดิมของใบแรกไว้
+   * เพื่อ restore หลังพิมพ์
+   */
+
+  qrPrintState.originalNextSibling =
+    firstCard;
+
+
+  qrPrintState.active =
+    true;
+
+
+  qrPrintState.printRoot =
+    createQRPrintRoot(
+      cards
+    );
+
+
+  await waitForQRRender();
+
+
+  return true;
+
+}
+
+
+// ==================================================
+// RESTORE AFTER PRINT
+// ==================================================
+
+function restoreQRAfterPrint() {
+
+  if (
+    !qrPrintState.active
+  ) {
+
+    return;
+
+  }
+
+
+  const printRoot =
+    qrPrintState.printRoot;
+
+
+  if (
+    !printRoot
+  ) {
+
+    qrPrintState =
+      {
+
+        active:
+          false,
+
+        originalParent:
+          null,
+
+        originalNextSibling:
+          null,
+
+        printRoot:
+          null
+
+      };
+
+    return;
+
+  }
+
+
+  /*
+   * ดึง Card กลับเข้า Preview Grid
+   * โดยรักษาลำดับเดิม
+   */
+
+  const cards =
+    Array.from(
+      printRoot.querySelectorAll(
+        ".qr-preview-card"
+      )
+    );
+
+
+  if (
+    qrPrintState.originalParent
+  ) {
+
+    cards.forEach(
+      card => {
+
+        qrPrintState.originalParent.appendChild(
+          card
         );
+
       }
+    );
 
-      button.textContent = label;
+  }
 
-      button.disabled = !!disabled;
 
-      button.addEventListener(
-        "click",
-        function(event) {
+  printRoot.remove();
 
-          event.preventDefault();
-          event.stopPropagation();
 
-          if (button.disabled) {
-            return;
-          }
+  qrPrintState =
+    {
 
-          if (
-            page < 1 ||
-            page > totalPages
-          ) {
-            return;
-          }
+      active:
+        false,
 
-          if (
-            page === qrCurrentPage
-          ) {
-            return;
-          }
+      originalParent:
+        null,
 
-          qrCurrentPage = page;
+      originalNextSibling:
+        null,
 
-          renderQRTable();
+      printRoot:
+        null
 
-          if (qrLocationTableBody) {
-            qrLocationTableBody.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest"
-            });
-          }
-        }
-      );
-
-      qrPagination.appendChild(
-        button
-      );
     };
 
 
-  // Previous
-
-  createButton(
-    "‹",
-    qrCurrentPage - 1,
-    qrCurrentPage <= 1,
-    false
+  console.log(
+    "GGN QR: Print UI restored."
   );
 
-
-  // --------------------------------------------------
-  // Page Number Logic
-  // --------------------------------------------------
-
-  const pages = [];
-
-  if (totalPages <= 7) {
-
-    for (
-      let page = 1;
-      page <= totalPages;
-      page++
-    ) {
-      pages.push(page);
-    }
-
-  } else {
-
-    pages.push(1);
-
-    if (qrCurrentPage > 4) {
-      pages.push("...");
-    }
-
-    const start =
-      Math.max(
-        2,
-        qrCurrentPage - 1
-      );
-
-    const end =
-      Math.min(
-        totalPages - 1,
-        qrCurrentPage + 1
-      );
-
-    for (
-      let page = start;
-      page <= end;
-      page++
-    ) {
-      pages.push(page);
-    }
-
-    if (
-      qrCurrentPage <
-      totalPages - 3
-    ) {
-      pages.push("...");
-    }
-
-    pages.push(totalPages);
-  }
-
-
-  pages.forEach(
-    function(page) {
-
-      if (page === "...") {
-
-        const span =
-          document.createElement("span");
-
-        span.className =
-          "qr-pagination-ellipsis";
-
-        span.textContent = "...";
-
-        qrPagination.appendChild(
-          span
-        );
-
-        return;
-      }
-
-      createButton(
-        String(page),
-        page,
-        false,
-        page === qrCurrentPage
-      );
-    }
-  );
-
-
-  // Next
-
-  createButton(
-    "›",
-    qrCurrentPage + 1,
-    qrCurrentPage >= totalPages,
-    false
-  );
 }
 
 
 // ==================================================
-// PAGE SIZE
+// PRINT CURRENT PREVIEW
 // ==================================================
 
-function handleQRPageSizeChange() {
-
-  if (!qrPageSize) {
-    return;
-  }
-
-  const value =
-    Number(qrPageSize.value);
-
-  if (
-    !Number.isFinite(value) ||
-    value <= 0
-  ) {
-    qrCurrentPageSize = 25;
-  } else {
-    qrCurrentPageSize = value;
-  }
-
-  qrCurrentPage = 1;
-
-  renderQRTable();
-}
-
-
-// ==================================================
-// SEARCH
-// ==================================================
-
-function handleQRSearch() {
-
-  qrSearchKeyword =
-    qrSearchInput
-      ? String(
-          qrSearchInput.value || ""
-        ).trim()
-      : "";
-
-  qrCurrentPage = 1;
-
-  renderQRTable();
-}
-
-
-// ==================================================
-// ZONE FILTER
-// ==================================================
-
-function handleQRZoneFilter() {
-
-  qrZoneValue =
-    qrZoneFilter
-      ? String(
-          qrZoneFilter.value || ""
-        ).trim()
-      : "";
-
-  qrCurrentPage = 1;
-
-  renderQRTable();
-}
-
-
-// ==================================================
-// ACTIVE / INACTIVE FILTER
-// ==================================================
-
-function handleQRStatusFilter() {
-
-  qrStatusValue =
-    qrStatusFilter
-      ? String(
-          qrStatusFilter.value || ""
-        ).trim()
-        .toLowerCase()
-      : "";
-
-  qrCurrentPage = 1;
-
-  renderQRTable();
-}
-
-
-// ==================================================
-// QR EXIST FILTER
-// ==================================================
-
-function handleQRExistFilter() {
-
-  qrExistValue =
-    qrExistFilter
-      ? String(
-          qrExistFilter.value || ""
-        ).trim()
-        .toLowerCase()
-      : "";
-
-  qrCurrentPage = 1;
-
-  renderQRTable();
-}
-
-
-// ==================================================
-// CLEAR FILTER
-// ==================================================
-
-function clearQRFilters() {
-
-  qrSearchKeyword = "";
-  qrZoneValue = "";
-  qrStatusValue = "";
-  qrExistValue = "";
-
-  qrCurrentPage = 1;
-
-  if (qrSearchInput) {
-    qrSearchInput.value = "";
-  }
-
-  if (qrZoneFilter) {
-    qrZoneFilter.value = "";
-  }
-
-  if (qrStatusFilter) {
-    qrStatusFilter.value = "";
-  }
-
-  if (qrExistFilter) {
-    qrExistFilter.value = "";
-  }
-
-  renderQRTable();
-
-  setQRStatus(
-    "🔄 ล้างตัวกรองแล้ว"
-  );
-}
-
-
-// ==================================================
-// SET STATUS
-// ==================================================
-
-function setQRStatus(message) {
-
-  if (!qrStatus) {
-    return;
-  }
-
-  qrStatus.textContent =
-    String(message || "");
-}
-
-
-// ==================================================
-// CREATE BUTTON
-// ==================================================
-
-function handleCreateQR() {
-
-  createSelectedQR();
-}
-
-
-// ==================================================
-// PRINT SELECTED
-// ==================================================
-
-async function handlePrintSelectedQR() {
-
-  const selectedLocations =
-    getSelectedLocations();
-
-  if (
-    !selectedLocations ||
-    selectedLocations.length === 0
-  ) {
-
-    setQRStatus(
-      "⚠️ กรุณาเลือกจุดตรวจก่อนพิมพ์ QR"
-    );
-
-    return;
-  }
-
-  await printLocations(
-    selectedLocations,
-    "selected"
-  );
-}
-
-
-// ==================================================
-// PRINT ALL ACTIVE
-// ==================================================
-
-async function handlePrintAllQR() {
-
-  const activeLocations =
-    getActiveLocations();
-
-  if (
-    !activeLocations ||
-    activeLocations.length === 0
-  ) {
-
-    setQRStatus(
-      "⚠️ ไม่พบจุด Active สำหรับพิมพ์ QR"
-    );
-
-    return;
-  }
-
-  await printLocations(
-    activeLocations,
-    "all"
-  );
-}
-
-
-// ==================================================
-// PRINT LOCATIONS
-// ==================================================
-
-async function printLocations(
-  locations,
-  mode
+async function printQRLocations(
+  locations
 ) {
 
-  if (qrIsPrinting) {
-    return;
-  }
-
   if (
-    !Array.isArray(locations) ||
+    !Array.isArray(
+      locations
+    ) ||
     locations.length === 0
   ) {
 
     setQRStatus(
-      "⚠️ ไม่มีรายการสำหรับพิมพ์"
+      "⚠️ ไม่มี QR สำหรับพิมพ์"
     );
 
     return;
+
   }
 
 
-  if (!qrPreviewGrid) {
+  if (
+    typeof QRCode === "undefined"
+  ) {
 
     setQRStatus(
-      "❌ ไม่พบ QR Preview"
+      "❌ ไม่พบ QR Generator"
     );
 
     return;
+
   }
 
 
-  injectQRPrintStyle();
+  /*
+   * สร้าง Preview ก่อนเสมอ
+   */
 
-
-  // --------------------------------------------------
-  // IMPORTANT
-  //
-  // Print ต้องใช้ Preview Card
-  //
-  // ดังนั้นถ้ายังไม่มี Preview
-  // ให้สร้าง Preview จากรายการที่จะพิมพ์ก่อน
-  //
-  // --------------------------------------------------
-
-  const missingPreview =
-    locations.some(
-      function(location) {
-
-        const pointId =
-          String(
-            location.pointId || ""
-          ).trim();
-
-        return !findPreviewCardByPointId(
-          pointId
-        );
-      }
-    );
-
-
-  if (missingPreview) {
-
-    renderQRPreview(
-      locations
-    );
-
-    await new Promise(
-      function(resolve) {
-
-        requestAnimationFrame(
-          function() {
-
-            requestAnimationFrame(
-              resolve
-            );
-          }
-        );
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Snapshot
-  // --------------------------------------------------
-
-  qrIsPrinting = true;
-
-  setQRStatus(
-    `⏳ กำลังเตรียม QR สำหรับพิมพ์ ${locations.length} จุด...`
+  renderQRPreview(
+    locations
   );
+
+
+  await waitForQRRender();
+
+
+  const cards =
+    getQRPreviewCards();
+
+
+  if (
+    cards.length !==
+    locations.length
+  ) {
+
+    setQRStatus(
+      "❌ จำนวน QR Preview ไม่ตรงกับรายการที่ต้องการพิมพ์"
+    );
+
+    console.error(
+      "GGN QR: Preview card count mismatch",
+      {
+        expected:
+          locations.length,
+
+        actual:
+          cards.length
+      }
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * ตรวจว่า QR มีจริงทุกใบ
+   */
+
+  const invalidCards =
+    cards.filter(
+      card => {
+
+        return (
+          !card.querySelector(
+            ".qr-preview-code canvas"
+          ) &&
+          !card.querySelector(
+            ".qr-preview-code img"
+          )
+        );
+
+      }
+    );
+
+
+  if (
+    invalidCards.length > 0
+  ) {
+
+    setQRStatus(
+      `❌ QR สร้างไม่สมบูรณ์ ${invalidCards.length} ใบ`
+    );
+
+    console.error(
+      "GGN QR: Some QR cards have no rendered QR."
+    );
+
+    return;
+
+  }
 
 
   try {
 
-    const snapshotItems = [];
-
-
-    for (
-      let index = 0;
-      index < locations.length;
-      index++
-    ) {
-
-      const location =
-        locations[index];
-
-      const pointId =
-        String(
-          location.pointId || ""
-        ).trim();
-
-
-      if (!pointId) {
-        continue;
-      }
-
-
-      const card =
-        findPreviewCardByPointId(
-          pointId
-        );
-
-
-      if (!card) {
-
-        console.warn(
-          "GGN QR: ไม่พบ Preview Card",
-          pointId
-        );
-
-        continue;
-      }
-
-
-      setQRStatus(
-        `⏳ กำลังเตรียม Snapshot ${index + 1}/${locations.length} : ${pointId}`
+    const prepared =
+      await prepareQRPrint(
+        cards
       );
 
 
-      try {
-
-        const dataURL =
-          await snapshotPreviewCard(
-            card
-          );
-
-
-        if (
-          !dataURL ||
-          !dataURL.startsWith(
-            "data:image/"
-          )
-        ) {
-
-          throw new Error(
-            "Snapshot ไม่ใช่รูปภาพ"
-          );
-        }
-
-
-        snapshotItems.push({
-
-          pointId,
-
-          dataURL
-
-        });
-
-
-      } catch (error) {
-
-        console.error(
-          "GGN QR: Snapshot failed",
-          {
-            pointId,
-            error
-          }
-        );
-
-        throw new Error(
-          `สร้าง Snapshot ของ ${pointId} ไม่สำเร็จ`
-        );
-      }
-    }
-
-
-    if (
-      snapshotItems.length === 0
-    ) {
+    if (!prepared) {
 
       throw new Error(
-        "ไม่สามารถสร้าง Snapshot QR ได้"
+        "ไม่สามารถเตรียม Print Layout ได้"
       );
+
     }
 
 
-    // --------------------------------------------------
-    // BUILD PRINT AREA
-    // --------------------------------------------------
+    const pageCount =
+      Math.ceil(
+        locations.length /
+        QR_CARDS_PER_PAGE
+      );
+
 
     setQRStatus(
-      `⏳ กำลังจัดหน้า A4 ${snapshotItems.length} QR...`
+      `🖨️ กำลังเปิดหน้าพิมพ์ ${locations.length} ใบ / ${pageCount} หน้า`
     );
 
 
-    buildQRPrintArea(
-      snapshotItems
+    console.log(
+      "GGN QR Print:",
+      {
+
+        total:
+          locations.length,
+
+        cardSize:
+          `${QR_CARD_WIDTH_MM} × ${QR_CARD_HEIGHT_MM} mm`,
+
+        paper:
+          "A4 Portrait",
+
+        grid:
+          "3 × 3",
+
+        cardsPerPage:
+          QR_CARDS_PER_PAGE,
+
+        pages:
+          pageCount
+
+      }
     );
 
 
-    // --------------------------------------------------
-    // WAIT PRINT IMAGE
-    // --------------------------------------------------
+    /*
+     * ให้ browser layout เสร็จก่อน
+     */
 
-    await waitForPrintImages();
-
-
-    // --------------------------------------------------
-    // Print
-    // --------------------------------------------------
-
-    setQRStatus(
-      `🖨️ พร้อมพิมพ์ ${snapshotItems.length} QR`
-    );
+    await waitForQRRender();
 
 
-    await preparePrint();
+    window.print();
 
 
   } catch (error) {
@@ -4775,569 +2224,278 @@ async function printLocations(
       error
     );
 
+
+    restoreQRAfterPrint();
+
+
     setQRStatus(
       "❌ พิมพ์ QR ไม่สำเร็จ" +
       (
-        error &&
         error.message
           ? `: ${error.message}`
           : ""
       )
     );
 
-    restoreAfterPrint();
-
-  } finally {
-
-    qrIsPrinting = false;
   }
+
 }
 
 
 // ==================================================
-// BUILD PRINT AREA
+// PRINT SELECTED
 // ==================================================
 
-function buildQRPrintArea(
-  snapshotItems
+function printSelectedQR() {
+
+  const selectedLocations =
+    getSelectedLocations();
+
+
+  if (
+    selectedLocations.length === 0
+  ) {
+
+    setQRStatus(
+      "⚠️ กรุณาเลือกจุดที่ต้องการพิมพ์"
+    );
+
+    return;
+
+  }
+
+
+  printQRLocations(
+    selectedLocations
+  );
+
+}
+
+
+// ==================================================
+// PRINT ALL
+//
+// เลือก Active ทั้งหมด
+// ==================================================
+
+function printAllQR() {
+
+  const activeLocations =
+    qrLocations.filter(
+      location => {
+
+        return (
+          location.active === true &&
+          String(
+            location.pointId ||
+            ""
+          ).trim()
+        );
+
+      }
+    );
+
+
+  if (
+    activeLocations.length === 0
+  ) {
+
+    setQRStatus(
+      "⚠️ ไม่พบจุด Active สำหรับพิมพ์"
+    );
+
+    return;
+
+  }
+
+
+  selectedPointIds =
+    new Set(
+
+      activeLocations.map(
+        location =>
+          String(
+            location.pointId
+          ).trim()
+      )
+
+    );
+
+
+  updateQRCheckboxes();
+
+
+  updateQRSummary();
+
+
+  printQRLocations(
+    activeLocations
+  );
+
+}
+
+
+// ==================================================
+// SET STATUS
+// ==================================================
+
+function setQRStatus(
+  message
 ) {
 
-  if (!qrPrintArea) {
-    throw new Error(
-      "ไม่พบ #qrPrintArea"
-    );
-  }
+  if (!qrStatus) {
 
-
-  qrPrintArea.innerHTML = "";
-
-
-  if (
-    !Array.isArray(snapshotItems) ||
-    snapshotItems.length === 0
-  ) {
     return;
+
   }
 
 
-  // --------------------------------------------------
-  // Split 9 Cards / Page
-  // --------------------------------------------------
+  qrStatus.textContent =
+    message;
 
-  for (
-    let start = 0;
-    start < snapshotItems.length;
-    start += ITEMS_PER_PAGE
-  ) {
-
-    const pageItems =
-      snapshotItems.slice(
-        start,
-        start + ITEMS_PER_PAGE
-      );
+}
 
 
-    const page =
-      document.createElement("section");
+// ==================================================
+// PRINT EVENTS
+// ==================================================
 
-    page.className =
-      "ggn-qr-print-page";
+window.addEventListener(
+  "afterprint",
+  function() {
 
-
-    // --------------------------------------------------
-    // Cards
-    // --------------------------------------------------
-
-    pageItems.forEach(
-      function(item) {
-
-        const card =
-          document.createElement("div");
-
-        card.className =
-          "ggn-qr-print-card";
+    restoreQRAfterPrint();
 
 
-        const image =
-          document.createElement("img");
-
-        image.className =
-          "ggn-qr-snapshot";
-
-        image.alt =
-          `QR ${item.pointId}`;
-
-        image.src =
-          item.dataURL;
-
-        image.decoding =
-          "sync";
-
-        image.draggable =
-          false;
-
-
-        card.appendChild(
-          image
-        );
-
-        page.appendChild(
-          card
-        );
-      }
+    setQRStatus(
+      "✅ กลับสู่หน้า QR Management แล้ว"
     );
 
-
-    qrPrintArea.appendChild(
-      page
-    );
   }
-}
+);
 
 
 // ==================================================
-// WAIT FOR PRINT IMAGES
+// EVENTS
 // ==================================================
-
-async function waitForPrintImages() {
-
-  if (!qrPrintArea) {
-    return;
-  }
-
-  const images =
-    Array.from(
-      qrPrintArea.querySelectorAll(
-        "img"
-      )
-    );
-
-  if (
-    images.length === 0
-  ) {
-    return;
-  }
-
-
-  await Promise.all(
-    images.map(
-      function(image) {
-
-        return waitForImage(
-          image
-        );
-      }
-    )
-  );
-
-
-  // --------------------------------------------------
-  // Give browser time to layout
-  // --------------------------------------------------
-
-  await new Promise(
-    function(resolve) {
-
-      requestAnimationFrame(
-        function() {
-
-          requestAnimationFrame(
-            resolve
-          );
-        }
-      );
-    }
-  );
-}
-
-
-// ==================================================
-// PREPARE PRINT
-// ==================================================
-
-async function preparePrint() {
-
-  if (!qrPrintArea) {
-    throw new Error(
-      "ไม่พบ Print Area"
-    );
-  }
-
-
-  if (
-    qrPrintArea.children.length === 0
-  ) {
-    throw new Error(
-      "ไม่มีข้อมูลสำหรับพิมพ์"
-    );
-  }
-
-
-  injectQRPrintStyle();
-
-
-  // --------------------------------------------------
-  // Add print state
-  // --------------------------------------------------
-
-  document.body.classList.add(
-    "ggn-qr-print-active"
-  );
-
-
-  // --------------------------------------------------
-  // Browser layout
-  // --------------------------------------------------
-
-  await new Promise(
-    function(resolve) {
-
-      requestAnimationFrame(
-        function() {
-
-          requestAnimationFrame(
-            function() {
-
-              setTimeout(
-                resolve,
-                100
-              );
-            }
-          );
-        }
-      );
-    }
-  );
-
-
-  // --------------------------------------------------
-  // Open browser print dialog
-  // --------------------------------------------------
-
-  window.print();
-}
-
-
-// ==================================================
-// RESTORE AFTER PRINT
-// ==================================================
-
-function restoreAfterPrint() {
-
-  document.body.classList.remove(
-    "ggn-qr-print-active"
-  );
-
-
-  if (qrPrintArea) {
-    qrPrintArea.innerHTML = "";
-  }
-
-
-  qrIsPrinting = false;
-}
-
-
-// ==================================================
-// PRINT MEDIA EVENTS
-// ==================================================
-
-function handleBeforePrint() {
-
-  document.body.classList.add(
-    "ggn-qr-print-active"
-  );
-}
-
-
-function handleAfterPrint() {
-
-  restoreAfterPrint();
-
-  setQRStatus(
-    "✅ กลับสู่หน้าจัดการ QR แล้ว"
-  );
-}
 
 
 // ==================================================
 // REFRESH
 // ==================================================
 
-async function handleRefreshQR() {
+if (refreshQrBtn) {
 
-  if (qrIsPrinting) {
-    return;
-  }
+  refreshQrBtn.addEventListener(
+    "click",
+    function() {
 
-  await loadQRManagement();
-}
+      loadQRManagement();
 
-
-// ==================================================
-// INITIALIZE EVENTS
-// ==================================================
-
-function initializeQREvents() {
-
-  if (qrEventsInitialized) {
-    return;
-  }
-
-  qrEventsInitialized = true;
-
-
-  // --------------------------------------------------
-  // Search
-  // --------------------------------------------------
-
-  if (qrSearchInput) {
-
-    qrSearchInput.addEventListener(
-      "input",
-      handleQRSearch
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Zone
-  // --------------------------------------------------
-
-  if (qrZoneFilter) {
-
-    qrZoneFilter.addEventListener(
-      "change",
-      handleQRZoneFilter
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Active / Inactive
-  // --------------------------------------------------
-
-  if (qrStatusFilter) {
-
-    qrStatusFilter.addEventListener(
-      "change",
-      handleQRStatusFilter
-    );
-  }
-
-
-  // --------------------------------------------------
-  // QR Exist
-  // --------------------------------------------------
-
-  if (qrExistFilter) {
-
-    qrExistFilter.addEventListener(
-      "change",
-      handleQRExistFilter
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Clear Filter
-  // --------------------------------------------------
-
-  if (clearQrFilterBtn) {
-
-    clearQrFilterBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        clearQRFilters();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Page Size
-  // --------------------------------------------------
-
-  if (qrPageSize) {
-
-    qrCurrentPageSize =
-      Number(
-        qrPageSize.value
-      ) || 25;
-
-    qrPageSize.addEventListener(
-      "change",
-      handleQRPageSizeChange
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Select All Current Page
-  // --------------------------------------------------
-
-  if (selectAllQrCheckbox) {
-
-    selectAllQrCheckbox.addEventListener(
-      "change",
-      function(event) {
-
-        event.preventDefault();
-
-        toggleSelectCurrentPage();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Clear All
-  // --------------------------------------------------
-
-  if (clearAllQrBtn) {
-
-    clearAllQrBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        clearAllQR();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Create QR
-  // --------------------------------------------------
-
-  if (createQrBtn) {
-
-    createQrBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        handleCreateQR();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Print Selected
-  // --------------------------------------------------
-
-  if (printSelectedQrBtn) {
-
-    printSelectedQrBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        handlePrintSelectedQR();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Print All
-  // --------------------------------------------------
-
-  if (printAllQrBtn) {
-
-    printAllQrBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        handlePrintAllQR();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Refresh
-  // --------------------------------------------------
-
-  if (refreshQrBtn) {
-
-    refreshQrBtn.addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-
-        handleRefreshQR();
-      }
-    );
-  }
-
-
-  // --------------------------------------------------
-  // Browser Print Events
-  // --------------------------------------------------
-
-  window.addEventListener(
-    "beforeprint",
-    handleBeforePrint
-  );
-
-  window.addEventListener(
-    "afterprint",
-    handleAfterPrint
-  );
-}
-
-
-// ==================================================
-// INITIALIZE PAGE
-// ==================================================
-
-function initializeQRPage() {
-
-  injectQRPrintStyle();
-
-  initializeQREvents();
-
-  loadQRManagement();
-}
-
-
-// ==================================================
-// PAGE INITIALIZATION
-// ==================================================
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeQRPage,
-    {
-      once: true
     }
   );
 
-} else {
-
-  initializeQRPage();
 }
 
-}
 
 // ==================================================
-// END OF QR.JS V5.9
-// PART 2/2
-// =================================================
+// SELECT ALL
+// ==================================================
+
+if (selectAllQrBtn) {
+
+  selectAllQrBtn.addEventListener(
+    "click",
+    function() {
+
+      selectAllQR();
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// CLEAR ALL
+// ==================================================
+
+if (clearAllQrBtn) {
+
+  clearAllQrBtn.addEventListener(
+    "click",
+    function() {
+
+      clearAllQR();
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// CREATE QR
+// ==================================================
+
+if (createQrBtn) {
+
+  createQrBtn.addEventListener(
+    "click",
+    function() {
+
+      createSelectedQR();
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// PRINT SELECTED
+// ==================================================
+
+if (printSelectedQrBtn) {
+
+  printSelectedQrBtn.addEventListener(
+    "click",
+    function() {
+
+      printSelectedQR();
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// PRINT ALL
+// ==================================================
+
+if (printAllQrBtn) {
+
+  printAllQrBtn.addEventListener(
+    "click",
+    function() {
+
+      printAllQR();
+
+    }
+  );
+
+}
+
+
+// ==================================================
+// START
+// ==================================================
+
+injectQRPrintStyles();
+
+
+loadQRManagement();
+
+
+}
