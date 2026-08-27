@@ -2453,7 +2453,7 @@ function injectQRPrintStyle() {
     .dashboard-container {
       display: block !important;
       width: ${A4_WIDTH_MM}mm !important;
-      min-width: ${A4_WIDTH_MM_MM}mm !important;
+      min-width: ${A4_WIDTH_MM}mm !important;
       max-width: ${A4_WIDTH_MM}mm !important;
       margin: 0 !important;
       padding: 0 !important;
