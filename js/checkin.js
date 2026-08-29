@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // CHECKIN.JS
-// Version 3.2
+// Version 3.3
 //
 // หน้าที่:
 // - Check-in
@@ -14,37 +14,22 @@
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
 //
-// V3.2 PERFORMANCE
+// V3.3 BUTTON LOCK
 //
 // IMPORTANT CHANGE:
-// - Preview แสดงทันที
-// - ไม่รอ Location ก่อนเริ่มหน้า
-// - ไม่สร้าง Location Request เอง
-// - ใช้ loadLocationByPoint() จาก app.js V4.2
-// - ใช้ Promise เดียวกับ App
-// - ไม่ยิง Point API ซ้ำ
-// - ถ้า Location ยังโหลดอยู่ตอนกดส่ง
-//   → รอ Promise เดิม
-// - เมื่อ Backend ตอบกลับ
-//   → Update Preview ทันที
-//
-// PREVIEW / TELEGRAM:
-//
-// 🟢 CHECK-IN
-//
-// 📍 จุด: [Location]
-// 👤 ผู้ปฏิบัติงาน: [ชื่อ]
-// 🕐 เวลา: [เวลา]
+// - ป้องกันการกดปุ่มส่งซ้ำ
+// - กดครั้งแรก → ล็อกปุ่มทันที
+// - ปุ่ม disabled ระหว่างการส่งข้อมูล
+// - ป้องกัน Double Submit
+// - หลังส่งสำเร็จ → reset form → ปลดล็อกปุ่ม
+// - หากส่งไม่สำเร็จ → แสดง Error → ปลดล็อกปุ่ม
 //
 // IMPORTANT:
-// - Point ID ใช้ภายในระบบ
-// - Zone ใช้ภายในระบบ
-// - ไม่แสดง Point ID
-// - ไม่แสดง Zone
-// - ไม่มี jobType
-// - ไม่มี extraText
-// - ไม่มีหมายเหตุ
-// - ส่งรูปเพียง 1 รูป
+// - ไม่แก้ Backend
+// - ไม่แก้ API
+// - ไม่เปลี่ยน Payload
+// - ไม่เปลี่ยน Location Flow
+// - ไม่เปลี่ยน Image Flow
 // ==================================================
 
 
@@ -95,13 +80,22 @@ async function initializeCheckin() {
 
   // ==================================================
   // LOCATION STATE
-  //
-  // V3.2
-  //
-  // ใช้สถานะจาก App เป็นหลัก
   // ==================================================
 
   let locationError =
+    false;
+
+
+  // ==================================================
+  // SEND LOCK
+  //
+  // ป้องกันการกดส่งซ้ำ
+  //
+  // false = พร้อมส่ง
+  // true  = กำลังส่ง
+  // ==================================================
+
+  let isSending =
     false;
 
 
@@ -192,11 +186,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // PREVIEW TEXT
-  //
-  // สำคัญ:
-  //
-  // ฟังก์ชันนี้ต้องทำงานได้ทันที
-  // โดยไม่ต้องรอ Location
   // ==================================================
 
   function updatePreviewText() {
@@ -566,15 +555,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // LOCATION REQUEST
-  //
-  // V3.2
-  //
-  // ไม่สร้าง Request ใหม่
-  //
-  // ใช้ loadLocationByPoint()
-  // จาก app.js V4.2
-  //
-  // app.js เป็นผู้จัดการ Promise
   // ==================================================
 
   function startLocationVerification() {
@@ -617,17 +597,6 @@ async function initializeCheckin() {
 
     }
 
-
-    /*
-     * สำคัญ:
-     *
-     * ไม่ await
-     *
-     * และไม่สร้าง fetch ใหม่
-     *
-     * loadLocationByPoint()
-     * จะคืน Promise เดิมจาก app.js
-     */
 
     const promise =
       loadLocationByPoint();
@@ -706,12 +675,6 @@ async function initializeCheckin() {
           );
 
 
-          /*
-           * Location มาแล้ว
-           *
-           * Update Preview ทันที
-           */
-
           updatePreviewText();
 
 
@@ -758,12 +721,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // WAIT FOR LOCATION
-  //
-  // V3.2
-  //
-  // ใช้ Promise เดิมจาก app.js
-  //
-  // ไม่มี Request ใหม่
   // ==================================================
 
   async function waitForLocation() {
@@ -781,11 +738,6 @@ async function initializeCheckin() {
     }
 
 
-    /*
-     * ถ้ามีผลตรวจสอบสำเร็จแล้ว
-     * ไม่ต้องรอ
-     */
-
     if (
       typeof isLocationVerified === "function" &&
       isLocationVerified()
@@ -795,10 +747,6 @@ async function initializeCheckin() {
 
     }
 
-
-    /*
-     * ขอ Promise เดิมจาก App
-     */
 
     if (
       typeof loadLocationByPoint !== "function"
@@ -874,40 +822,13 @@ async function initializeCheckin() {
 
   async function sendData() {
 
-    const name =
-      fullname.value.trim();
-
-
-    const pointId =
-      getCheckinPointId();
-
-
     // ==================================================
-    // VALIDATE NAME
+    // DOUBLE SUBMIT PROTECTION
+    //
+    // ตรวจสอบก่อนทำงานทุกครั้ง
     // ==================================================
 
-    if (!name) {
-
-      status.textContent =
-        "❌ กรุณากรอกชื่อ-นามสกุล";
-
-
-      fullname.focus();
-
-
-      return;
-
-    }
-
-
-    if (/\d/.test(name)) {
-
-      status.textContent =
-        "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
-
-
-      fullname.focus();
-
+    if (isSending) {
 
       return;
 
@@ -915,48 +836,15 @@ async function initializeCheckin() {
 
 
     // ==================================================
-    // VALIDATE POINT
+    // LOCK ทันที
+    //
+    // สำคัญ:
+    // ต้องล็อกก่อน Validation และ await
+    // เพื่อไม่ให้เกิดการกดซ้ำ
     // ==================================================
 
-    if (!pointId) {
-
-      status.textContent =
-        "❌ ไม่พบรหัสจุดตรวจ";
-
-
-      return;
-
-    }
-
-
-    // ==================================================
-    // VALIDATE IMAGE
-    // ==================================================
-
-    if (!photo) {
-
-      status.textContent =
-        "❌ กรุณาถ่ายรูปหรือเลือกรูปภาพ";
-
-
-      return;
-
-    }
-
-
-    // ==================================================
-    // API
-    // ==================================================
-
-    if (!GOOGLE_APPS_SCRIPT_URL) {
-
-      status.textContent =
-        "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
-
-
-      return;
-
-    }
+    isSending =
+      true;
 
 
     sendBtn.disabled =
@@ -965,13 +853,133 @@ async function initializeCheckin() {
 
     try {
 
+      const name =
+        fullname.value.trim();
+
+
+      const pointId =
+        getCheckinPointId();
+
+
+      // ==================================================
+      // VALIDATE NAME
+      // ==================================================
+
+      if (!name) {
+
+        status.textContent =
+          "❌ กรุณากรอกชื่อ-นามสกุล";
+
+
+        fullname.focus();
+
+
+        isSending =
+          false;
+
+
+        sendBtn.disabled =
+          false;
+
+
+        return;
+
+      }
+
+
+      if (/\d/.test(name)) {
+
+        status.textContent =
+          "❌ ห้ามกรอกตัวเลขในชื่อ-นามสกุล";
+
+
+        fullname.focus();
+
+
+        isSending =
+          false;
+
+
+        sendBtn.disabled =
+          false;
+
+
+        return;
+
+      }
+
+
+      // ==================================================
+      // VALIDATE POINT
+      // ==================================================
+
+      if (!pointId) {
+
+        status.textContent =
+          "❌ ไม่พบรหัสจุดตรวจ";
+
+
+        isSending =
+          false;
+
+
+        sendBtn.disabled =
+          false;
+
+
+        return;
+
+      }
+
+
+      // ==================================================
+      // VALIDATE IMAGE
+      // ==================================================
+
+      if (!photo) {
+
+        status.textContent =
+          "❌ กรุณาถ่ายรูปหรือเลือกรูปภาพ";
+
+
+        isSending =
+          false;
+
+
+        sendBtn.disabled =
+          false;
+
+
+        return;
+
+      }
+
+
+      // ==================================================
+      // API
+      // ==================================================
+
+      if (!GOOGLE_APPS_SCRIPT_URL) {
+
+        status.textContent =
+          "❌ ยังไม่ได้ตั้งค่า Google Apps Script URL";
+
+
+        isSending =
+          false;
+
+
+        sendBtn.disabled =
+          false;
+
+
+        return;
+
+      }
+
+
       // ==================================================
       // VERIFY LOCATION
-      //
-      // ถ้ายังไม่เสร็จ
-      // → รอ Promise เดิม
-      //
-      // ไม่ยิง API ใหม่
       // ==================================================
 
       status.textContent =
@@ -1118,8 +1126,18 @@ async function initializeCheckin() {
             : ""
         );
 
-
     } finally {
+
+      // ==================================================
+      // UNLOCK
+      //
+      // หลังจบการส่งข้อมูลแล้ว
+      // จึงอนุญาตให้กดรอบใหม่
+      // ==================================================
+
+      isSending =
+        false;
+
 
       sendBtn.disabled =
         false;
@@ -1235,10 +1253,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // INITIAL PREVIEW
-  //
-  // สำคัญ:
-  //
-  // Preview ขึ้นก่อน Location
   // ==================================================
 
   updatePreviewText();
@@ -1246,12 +1260,6 @@ async function initializeCheckin() {
 
   // ==================================================
   // BACKGROUND LOCATION VERIFICATION
-  //
-  // V3.2
-  //
-  // ไม่ await
-  //
-  // ใช้ Promise เดียวกับ app.js
   // ==================================================
 
   if (

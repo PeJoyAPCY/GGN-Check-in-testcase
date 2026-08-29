@@ -1,7 +1,8 @@
+
 // ==================================================
 // GGN CHECK-IN
 // CHECKOUT.JS
-// Version 3.2
+// Version 3.3
 //
 // หน้าที่:
 // - Check-out
@@ -14,33 +15,17 @@
 // - รองรับ QR Point ID
 // - ใช้ Zone / Location จาก Backend
 //
-// รูปแบบ Preview / Telegram:
-//
-// 🔴 Check out - ออกงาน
-// ━━━━━━━━━━━━━━━━━━━━━
-// 📍 จุด: [Location]
-// 👤 ผู้ปฏิบัติงาน: [ชื่อ]
-// 🕐 เวลา: [เวลา]
-// ━━━━━━━━━━━━━━━━━━━━━
+// V3.3 BUTTON PROTECTION
 //
 // IMPORTANT:
-// - Point ID ใช้ภายในระบบ
-// - Zone ใช้ภายในระบบเพื่อเลือก Telegram Group
-// - ไม่แสดง Point ID
-// - ไม่แสดง Zone
-// - ไม่มี jobType
-// - ไม่มี extraText
-// - ไม่มีหมายเหตุ
-//
-// V3.2:
-//
-// - ไม่ตรวจ Point ซ้ำเอง
-// - ไม่สร้าง Promise ตรวจ Point เอง
-// - ใช้ loadLocationByPoint() จาก APP.JS V4.2
-// - ใช้ Verification Result จาก APP.JS
-// - รองรับ Promise เดียวของระบบ
-// - Preview ไม่รอ Location
-// - Location อัปเดตเมื่อ Backend ตรวจสอบสำเร็จ
+// - ก่อน Validation → ปุ่มยังใช้งานได้
+// - Validation เดิมยังทำงานเหมือนเดิม
+// - เมื่อผ่าน Validation และเริ่มส่งข้อมูล
+//   → ล็อกปุ่มทันที
+// - ป้องกันการกดส่งซ้ำ
+// - ระหว่างส่งปุ่ม disabled
+// - ส่งสำเร็จ → reset และปลดล็อก
+// - ส่งไม่สำเร็จ → ปลดล็อกเพื่อส่งใหม่
 // ==================================================
 
 
@@ -169,12 +154,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // GET VERIFICATION RESULT
-  //
-  // V3.2
-  //
-  // ใช้ผลจาก APP.JS V4.2
-  //
-  // ไม่สร้าง Verification State ใหม่
   // ==================================================
 
   function getCheckoutVerificationResult() {
@@ -198,10 +177,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // CHECK VERIFIED
-  //
-  // V3.2
-  //
-  // อ่านสถานะจาก APP.JS
   // ==================================================
 
   function isCheckoutLocationVerified() {
@@ -225,11 +200,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // PREVIEW
-  //
-  // สำคัญ:
-  // Preview ต้องขึ้นทันที
-  //
-  // ไม่รอ Location
   // ==================================================
 
   function updatePreviewText() {
@@ -285,9 +255,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // UPDATE LOCATION PREVIEW
-  //
-  // เรียกหลัง APP.JS
-  // ตรวจสอบ Point สำเร็จ
   // ==================================================
 
   function updateLocationPreview() {
@@ -299,20 +266,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // POINT VERIFICATION
-  //
-  // V3.2
-  //
-  // IMPORTANT:
-  //
-  // Checkout ไม่สร้าง Request เอง
-  //
-  // ใช้ Promise จาก APP.JS V4.2
-  //
-  // ถ้า APP.JS เริ่ม Request ไปแล้ว
-  // จะได้รับ Promise เดิม
-  //
-  // ถ้า APP.JS ตรวจเสร็จแล้ว
-  // จะได้รับผลที่ตรวจแล้วทันที
   // ==================================================
 
   function ensurePointVerification() {
@@ -320,10 +273,6 @@ async function initializeCheckout() {
     const pointId =
       getCheckoutPointId();
 
-
-    // ----------------------------------------------
-    // ไม่มี Point ID
-    // ----------------------------------------------
 
     if (!pointId) {
 
@@ -333,10 +282,6 @@ async function initializeCheckout() {
 
     }
 
-
-    // ----------------------------------------------
-    // ถ้า APP.JS ตรวจสำเร็จแล้ว
-    // ----------------------------------------------
 
     if (
       isCheckoutLocationVerified()
@@ -351,10 +296,6 @@ async function initializeCheckout() {
 
     }
 
-
-    // ----------------------------------------------
-    // ใช้ Promise จาก APP.JS
-    // ----------------------------------------------
 
     if (
       typeof loadLocationByPoint !==
@@ -430,8 +371,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // INPUT EVENT
-  //
-  // Preview เปลี่ยนทันทีเมื่อพิมพ์ชื่อ
   // ==================================================
 
   fullname.addEventListener(
@@ -445,6 +384,24 @@ async function initializeCheckout() {
   // ==================================================
 
   async function sendData() {
+
+    /*
+     * IMPORTANT
+     *
+     * ถ้าปุ่มถูก Lock อยู่
+     * ไม่ให้ทำงานซ้ำอีกชั้นหนึ่ง
+     *
+     * ป้องกันกรณี Event ถูกเรียกซ้ำ
+     */
+
+    if (
+      sendBtn.disabled
+    ) {
+
+      return;
+
+    }
+
 
     const name =
       fullname.value.trim();
@@ -503,10 +460,6 @@ async function initializeCheckout() {
 
     // ==================================================
     // ENSURE POINT VERIFICATION
-    //
-    // V3.2
-    //
-    // ใช้ Promise เดียวจาก APP.JS
     // ==================================================
 
     if (
@@ -559,9 +512,6 @@ async function initializeCheckout() {
 
     // ==================================================
     // CURRENT DATA
-    //
-    // อ่านหลัง Verification
-    // เพื่อให้ได้ข้อมูลจาก Backend ล่าสุด
     // ==================================================
 
     const zone =
@@ -622,11 +572,26 @@ async function initializeCheckout() {
     }
 
 
+    // ==================================================
+    // LOCK BUTTON
+    //
+    // สำคัญ:
+    //
+    // ล็อกตรงนี้เท่านั้น
+    //
+    // เพราะ Validation ทั้งหมด
+    // ผ่านเรียบร้อยแล้ว
+    // ==================================================
+
     sendBtn.disabled =
       true;
 
 
     try {
+
+      // ==================================================
+      // SENDING STATUS
+      // ==================================================
 
       status.textContent =
         "⏳ กำลังส่งข้อมูล...";
@@ -634,8 +599,6 @@ async function initializeCheckout() {
 
       // ==================================================
       // PAYLOAD
-      //
-      // ไม่เปลี่ยนจาก V3.1
       // ==================================================
 
       const payload = {
@@ -663,6 +626,10 @@ async function initializeCheckout() {
         payload
       );
 
+
+      // ==================================================
+      // SEND
+      // ==================================================
 
       await sendRequest(
         payload
@@ -699,6 +666,13 @@ async function initializeCheckout() {
 
     } finally {
 
+      // ==================================================
+      // UNLOCK BUTTON
+      //
+      // ส่งสำเร็จหรือไม่สำเร็จ
+      // จึงปลดล็อกปุ่ม
+      // ==================================================
+
       sendBtn.disabled =
         false;
 
@@ -709,12 +683,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // REQUEST
-  //
-  // ใช้สำหรับส่ง Check-out เท่านั้น
-  //
-  // ไม่เกี่ยวกับ Point Verification
-  //
-  // Point Verification ใช้ APP.JS
   // ==================================================
 
   async function sendRequest(payload) {
@@ -804,9 +772,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // INITIAL PREVIEW
-  //
-  // สำคัญ:
-  // ทำก่อนตรวจสอบ Point
   // ==================================================
 
   updatePreviewText();
@@ -814,12 +779,6 @@ async function initializeCheckout() {
 
   // ==================================================
   // START POINT VERIFICATION
-  //
-  // V3.2
-  //
-  // ไม่สร้าง Request ใหม่
-  //
-  // ใช้ Promise จาก APP.JS V4.2
   // ==================================================
 
   if (
@@ -849,12 +808,6 @@ async function initializeCheckout() {
 
           }
 
-
-          /*
-           * ตรวจสำเร็จ
-           *
-           * ไม่ต้องแสดงข้อความ
-           */
 
           if (
             status.textContent ===
