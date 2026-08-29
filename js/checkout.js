@@ -586,6 +586,9 @@ async function initializeCheckout() {
     sendBtn.disabled =
       true;
 
+    sendBtn.classList.add(
+      "is-sending"
+    );
 
     try {
 
@@ -675,6 +678,10 @@ async function initializeCheckout() {
 
       sendBtn.disabled =
         false;
+
+      sendBtn.classList.remove(
+        "is-sending"
+      );
 
     }
 

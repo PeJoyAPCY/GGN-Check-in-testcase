@@ -308,6 +308,29 @@ button:disabled {
   color: #ffffff;
 }
 
+/* =========================================================
+   SEND BUTTON - LOCK STATE
+   ---------------------------------------------------------
+   Check-in / Check-out
+   - เมื่อเริ่มส่งข้อมูล → ปุ่มทึบ
+   - กดซ้ำไม่ได้
+   - ไม่เปลี่ยนสีเมื่อ hover
+   ========================================================= */
+
+#sendBtn:disabled,
+#sendBtn.is-sending {
+  background: #bfc3c7 !important;
+  color: #ffffff !important;
+  opacity: 1;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+#sendBtn:disabled:hover,
+#sendBtn.is-sending:hover {
+  background: #bfc3c7 !important;
+  color: #ffffff !important;
+}
 
 /* =========================================================
    PREVIEW

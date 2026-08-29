@@ -844,12 +844,14 @@ async function initializeCheckin() {
     // ==================================================
 
     isSending =
-      true;
+        true;
 
+      sendBtn.disabled =
+        true;
 
-    sendBtn.disabled =
-      true;
-
+      sendBtn.classList.add(
+        "is-sending"
+      );
 
     try {
 
@@ -1138,10 +1140,12 @@ async function initializeCheckin() {
       isSending =
         false;
 
-
       sendBtn.disabled =
         false;
 
+      sendBtn.classList.remove(
+        "is-sending"
+      );
     }
 
   }
