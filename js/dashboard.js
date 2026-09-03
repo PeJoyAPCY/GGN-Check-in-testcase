@@ -1,14 +1,18 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.0
+// Version 5.1
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
+// - โหลด Status Dashboard จาก API
 // - แสดง Summary
 // - แสดงทุกจุดตรวจ
 // - แบ่งกลุ่มตาม Zone
 // - แสดงสถานะของแต่ละจุด
+// - รองรับหลายคนต่อ 1 Point
+// - รองรับ DAY / NIGHT
+// - รองรับ NORMAL / SAT / SUN / SPECIAL
 // - รีเฟรชข้อมูล
 // - จัดการเมนู Dashboard / QR Management
 //
@@ -18,6 +22,12 @@
 // - ไม่แก้ Backend
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
+//
+// V5.1:
+// - ใช้ action=statusdashboard เป็นแหล่งข้อมูล Status
+// - ไม่ใช้ status จาก action=dashboard เป็นตัวตัดสินสถานะ Point
+// - รองรับ persons[] หลายคนต่อ Point
+// - Summary ใช้ข้อมูลจาก Status Dashboard
 // ==================================================
 
 
@@ -55,6 +65,16 @@ const qrManagementMenuBtn =
 
 // ==================================================
 // LOAD DASHBOARD
+//
+// ขั้นตอน:
+//
+// 1. โหลด Dashboard เดิม
+//    เพื่อใช้ข้อมูล Zone / Point / Location
+//
+// 2. โหลด Status Dashboard
+//    เพื่อใช้สถานะกำลังพล
+//
+// 3. Merge ข้อมูลเข้าด้วยกัน
 // ==================================================
 
 async function loadDashboard() {
@@ -72,48 +92,111 @@ async function loadDashboard() {
 
   try {
 
-    const response =
+    // ==================================================
+    // LOAD BASE DASHBOARD
+    // ==================================================
+
+    const dashboardResponse =
       await fetch(
         `${GOOGLE_APPS_SCRIPT_URL}?action=dashboard`
       );
 
 
-    const result =
-      await response.json();
+    const dashboardResult =
+      await dashboardResponse.json();
 
 
     console.log(
       "GGN Dashboard API:",
-      result
+      dashboardResult
     );
 
 
     if (
-      !result ||
-      result.success !== true
+      !dashboardResult ||
+      dashboardResult.success !== true
     ) {
 
       throw new Error(
-        result &&
-        result.message
-          ? result.message
+        dashboardResult &&
+        dashboardResult.message
+          ? dashboardResult.message
           : "ไม่สามารถโหลด Dashboard ได้"
       );
 
     }
 
 
-    const data =
-      result.data || {};
+    const dashboardData =
+      dashboardResult.data || {};
 
+
+    // ==================================================
+    // LOAD STATUS DASHBOARD
+    //
+    // ใช้ข้อมูลสถานะจริงของแต่ละ Point
+    // ==================================================
+
+    const statusResponse =
+      await fetch(
+        `${GOOGLE_APPS_SCRIPT_URL}?action=statusdashboard`
+      );
+
+
+    const statusResult =
+      await statusResponse.json();
+
+
+    console.log(
+      "GGN Status Dashboard API:",
+      statusResult
+    );
+
+
+    if (
+      !statusResult ||
+      statusResult.success !== true
+    ) {
+
+      throw new Error(
+        statusResult &&
+        statusResult.message
+          ? statusResult.message
+          : "ไม่สามารถโหลด Status Dashboard ได้"
+      );
+
+    }
+
+
+    const statusData =
+      statusResult.data || {};
+
+
+    // ==================================================
+    // MERGE STATUS INTO DASHBOARD
+    // ==================================================
+
+    const mergedData =
+      mergeDashboardStatus(
+
+        dashboardData,
+
+        statusData
+
+      );
+
+
+    // ==================================================
+    // RENDER
+    // ==================================================
 
     renderSummary(
-      data.summary || {}
+      mergedData.summary || {}
     );
 
 
     renderZones(
-      data.zones || []
+      mergedData.zones || []
     );
 
 
@@ -143,12 +226,751 @@ async function loadDashboard() {
 
 
 // ==================================================
+// MERGE DASHBOARD + STATUS DASHBOARD
+// ==================================================
+//
+// Dashboard API:
+// - zones
+// - points
+// - location
+//
+// Status Dashboard API:
+// - statuses
+// - summary
+//
+// จุดสำคัญ:
+//
+// statusData.statuses[pointId]
+// จะเป็นข้อมูลจาก 15_StatusDashboard.gs
+//
+// ==================================================
+
+function mergeDashboardStatus(
+  dashboardData,
+  statusData
+) {
+
+  const baseData =
+    dashboardData || {};
+
+
+  const statuses =
+    statusData &&
+    statusData.statuses
+      ? statusData.statuses
+      : {};
+
+
+  // ==================================================
+  // SUMMARY
+  // ==================================================
+
+  const summary =
+    buildDashboardSummaryFromStatus(
+      statuses
+    );
+
+
+  // ==================================================
+  // ZONES
+  // ==================================================
+
+  const zones =
+    Array.isArray(
+      baseData.zones
+    )
+      ? baseData.zones
+      : [];
+
+
+  zones.forEach(
+    function(zone) {
+
+      if (
+        !zone
+      ) {
+
+        return;
+
+      }
+
+
+      const points =
+        Array.isArray(
+          zone.points
+        )
+          ? zone.points
+          : [];
+
+
+      points.forEach(
+        function(point) {
+
+          if (
+            !point
+          ) {
+
+            return;
+
+          }
+
+
+          const pointId =
+            String(
+              point.pointId ||
+              ""
+            ).trim();
+
+
+          if (
+            !pointId
+          ) {
+
+            return;
+
+          }
+
+
+          const status =
+            statuses[
+              pointId
+            ];
+
+
+          if (
+            !status
+          ) {
+
+            /*
+             * ถ้าไม่พบ Status
+             * ให้ใช้สถานะเดิมของ Dashboard
+             * เพื่อไม่ให้ UI หาย
+             */
+
+            return;
+
+          }
+
+
+          applyStatusToPoint(
+            point,
+            status
+          );
+
+        }
+      );
+
+
+      /*
+       * Recalculate Zone Summary
+       */
+
+      updateZoneSummary(
+        zone,
+        statuses
+      );
+
+    }
+  );
+
+
+  return {
+
+    summary:
+      summary,
+
+    zones:
+      zones
+
+  };
+
+}
+
+
+// ==================================================
+// BUILD SUMMARY FROM STATUS DASHBOARD
+// ==================================================
+//
+// Status:
+//
+// COMPLETE
+// PARTIAL
+// NOT_STARTED
+// NO_SETTING
+// ERROR
+//
+// Summary ใหม่:
+//
+// total
+// complete
+// partial
+// notStarted
+// noSetting
+// error
+//
+// แต่ UI เดิมต้องการ:
+//
+// total
+// checkIn
+// checkOut
+// noData
+//
+// ดังนั้น map ให้ UI เดิมใช้งานได้
+//
+// checkIn:
+//   COMPLETE + PARTIAL
+//
+// noData:
+//   NOT_STARTED + NO_SETTING + ERROR
+//
+// checkOut:
+//   ใช้ 0 เพราะ Status Dashboard ใหม่
+//   ไม่ได้ใช้ Check-out เป็นสถานะของ Point
+//
+// ==================================================
+
+function buildDashboardSummaryFromStatus(
+  statuses
+) {
+
+  const summary = {
+
+    total:
+      0,
+
+    checkIn:
+      0,
+
+    checkOut:
+      0,
+
+    noData:
+      0,
+
+    complete:
+      0,
+
+    partial:
+      0,
+
+    notStarted:
+      0,
+
+    noSetting:
+      0,
+
+    error:
+      0
+
+  };
+
+
+  if (
+    !statuses ||
+    typeof statuses !== "object"
+  ) {
+
+    return summary;
+
+  }
+
+
+  Object.keys(
+    statuses
+  ).forEach(
+    function(pointId) {
+
+      const status =
+        statuses[
+          pointId
+        ];
+
+
+      if (
+        !status
+      ) {
+
+        return;
+
+      }
+
+
+      summary.total++;
+
+
+      switch (
+        status.status
+      ) {
+
+        case "COMPLETE":
+
+          summary.complete++;
+          summary.checkIn++;
+
+          break;
+
+
+        case "PARTIAL":
+
+          summary.partial++;
+          summary.checkIn++;
+
+          break;
+
+
+        case "NOT_STARTED":
+
+          summary.notStarted++;
+          summary.noData++;
+
+          break;
+
+
+        case "NO_SETTING":
+
+          summary.noSetting++;
+          summary.noData++;
+
+          break;
+
+
+        case "ERROR":
+
+          summary.error++;
+          summary.noData++;
+
+          break;
+
+
+        default:
+
+          summary.noData++;
+
+          break;
+
+      }
+
+    }
+  );
+
+
+  return summary;
+
+}
+
+
+// ==================================================
+// APPLY STATUS TO POINT
+// ==================================================
+
+function applyStatusToPoint(
+  point,
+  status
+) {
+
+  if (
+    !point ||
+    !status
+  ) {
+
+    return;
+
+  }
+
+
+  // ==================================================
+  // STATUS
+  // ==================================================
+
+  point.status =
+    status.status ||
+    "UNKNOWN";
+
+
+  point.statusText =
+    status.statusText ||
+    "ไม่ทราบสถานะ";
+
+
+  // ==================================================
+  // COUNTS
+  // ==================================================
+
+  point.requiredCount =
+    Number(
+      status.requiredCount ||
+      0
+    );
+
+
+  point.checkedInCount =
+    Number(
+      status.checkedInCount ||
+      0
+    );
+
+
+  point.remainingCount =
+    Number(
+      status.remainingCount ||
+      0
+    );
+
+
+  point.hasSetting =
+    status.hasSetting === true;
+
+
+  point.dayType =
+    status.dayType ||
+    "";
+
+
+  point.shift =
+    status.shift ||
+    "";
+
+
+  // ==================================================
+  // PERSONS
+  //
+  // รองรับหลายคน
+  // ==================================================
+
+  point.persons =
+    Array.isArray(
+      status.persons
+    )
+      ? status.persons
+      : [];
+
+
+  // ==================================================
+  // STATUS ICON
+  // ==================================================
+
+  point.statusIcon =
+    getDashboardStatusIcon(
+      point.status
+    );
+
+
+  // ==================================================
+  // PERSON DISPLAY
+  //
+  // เพื่อ compatibility กับ UI เดิม
+  //
+  // fullname:
+  // คนแรก
+  //
+  // timestamp:
+  // เวลา Check-in คนแรก
+  //
+  // ==================================================
+
+  if (
+    point.persons.length > 0
+  ) {
+
+    point.fullname =
+      point.persons
+        .map(
+          function(person) {
+
+            return String(
+              person.fullname ||
+              ""
+            ).trim();
+
+          }
+        )
+        .filter(
+          function(name) {
+
+            return !!name;
+
+          }
+        )
+        .join(
+          ", "
+        );
+
+
+    point.timestamp =
+      point.persons[0].timestamp ||
+      "";
+
+  } else {
+
+    point.fullname =
+      "";
+
+
+    point.timestamp =
+      "";
+
+  }
+
+
+  /*
+   * jobType
+   *
+   * Status Dashboard ไม่มี jobType
+   * จึงไม่เขียนทับค่าที่มาจาก Dashboard เดิม
+   */
+
+}
+
+
+// ==================================================
+// STATUS ICON
+// ==================================================
+
+function getDashboardStatusIcon(
+  status
+) {
+
+  switch (
+    String(
+      status ||
+      ""
+    )
+      .trim()
+      .toUpperCase()
+  ) {
+
+    case "COMPLETE":
+
+      return "🟢";
+
+
+    case "PARTIAL":
+
+      return "🟡";
+
+
+    case "NOT_STARTED":
+
+      return "⚪";
+
+
+    case "NO_SETTING":
+
+      return "⚫";
+
+
+    case "ERROR":
+
+      return "🔴";
+
+
+    default:
+
+      return "⚪";
+
+  }
+
+}
+
+
+// ==================================================
+// UPDATE ZONE SUMMARY
+// ==================================================
+
+function updateZoneSummary(
+  zone,
+  statuses
+) {
+
+  if (
+    !zone
+  ) {
+
+    return;
+
+  }
+
+
+  const points =
+    Array.isArray(
+      zone.points
+    )
+      ? zone.points
+      : [];
+
+
+  let total =
+    0;
+
+
+  let complete =
+    0;
+
+
+  let partial =
+    0;
+
+
+  let notStarted =
+    0;
+
+
+  let noSetting =
+    0;
+
+
+  let error =
+    0;
+
+
+  points.forEach(
+    function(point) {
+
+      if (
+        !point
+      ) {
+
+        return;
+
+      }
+
+
+      const pointId =
+        String(
+          point.pointId ||
+          ""
+        ).trim();
+
+
+      if (
+        !pointId
+      ) {
+
+        return;
+
+      }
+
+
+      total++;
+
+
+      const status =
+        statuses[
+          pointId
+        ];
+
+
+      if (
+        !status
+      ) {
+
+        return;
+
+      }
+
+
+      switch (
+        status.status
+      ) {
+
+        case "COMPLETE":
+
+          complete++;
+
+          break;
+
+
+        case "PARTIAL":
+
+          partial++;
+
+          break;
+
+
+        case "NOT_STARTED":
+
+          notStarted++;
+
+          break;
+
+
+        case "NO_SETTING":
+
+          noSetting++;
+
+          break;
+
+
+        case "ERROR":
+
+          error++;
+
+          break;
+
+      }
+
+    }
+  );
+
+
+  /*
+   * เก็บค่าใหม่
+   */
+
+  zone.total =
+    total;
+
+
+  zone.complete =
+    complete;
+
+
+  zone.partial =
+    partial;
+
+
+  zone.notStarted =
+    notStarted;
+
+
+  zone.noSetting =
+    noSetting;
+
+
+  zone.error =
+    error;
+
+
+  /*
+   * Compatibility กับ UI เดิม
+   */
+
+  zone.checkIn =
+    complete +
+    partial;
+
+
+  zone.checkOut =
+    0;
+
+
+  zone.noData =
+    notStarted +
+    noSetting +
+    error;
+
+}
+
+
+// ==================================================
 // RENDER SUMMARY
 // ==================================================
 
 function renderSummary(summary) {
 
-  if (!dashboardSummary) {
+  if (
+    !dashboardSummary
+  ) {
 
     return;
 
@@ -162,6 +984,7 @@ function renderSummary(summary) {
   const items = [
 
     {
+
       className:
         "total",
 
@@ -176,7 +999,9 @@ function renderSummary(summary) {
 
     },
 
+
     {
+
       className:
         "checkin",
 
@@ -184,14 +1009,16 @@ function renderSummary(summary) {
         "🟢",
 
       label:
-        "เข้างานแล้ว",
+        "ครบ/เข้างานแล้ว",
 
       value:
         summary.checkIn || 0
 
     },
 
+
     {
+
       className:
         "checkout",
 
@@ -206,7 +1033,9 @@ function renderSummary(summary) {
 
     },
 
+
     {
+
       className:
         "nodata",
 
@@ -268,7 +1097,9 @@ function renderSummary(summary) {
 
 function renderZones(zones) {
 
-  if (!dashboardZones) {
+  if (
+    !dashboardZones
+  ) {
 
     return;
 
@@ -279,7 +1110,9 @@ function renderZones(zones) {
     "";
 
 
-  if (!zones.length) {
+  if (
+    !zones.length
+  ) {
 
     dashboardZones.innerHTML =
 
@@ -305,6 +1138,10 @@ function renderZones(zones) {
         "dashboard-zone";
 
 
+      // ==================================================
+      // ZONE HEADER
+      // ==================================================
+
       const zoneHeader =
         document.createElement(
           "div"
@@ -326,7 +1163,8 @@ function renderZones(zones) {
 
 
       zoneTitle.textContent =
-        zone.zone || "-";
+        zone.zone ||
+        "-";
 
 
       const zoneSummary =
@@ -346,15 +1184,19 @@ function renderZones(zones) {
         </span>
 
         <span>
-          🟢 ${zone.checkIn || 0}
+          🟢 ${zone.complete || 0}
         </span>
 
         <span>
-          🔴 ${zone.checkOut || 0}
+          🟡 ${zone.partial || 0}
         </span>
 
         <span>
-          ⚪ ${zone.noData || 0}
+          ⚪ ${zone.notStarted || 0}
+        </span>
+
+        <span>
+          ⚫ ${zone.noSetting || 0}
         </span>`;
 
 
@@ -373,6 +1215,10 @@ function renderZones(zones) {
       );
 
 
+      // ==================================================
+      // POINT GRID
+      // ==================================================
+
       const pointsGrid =
         document.createElement(
           "div"
@@ -383,7 +1229,10 @@ function renderZones(zones) {
         "dashboard-points-grid";
 
 
-      (zone.points || []).forEach(
+      (
+        zone.points ||
+        []
+      ).forEach(
         point => {
 
           pointsGrid.appendChild(
@@ -415,7 +1264,9 @@ function renderZones(zones) {
 // CREATE POINT CARD
 // ==================================================
 
-function createPointCard(point) {
+function createPointCard(
+  point
+) {
 
   const card =
     document.createElement(
@@ -463,7 +1314,9 @@ function createPointCard(point) {
 
   statusIcon.textContent =
     point.statusIcon ||
-    "⚪";
+    getDashboardStatusIcon(
+      status
+    );
 
 
   const pointId =
@@ -545,8 +1398,52 @@ function createPointCard(point) {
 
 
   // ==================================================
-  // PERSON
+  // REQUIRED / CHECKED-IN
   // ==================================================
+
+  const manpower =
+    document.createElement(
+      "div"
+    );
+
+
+  manpower.className =
+    "point-manpower";
+
+
+  if (
+    point.hasSetting
+  ) {
+
+    manpower.textContent =
+      `👥 ${point.checkedInCount || 0}/${point.requiredCount || 0}`;
+
+  } else {
+
+    manpower.textContent =
+      "👥 ไม่ได้ตั้งกำลังพล";
+
+  }
+
+
+  card.appendChild(
+    manpower
+  );
+
+
+  // ==================================================
+  // PERSONS
+  //
+  // รองรับหลายคนต่อ Point
+  // ==================================================
+
+  const persons =
+    Array.isArray(
+      point.persons
+    )
+      ? point.persons
+      : [];
+
 
   const person =
     document.createElement(
@@ -558,11 +1455,63 @@ function createPointCard(point) {
     "point-person";
 
 
-  person.textContent =
+  if (
+    persons.length
+  ) {
 
-    point.fullname
-      ? `👤 ${point.fullname}`
-      : "👤 —";
+    person.innerHTML =
+      "";
+
+
+    persons.forEach(
+      function(personData, index) {
+
+        const personRow =
+          document.createElement(
+            "div"
+          );
+
+
+        personRow.className =
+          "point-person-row";
+
+
+        const fullname =
+          String(
+            personData.fullname ||
+            ""
+          ).trim();
+
+
+        const timestamp =
+          String(
+            personData.timestamp ||
+            ""
+          ).trim();
+
+
+        personRow.textContent =
+          `👤 ${fullname || "—"}` +
+          (
+            timestamp
+              ? ` · ${timestamp}`
+              : ""
+          );
+
+
+        person.appendChild(
+          personRow
+        );
+
+      }
+    );
+
+  } else {
+
+    person.textContent =
+      "👤 —";
+
+  }
 
 
   card.appendChild(
@@ -598,29 +1547,40 @@ function createPointCard(point) {
 
   // ==================================================
   // TIMESTAMP
+  //
+  // ถ้ามีหลายคน
+  // timestamp จะแสดงอยู่กับแต่ละคนแล้ว
   // ==================================================
 
-  const timestamp =
-    document.createElement(
-      "div"
+  if (
+    !persons.length &&
+    point.timestamp
+  ) {
+
+    const timestamp =
+      document.createElement(
+        "div"
+      );
+
+
+    timestamp.className =
+      "point-timestamp";
+
+
+    timestamp.textContent =
+      `🕐 ${point.timestamp}`;
+
+
+    card.appendChild(
+      timestamp
     );
 
-
-  timestamp.className =
-    "point-timestamp";
+  }
 
 
-  timestamp.textContent =
-
-    point.timestamp
-      ? `🕐 ${point.timestamp}`
-      : "🕐 —";
-
-
-  card.appendChild(
-    timestamp
-  );
-
+  // ==================================================
+  // RETURN
+  // ==================================================
 
   return card;
 
@@ -686,7 +1646,9 @@ function goToQRManagement() {
 
 function updateDashboardMenu() {
 
-  if (dashboardMenuBtn) {
+  if (
+    dashboardMenuBtn
+  ) {
 
     dashboardMenuBtn.classList.toggle(
       "dashboard-menu-active",
@@ -696,7 +1658,9 @@ function updateDashboardMenu() {
   }
 
 
-  if (qrManagementMenuBtn) {
+  if (
+    qrManagementMenuBtn
+  ) {
 
     qrManagementMenuBtn.classList.toggle(
       "dashboard-menu-active",
@@ -717,7 +1681,9 @@ function updateDashboardMenu() {
 // REFRESH DASHBOARD
 // ==================================================
 
-if (refreshDashboardBtn) {
+if (
+  refreshDashboardBtn
+) {
 
   refreshDashboardBtn.addEventListener(
     "click",
@@ -731,7 +1697,9 @@ if (refreshDashboardBtn) {
 // DASHBOARD MENU
 // ==================================================
 
-if (dashboardMenuBtn) {
+if (
+  dashboardMenuBtn
+) {
 
   dashboardMenuBtn.addEventListener(
     "click",
@@ -745,7 +1713,9 @@ if (dashboardMenuBtn) {
 // QR MANAGEMENT MENU
 // ==================================================
 
-if (qrManagementMenuBtn) {
+if (
+  qrManagementMenuBtn
+) {
 
   qrManagementMenuBtn.addEventListener(
     "click",
