@@ -1,7 +1,8 @@
+
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.1
+// Version 5.2
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -23,11 +24,15 @@
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
 //
-// V5.1:
+// V5.2:
 // - ใช้ action=statusdashboard เป็นแหล่งข้อมูล Status
 // - ไม่ใช้ status จาก action=dashboard เป็นตัวตัดสินสถานะ Point
 // - รองรับ persons[] หลายคนต่อ Point
 // - Summary ใช้ข้อมูลจาก Status Dashboard
+// - ปรับ Point Card ใหม่
+// - ตัด Job Type / 📌 ออกจาก Point Card
+// - ตัดวันที่ออกจากเวลา
+// - แสดงเวลาเฉพาะ HH:mm:ss
 // ==================================================
 
 
@@ -241,7 +246,7 @@ async function loadDashboard() {
 // จุดสำคัญ:
 //
 // statusData.statuses[pointId]
-// จะเป็นข้อมูลจาก 15_StatusDashboard.gs
+// จะเป็นข้อมูลจาก Status Dashboard
 //
 // ==================================================
 
@@ -399,7 +404,7 @@ function mergeDashboardStatus(
 // NO_SETTING
 // ERROR
 //
-// Summary ใหม่:
+// Summary:
 //
 // total
 // complete
@@ -661,7 +666,7 @@ function applyStatusToPoint(
   // เพื่อ compatibility กับ UI เดิม
   //
   // fullname:
-  // คนแรก
+  // คนแรก / รวมหลายคน
   //
   // timestamp:
   // เวลา Check-in คนแรก
@@ -1262,6 +1267,24 @@ function renderZones(zones) {
 
 // ==================================================
 // CREATE POINT CARD
+//
+// V5.2 CARD FORMAT:
+//
+// 🟢 LP_027
+//
+// 129. บริษัท นิชิได(ประเทศไทย)จำกัด
+// ชื่อเดิมไทยซินเทอร์ดเมช
+//
+// ครบกำลังพล
+//
+// 👥 1/1
+//
+// 👤 จำนงค์วินันท์ · 06:53:23
+//
+// IMPORTANT:
+// - ไม่แสดงวันที่
+// - ไม่แสดง 📌 Job Type
+// - รองรับหลายคนต่อ Point
 // ==================================================
 
 function createPointCard(
@@ -1435,6 +1458,11 @@ function createPointCard(
   // PERSONS
   //
   // รองรับหลายคนต่อ Point
+  //
+  // รูปแบบ:
+  // 👤 ชื่อ · HH:mm:ss
+  //
+  // ไม่แสดงวันที่
   // ==================================================
 
   const persons =
@@ -1484,10 +1512,9 @@ function createPointCard(
 
 
         const timestamp =
-          String(
-            personData.timestamp ||
-            ""
-          ).trim();
+          formatDashboardTime(
+            personData.timestamp
+          );
 
 
         personRow.textContent =
@@ -1520,36 +1547,12 @@ function createPointCard(
 
 
   // ==================================================
-  // JOB
-  // ==================================================
-
-  const job =
-    document.createElement(
-      "div"
-    );
-
-
-  job.className =
-    "point-job";
-
-
-  job.textContent =
-
-    point.jobType
-      ? `📌 ${point.jobType}`
-      : "📌 —";
-
-
-  card.appendChild(
-    job
-  );
-
-
-  // ==================================================
-  // TIMESTAMP
+  // TIMESTAMP FALLBACK
   //
-  // ถ้ามีหลายคน
-  // timestamp จะแสดงอยู่กับแต่ละคนแล้ว
+  // กรณีไม่มี persons แต่ Dashboard เดิม
+  // มี timestamp ให้แสดงเวลา
+  //
+  // แสดงเฉพาะ HH:mm:ss
   // ==================================================
 
   if (
@@ -1567,15 +1570,35 @@ function createPointCard(
       "point-timestamp";
 
 
-    timestamp.textContent =
-      `🕐 ${point.timestamp}`;
+    const formattedTime =
+      formatDashboardTime(
+        point.timestamp
+      );
 
 
-    card.appendChild(
-      timestamp
-    );
+    if (
+      formattedTime
+    ) {
+
+      timestamp.textContent =
+        `🕐 ${formattedTime}`;
+
+      card.appendChild(
+        timestamp
+      );
+
+    }
 
   }
+
+
+  // ==================================================
+  // IMPORTANT
+  //
+  // V5.2 ไม่สร้าง Job Type
+  // และไม่แสดง 📌
+  //
+  // ==================================================
 
 
   // ==================================================
@@ -1583,6 +1606,161 @@ function createPointCard(
   // ==================================================
 
   return card;
+
+}
+
+
+// ==================================================
+// FORMAT DASHBOARD TIME
+//
+// หน้าที่:
+// - รับ timestamp จาก API
+// - ตัดวันที่ออก
+// - คืนค่าเฉพาะเวลา HH:mm:ss
+//
+// รองรับตัวอย่าง:
+//
+// 03/09/2026 06:53:23
+// 2026-09-03 06:53:23
+// 2026-09-03T06:53:23
+// 06:53:23
+// 06:53
+//
+// ==================================================
+
+function formatDashboardTime(
+  timestamp
+) {
+
+  if (
+    timestamp === null ||
+    timestamp === undefined
+  ) {
+
+    return "";
+
+  }
+
+
+  const value =
+    String(
+      timestamp
+    ).trim();
+
+
+  if (
+    !value
+  ) {
+
+    return "";
+
+  }
+
+
+  // ==================================================
+  // HH:mm:ss
+  // ==================================================
+
+  let match =
+    value.match(
+      /(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/
+    );
+
+
+  if (
+    match
+  ) {
+
+    const hour =
+      String(
+        match[1]
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    const minute =
+      String(
+        match[2]
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    const second =
+      String(
+        match[3] || "00"
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    return (
+      `${hour}:${minute}:${second}`
+    );
+
+  }
+
+
+  // ==================================================
+  // ถ้าเป็น Date string ที่ Browser parse ได้
+  // ==================================================
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    !Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    const hour =
+      String(
+        date.getHours()
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    const minute =
+      String(
+        date.getMinutes()
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    const second =
+      String(
+        date.getSeconds()
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    return (
+      `${hour}:${minute}:${second}`
+    );
+
+  }
+
+
+  // ==================================================
+  // ถ้าไม่สามารถ parse ได้
+  // คืนค่าเดิม
+  // ==================================================
+
+  return value;
 
 }
 
