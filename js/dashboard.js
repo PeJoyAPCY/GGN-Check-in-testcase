@@ -2,7 +2,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.5
+// Version 5.6
 //
 // หน้าที่:
 // - Dashboard
@@ -13,16 +13,16 @@
 // - Refresh
 // - Menu Navigation
 //
-// V5.5 CHANGE:
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก APP.JS
-// - Dashboard API + Status Dashboard API เรียกพร้อมกัน
-// - ใช้ Promise.all()
-// - ใช้ cache: "no-store"
-// - Cache Busting ด้วย timestamp
-// - เอา Custom Headers ออก เพื่อป้องกัน CORS Preflight
-// - แสดงเวลา API แยกรายตัว
-// - แสดงเวลารวมของ Dashboard
-// - ตรวจสอบ Response ก่อน JSON Parse
+// V5.6 CHANGE:
+// - รองรับ Status Dashboard API ที่ส่ง statuses เป็น Object
+// - รองรับ statuses ทั้ง Object และ Array
+// - Normalize pointId ก่อนจับคู่
+// - ใช้ Status Dashboard เป็นข้อมูลสถานะหลัก
+// - ป้องกันข้อมูลเก่าจาก Dashboard API ค้างบน Card
+// - แก้ Summary จาก Status จริง
+// - แก้ Zone Summary จาก Status จริง
+// - แก้ API timing ให้แยกรายตัวถูกต้อง
+// - แก้ Date Regex DD/MM/YYYY
 //
 // IMPORTANT
 // - ไม่เปลี่ยน Backend
@@ -30,6 +30,7 @@
 // - ไม่เปลี่ยน Payload
 // - ไม่เปลี่ยน Status Logic
 // - ไม่เปลี่ยน UI Structure
+// - ไม่เปลี่ยน Card Design
 // ==================================================
 
 
@@ -64,8 +65,20 @@ const qrManagementMenuBtn =
 
 
 // ==================================================
+// NORMALIZE POINT ID
+// V5.6
+// ==================================================
+
+function normalizePointId(value) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase();
+}
+
+
+// ==================================================
 // LOAD DASHBOARD
-// V5.5
+// V5.6
 // ==================================================
 
 async function loadDashboard() {
@@ -75,11 +88,9 @@ async function loadDashboard() {
   // ------------------------------------------------
 
   if (dashboardLoading) {
-
     console.warn(
       "⚠️ Dashboard is already loading"
     );
-
     return;
   }
 
@@ -116,11 +127,7 @@ async function loadDashboard() {
 
 
   // ==================================================
-  // IMPORTANT
-  //
-  // ใช้ URL ตัวจริงจาก APP.JS V4.2
-  //
-  // GOOGLE_APPS_SCRIPT_URL
+  // GOOGLE APPS SCRIPT URL
   // ==================================================
 
   if (
@@ -169,7 +176,7 @@ async function loadDashboard() {
 
 
   console.log(
-    "🚀 GGN Dashboard V5.5"
+    "🚀 GGN Dashboard V5.6"
   );
 
   console.log(
@@ -194,15 +201,14 @@ async function loadDashboard() {
     performance.now();
 
 
+  // ==================================================
+  // API
+  // ==================================================
+
   try {
 
     // ==================================================
     // DASHBOARD API
-    //
-    // IMPORTANT:
-    // ไม่มี custom headers
-    //
-    // เพื่อไม่ให้ Browser ส่ง CORS Preflight
     // ==================================================
 
     const dashboardPromise =
@@ -216,31 +222,12 @@ async function loadDashboard() {
       .then(
         async response => {
 
-          const elapsed =
-            Math.round(
-              performance.now() -
-              dashboardStart
-            );
-
-          console.log(
-            `⏱️ Dashboard API response: ${elapsed} ms`
-          );
-
-
           if (!response.ok) {
-
             throw new Error(
               `Dashboard API HTTP ${response.status}`
             );
           }
 
-
-          // ------------------------------------------------
-          // Read as text first
-          //
-          // ป้องกัน Unexpected token '<'
-          // และช่วยตรวจว่า Backend ส่งอะไรกลับมา
-          // ------------------------------------------------
 
           const text =
             await response.text();
@@ -249,19 +236,12 @@ async function loadDashboard() {
             text.trim();
 
 
-          if (
-            !trimmed
-          ) {
-
+          if (!trimmed) {
             throw new Error(
               "Dashboard API returned empty response"
             );
           }
 
-
-          // ------------------------------------------------
-          // ตรวจ JSON
-          // ------------------------------------------------
 
           let json;
 
@@ -288,6 +268,17 @@ async function loadDashboard() {
           }
 
 
+          const elapsed =
+            Math.round(
+              performance.now() -
+              dashboardStart
+            );
+
+          console.log(
+            `⏱️ Dashboard API response: ${elapsed} ms`
+          );
+
+
           console.log(
             "GGN Dashboard API:",
             json
@@ -301,11 +292,6 @@ async function loadDashboard() {
 
     // ==================================================
     // STATUS DASHBOARD API
-    //
-    // IMPORTANT:
-    // ไม่มี custom headers
-    //
-    // เพื่อไม่ให้ Browser ส่ง CORS Preflight
     // ==================================================
 
     const statusPromise =
@@ -319,28 +305,12 @@ async function loadDashboard() {
       .then(
         async response => {
 
-          const elapsed =
-            Math.round(
-              performance.now() -
-              statusStart
-            );
-
-          console.log(
-            `⏱️ Status Dashboard API response: ${elapsed} ms`
-          );
-
-
           if (!response.ok) {
-
             throw new Error(
               `Status Dashboard API HTTP ${response.status}`
             );
           }
 
-
-          // ------------------------------------------------
-          // Read as text first
-          // ------------------------------------------------
 
           const text =
             await response.text();
@@ -349,19 +319,12 @@ async function loadDashboard() {
             text.trim();
 
 
-          if (
-            !trimmed
-          ) {
-
+          if (!trimmed) {
             throw new Error(
               "Status Dashboard API returned empty response"
             );
           }
 
-
-          // ------------------------------------------------
-          // Parse JSON
-          // ------------------------------------------------
 
           let json;
 
@@ -386,6 +349,17 @@ async function loadDashboard() {
               "Status Dashboard API ไม่ได้ส่ง JSON กลับมา"
             );
           }
+
+
+          const elapsed =
+            Math.round(
+              performance.now() -
+              statusStart
+            );
+
+          console.log(
+            `⏱️ Status Dashboard API response: ${elapsed} ms`
+          );
 
 
           console.log(
@@ -457,6 +431,22 @@ async function loadDashboard() {
 
 
     // ==================================================
+    // DEBUG STATUS SHAPE
+    // V5.6
+    // ==================================================
+
+    console.log(
+      "📦 Status Dashboard data:",
+      statusData
+    );
+
+    console.log(
+      "📊 Status Dashboard statuses:",
+      statusData?.statuses
+    );
+
+
+    // ==================================================
     // MERGE
     // ==================================================
 
@@ -495,13 +485,23 @@ async function loadDashboard() {
         totalStart
       );
 
-    const dashboardElapsed =
+
+    // ------------------------------------------------
+    // API elapsed
+    //
+    // IMPORTANT:
+    // Promise.all() จบแล้ว
+    // ดังนั้นต้องใช้ค่าที่วัดจาก API จริง
+    // ไม่คำนวณจากเวลาปัจจุบันอีก
+    // ------------------------------------------------
+
+    const dashboardApiElapsed =
       Math.round(
         performance.now() -
         dashboardStart
       );
 
-    const statusElapsed =
+    const statusApiElapsed =
       Math.round(
         performance.now() -
         statusStart
@@ -519,10 +519,10 @@ async function loadDashboard() {
           totalElapsed,
 
         dashboardApiMs:
-          dashboardElapsed,
+          dashboardApiElapsed,
 
         statusApiMs:
-          statusElapsed
+          statusApiElapsed
       }
     );
 
@@ -549,9 +549,7 @@ async function loadDashboard() {
     );
 
 
-    if (
-      dashboardZones
-    ) {
+    if (dashboardZones) {
 
       dashboardZones.innerHTML = `
         <div class="dashboard-error">
@@ -592,13 +590,9 @@ function setDashboardStatus(
   message
 ) {
 
-  if (
-    !dashboardStatus
-  ) {
-
+  if (!dashboardStatus) {
     return;
   }
-
 
   dashboardStatus.textContent =
     message;
@@ -613,10 +607,7 @@ function setRefreshButtonLoading(
   loading
 ) {
 
-  if (
-    !refreshDashboardBtn
-  ) {
-
+  if (!refreshDashboardBtn) {
     return;
   }
 
@@ -625,9 +616,7 @@ function setRefreshButtonLoading(
     loading;
 
 
-  if (
-    loading
-  ) {
+  if (loading) {
 
     refreshDashboardBtn.dataset.originalText =
       refreshDashboardBtn.textContent;
@@ -645,7 +634,68 @@ function setRefreshButtonLoading(
 
 
 // ==================================================
+// NORMALIZE STATUS LIST
+// V5.6
+//
+// API จริง:
+// statuses = {
+//   CM1_001: {...},
+//   CM1_002: {...}
+// }
+//
+// Frontend ภายในจะใช้ Array
+// ==================================================
+
+function normalizeStatusList(
+  statuses
+) {
+
+  if (!statuses) {
+    return [];
+  }
+
+
+  // ------------------------------------------------
+  // ถ้าเป็น Array อยู่แล้ว
+  // ------------------------------------------------
+
+  if (
+    Array.isArray(statuses)
+  ) {
+
+    return statuses.filter(
+      status =>
+        status &&
+        typeof status === "object"
+    );
+  }
+
+
+  // ------------------------------------------------
+  // ถ้าเป็น Object
+  // ------------------------------------------------
+
+  if (
+    typeof statuses === "object"
+  ) {
+
+    return Object.values(
+      statuses
+    ).filter(
+      status =>
+        status &&
+        typeof status === "object"
+    );
+  }
+
+
+  return [];
+}
+
+
+// ==================================================
 // MERGE DASHBOARD + STATUS
+// V5.6
 // ==================================================
 
 function mergeDashboardStatus(
@@ -653,12 +703,20 @@ function mergeDashboardStatus(
   statusData
 ) {
 
+  // ------------------------------------------------
+  // Status Dashboard
+  // ------------------------------------------------
+
   const statuses =
-    Array.isArray(
+    normalizeStatusList(
       statusData?.statuses
-    )
-      ? statusData.statuses
-      : [];
+    );
+
+
+  console.log(
+    "📊 Normalized status count:",
+    statuses.length
+  );
 
 
   // ------------------------------------------------
@@ -685,6 +743,8 @@ function mergeDashboardStatus(
 
   // ------------------------------------------------
   // Status Map
+  //
+  // ใช้ normalized pointId
   // ------------------------------------------------
 
   const statusMap =
@@ -694,19 +754,28 @@ function mergeDashboardStatus(
   statuses.forEach(
     status => {
 
-      if (
-        status &&
-        status.pointId
-      ) {
-
-        statusMap.set(
-          String(
-            status.pointId
-          ),
-          status
+      const key =
+        normalizePointId(
+          status?.pointId
         );
+
+
+      if (!key) {
+        return;
       }
+
+
+      statusMap.set(
+        key,
+        status
+      );
     }
+  );
+
+
+  console.log(
+    "🗺️ Status map size:",
+    statusMap.size
   );
 
 
@@ -720,7 +789,7 @@ function mergeDashboardStatus(
 
         const points =
           Array.isArray(
-            zone.points
+            zone?.points
           )
             ? zone.points
             : [];
@@ -730,22 +799,23 @@ function mergeDashboardStatus(
           points.map(
             point => {
 
-              const pointId =
-                String(
-                  point.pointId ||
-                  ""
+              const pointKey =
+                normalizePointId(
+                  point?.pointId
                 );
 
 
               const status =
                 statusMap.get(
-                  pointId
+                  pointKey
                 );
 
 
-              if (
-                status
-              ) {
+              // --------------------------------------
+              // มี Status Dashboard
+              // --------------------------------------
+
+              if (status) {
 
                 return applyStatusToPoint(
                   point,
@@ -753,6 +823,14 @@ function mergeDashboardStatus(
                 );
               }
 
+
+              // --------------------------------------
+              // ไม่มี Status
+              //
+              // รักษาข้อมูล Location เดิม
+              // แต่ไม่ปล่อย status เก่า
+              // มาปนโดยไม่จำเป็น
+              // --------------------------------------
 
               return {
                 ...point
@@ -780,6 +858,45 @@ function mergeDashboardStatus(
     );
 
 
+  // ------------------------------------------------
+  // Diagnostic
+  // ------------------------------------------------
+
+  const mergedPointCount =
+    zones.reduce(
+      (
+        total,
+        zone
+      ) =>
+        total +
+        (
+          Array.isArray(
+            zone?.points
+          )
+            ? zone.points.length
+            : 0
+        ),
+      0
+    );
+
+
+  console.log(
+    "🔗 Dashboard merge:",
+    {
+      statusCount:
+        statuses.length,
+
+      statusMapSize:
+        statusMap.size,
+
+      baseZoneCount:
+        baseZones.length,
+
+      mergedPointCount
+    }
+  );
+
+
   return {
     ...dashboardData,
 
@@ -798,8 +915,17 @@ function buildDashboardSummaryFromStatus(
   statuses
 ) {
 
-  let total =
-    statuses.length;
+  const list =
+    Array.isArray(
+      statuses
+    )
+      ? statuses
+      : [];
+
+
+  const total =
+    list.length;
+
 
   let complete =
     0;
@@ -817,14 +943,16 @@ function buildDashboardSummaryFromStatus(
     0;
 
 
-  statuses.forEach(
+  list.forEach(
     status => {
 
       const value =
         String(
           status?.status ||
           ""
-        ).toUpperCase();
+        )
+          .trim()
+          .toUpperCase();
 
 
       switch (value) {
@@ -889,7 +1017,8 @@ function buildDashboardSummaryFromStatus(
 
     checkIn,
 
-    checkOut: 0,
+    checkOut:
+      0,
 
     noData,
 
@@ -938,8 +1067,8 @@ function applyStatusToPoint(
       persons
         .map(
           person =>
-            person.fullname ||
-            person.name ||
+            person?.fullname ||
+            person?.name ||
             ""
         )
         .filter(Boolean)
@@ -957,29 +1086,33 @@ function applyStatusToPoint(
 
     ...point,
 
+    // ------------------------------------------------
+    // Status จาก Status Dashboard เท่านั้น
+    // ------------------------------------------------
+
     status:
-      status.status,
+      status?.status || "",
 
     statusText:
-      status.statusText,
+      status?.statusText || "",
 
     requiredCount:
-      status.requiredCount,
+      status?.requiredCount ?? 0,
 
     checkedInCount:
-      status.checkedInCount,
+      status?.checkedInCount ?? 0,
 
     remainingCount:
-      status.remainingCount,
+      status?.remainingCount ?? 0,
 
     hasSetting:
-      status.hasSetting,
+      status?.hasSetting,
 
     dayType:
-      status.dayType,
+      status?.dayType || "",
 
     shift:
-      status.shift,
+      status?.shift || "",
 
     persons,
 
@@ -989,7 +1122,7 @@ function applyStatusToPoint(
 
     statusIcon:
       getDashboardStatusIcon(
-        status.status
+        status?.status
       )
   };
 }
@@ -1006,7 +1139,9 @@ function getDashboardStatusIcon(
   switch (
     String(
       status || ""
-    ).toUpperCase()
+    )
+      .trim()
+      .toUpperCase()
   ) {
 
     case "COMPLETE":
@@ -1049,8 +1184,17 @@ function updateZoneSummary(
   points
 ) {
 
-  let total =
-    points.length;
+  const list =
+    Array.isArray(
+      points
+    )
+      ? points
+      : [];
+
+
+  const total =
+    list.length;
+
 
   let complete =
     0;
@@ -1068,14 +1212,16 @@ function updateZoneSummary(
     0;
 
 
-  points.forEach(
+  list.forEach(
     point => {
 
       const status =
         String(
           point?.status ||
           ""
-        ).toUpperCase();
+        )
+          .trim()
+          .toUpperCase();
 
 
       switch (status) {
@@ -1157,10 +1303,7 @@ function renderSummary(
   summary
 ) {
 
-  if (
-    !dashboardSummary
-  ) {
-
+  if (!dashboardSummary) {
     return;
   }
 
@@ -1170,6 +1313,7 @@ function renderSummary(
 
 
   dashboardSummary.innerHTML = `
+
     <div class="dashboard-summary-card">
 
       <div class="dashboard-summary-label">
@@ -1228,6 +1372,7 @@ function renderSummary(
       </div>
 
     </div>
+
   `;
 }
 
@@ -1240,10 +1385,7 @@ function renderZones(
   zones
 ) {
 
-  if (
-    !dashboardZones
-  ) {
-
+  if (!dashboardZones) {
     return;
   }
 
@@ -1254,9 +1396,11 @@ function renderZones(
   ) {
 
     dashboardZones.innerHTML = `
+
       <div class="dashboard-empty">
         ไม่พบข้อมูลจุด
       </div>
+
     `;
 
     return;
@@ -1269,43 +1413,49 @@ function renderZones(
         zone => {
 
           const zoneName =
-            zone.zone ||
-            zone.name ||
+            zone?.zone ||
+            zone?.name ||
             "ไม่ระบุเขต";
 
 
           const points =
             Array.isArray(
-              zone.points
+              zone?.points
             )
               ? zone.points
               : [];
 
 
           const summary =
-            zone.summary ||
+            zone?.summary ||
             updateZoneSummary(
               points
             );
 
 
           return `
+
             <section class="dashboard-zone">
 
               <div class="dashboard-zone-header">
 
                 <div class="dashboard-zone-title">
+
                   ${escapeHtml(
                     zoneName
                   )}
+
                 </div>
 
+
                 <div class="dashboard-zone-summary">
+
                   ${Number(
                     summary.checkIn || 0
                   )}/${Number(
                     summary.total || 0
                   )}
+
                 </div>
 
               </div>
@@ -1315,21 +1465,26 @@ function renderZones(
 
                 ${
                   points.length
+
                     ? points
                         .map(
                           createPointCard
                         )
                         .join("")
+
                     : `
+
                       <div class="dashboard-empty">
                         ไม่พบจุดในเขตนี้
                       </div>
+
                     `
                 }
 
               </div>
 
             </section>
+
           `;
         }
       )
@@ -1349,7 +1504,9 @@ function createPointCard(
     String(
       point?.status ||
       ""
-    ).toUpperCase();
+    )
+      .trim()
+      .toUpperCase();
 
 
   const icon =
@@ -1394,22 +1551,28 @@ function createPointCard(
     "";
 
 
-  if (
-    hasSetting
-  ) {
+  if (hasSetting) {
 
     manpowerHtml = `
+
       <div class="dashboard-point-manpower">
+
         👥 ${checkedIn}/${required}
+
       </div>
+
     `;
 
   } else {
 
     manpowerHtml = `
+
       <div class="dashboard-point-manpower">
+
         👥 ไม่มีการตั้งกำลัง
+
       </div>
+
     `;
   }
 
@@ -1449,17 +1612,23 @@ function createPointCard(
 
 
             return `
+
               <div class="dashboard-point-person">
 
-                👤 ${escapeHtml(name)}
+                👤 ${escapeHtml(
+                  name
+                )}
 
                 ${
                   time
-                    ? ` · ${escapeHtml(time)}`
+                    ? ` · ${escapeHtml(
+                        time
+                      )}`
                     : ""
                 }
 
               </div>
+
             `;
           }
         )
@@ -1473,7 +1642,7 @@ function createPointCard(
   ) {
 
     const formattedTime =
-      point.timestamp
+      point?.timestamp
         ? formatDashboardTime(
             point.timestamp
           )
@@ -1481,6 +1650,7 @@ function createPointCard(
 
 
     personsHtml = `
+
       <div class="dashboard-point-person">
 
         👤 ${escapeHtml(
@@ -1496,6 +1666,7 @@ function createPointCard(
         }
 
       </div>
+
     `;
   }
 
@@ -1506,6 +1677,7 @@ function createPointCard(
   ) {
 
     personsHtml = `
+
       <div class="dashboard-point-person">
 
         ${escapeHtml(
@@ -1515,19 +1687,25 @@ function createPointCard(
         )}
 
       </div>
+
     `;
   }
 
 
   return `
+
     <div
+
       class="dashboard-point-card"
+
       data-point-id="${escapeHtml(
         pointId
       )}"
+
       data-status="${escapeHtml(
         status
       )}"
+
     >
 
       <div class="dashboard-point-header">
@@ -1557,6 +1735,7 @@ function createPointCard(
       ${
         statusText
           ? `
+
             <div class="dashboard-point-status">
 
               ${escapeHtml(
@@ -1564,6 +1743,7 @@ function createPointCard(
               )}
 
             </div>
+
           `
           : ""
       }
@@ -1574,17 +1754,22 @@ function createPointCard(
 
       ${
         personsHtml
+
           ? `
+
             <div class="dashboard-point-persons">
 
               ${personsHtml}
 
             </div>
+
           `
+
           : ""
       }
 
     </div>
+
   `;
 }
 
@@ -1602,7 +1787,6 @@ function formatDashboardTime(
     value === undefined ||
     value === ""
   ) {
-
     return "";
   }
 
@@ -1627,10 +1811,7 @@ function formatDashboardTime(
     ).trim();
 
 
-  if (
-    !text
-  ) {
-
+  if (!text) {
     return "";
   }
 
@@ -1645,9 +1826,7 @@ function formatDashboardTime(
     );
 
 
-  if (
-    timeOnly
-  ) {
+  if (timeOnly) {
 
     const hh =
       String(
@@ -1681,29 +1860,10 @@ function formatDashboardTime(
 
 
   // ------------------------------------------------
-  // Native Date
-  // ------------------------------------------------
-
-  const parsed =
-    new Date(
-      text
-    );
-
-
-  if (
-    !isNaN(
-      parsed.getTime()
-    )
-  ) {
-
-    return formatDateObjectTime(
-      parsed
-    );
-  }
-
-
-  // ------------------------------------------------
   // DD/MM/YYYY HH:mm:ss
+  //
+  // ตรวจรูปแบบไทยก่อน Native Date
+  // เพื่อป้องกัน browser ตีความผิด
   // ------------------------------------------------
 
   const thaiDate =
@@ -1712,9 +1872,7 @@ function formatDashboardTime(
     );
 
 
-  if (
-    thaiDate
-  ) {
+  if (thaiDate) {
 
     const hh =
       String(
@@ -1744,6 +1902,28 @@ function formatDashboardTime(
 
 
     return `${hh}:${mm}:${ss}`;
+  }
+
+
+  // ------------------------------------------------
+  // Native Date
+  // ------------------------------------------------
+
+  const parsed =
+    new Date(
+      text
+    );
+
+
+  if (
+    !isNaN(
+      parsed.getTime()
+    )
+  ) {
+
+    return formatDateObjectTime(
+      parsed
+    );
   }
 
 
@@ -1853,9 +2033,9 @@ function setupDashboardMenu() {
 
 
         if (
-          currentPage === "dashboard.html"
+          currentPage ===
+          "dashboard.html"
         ) {
-
           return;
         }
 
@@ -1879,9 +2059,9 @@ function setupDashboardMenu() {
 
 
         if (
-          currentPage === "qr.html"
+          currentPage ===
+          "qr.html"
         ) {
-
           return;
         }
 
@@ -1903,7 +2083,6 @@ function setupDashboardRefresh() {
   if (
     !refreshDashboardBtn
   ) {
-
     return;
   }
 
@@ -1915,7 +2094,6 @@ function setupDashboardRefresh() {
       if (
         dashboardLoading
       ) {
-
         return;
       }
 
