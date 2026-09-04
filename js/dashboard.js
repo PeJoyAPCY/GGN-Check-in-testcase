@@ -2,7 +2,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.4
+// Version 5.5
 //
 // หน้าที่:
 // - Dashboard
@@ -13,12 +13,13 @@
 // - Refresh
 // - Menu Navigation
 //
-// V5.4 CHANGE:
+// V5.5 CHANGE:
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก APP.JS
 // - Dashboard API + Status Dashboard API เรียกพร้อมกัน
 // - ใช้ Promise.all()
-// - ป้องกัน Browser Cache
+// - ใช้ cache: "no-store"
 // - Cache Busting ด้วย timestamp
+// - เอา Custom Headers ออก เพื่อป้องกัน CORS Preflight
 // - แสดงเวลา API แยกรายตัว
 // - แสดงเวลารวมของ Dashboard
 // - ตรวจสอบ Response ก่อน JSON Parse
@@ -64,7 +65,7 @@ const qrManagementMenuBtn =
 
 // ==================================================
 // LOAD DASHBOARD
-// V5.4
+// V5.5
 // ==================================================
 
 async function loadDashboard() {
@@ -161,7 +162,6 @@ async function loadDashboard() {
     `?action=dashboard` +
     `&_ts=${cacheBust}`;
 
-
   const statusDashboardUrl =
     `${GOOGLE_APPS_SCRIPT_URL}` +
     `?action=statusdashboard` +
@@ -169,7 +169,7 @@ async function loadDashboard() {
 
 
   console.log(
-    "🚀 GGN Dashboard V5.4"
+    "🚀 GGN Dashboard V5.5"
   );
 
   console.log(
@@ -198,6 +198,11 @@ async function loadDashboard() {
 
     // ==================================================
     // DASHBOARD API
+    //
+    // IMPORTANT:
+    // ไม่มี custom headers
+    //
+    // เพื่อไม่ให้ Browser ส่ง CORS Preflight
     // ==================================================
 
     const dashboardPromise =
@@ -205,16 +210,7 @@ async function loadDashboard() {
         dashboardUrl,
         {
           method: "GET",
-
-          cache: "no-store",
-
-          headers: {
-            "Cache-Control":
-              "no-cache, no-store, must-revalidate",
-
-            "Pragma":
-              "no-cache"
-          }
+          cache: "no-store"
         }
       )
       .then(
@@ -225,7 +221,6 @@ async function loadDashboard() {
               performance.now() -
               dashboardStart
             );
-
 
           console.log(
             `⏱️ Dashboard API response: ${elapsed} ms`
@@ -249,7 +244,6 @@ async function loadDashboard() {
 
           const text =
             await response.text();
-
 
           const trimmed =
             text.trim();
@@ -307,6 +301,11 @@ async function loadDashboard() {
 
     // ==================================================
     // STATUS DASHBOARD API
+    //
+    // IMPORTANT:
+    // ไม่มี custom headers
+    //
+    // เพื่อไม่ให้ Browser ส่ง CORS Preflight
     // ==================================================
 
     const statusPromise =
@@ -314,16 +313,7 @@ async function loadDashboard() {
         statusDashboardUrl,
         {
           method: "GET",
-
-          cache: "no-store",
-
-          headers: {
-            "Cache-Control":
-              "no-cache, no-store, must-revalidate",
-
-            "Pragma":
-              "no-cache"
-          }
+          cache: "no-store"
         }
       )
       .then(
@@ -334,7 +324,6 @@ async function loadDashboard() {
               performance.now() -
               statusStart
             );
-
 
           console.log(
             `⏱️ Status Dashboard API response: ${elapsed} ms`
@@ -355,7 +344,6 @@ async function loadDashboard() {
 
           const text =
             await response.text();
-
 
           const trimmed =
             text.trim();
@@ -464,7 +452,6 @@ async function loadDashboard() {
     const dashboardData =
       dashboardResponse.data || {};
 
-
     const statusData =
       statusResponse.data || {};
 
@@ -508,13 +495,11 @@ async function loadDashboard() {
         totalStart
       );
 
-
     const dashboardElapsed =
       Math.round(
         performance.now() -
         dashboardStart
       );
-
 
     const statusElapsed =
       Math.round(
@@ -526,7 +511,6 @@ async function loadDashboard() {
     console.log(
       `⚡ Dashboard loaded in ${totalElapsed} ms`
     );
-
 
     console.log(
       "📊 Dashboard timing:",
@@ -570,7 +554,6 @@ async function loadDashboard() {
     ) {
 
       dashboardZones.innerHTML = `
-
         <div class="dashboard-error">
 
           <div class="dashboard-error-title">
@@ -585,7 +568,6 @@ async function loadDashboard() {
           </div>
 
         </div>
-
       `;
     }
 
@@ -613,6 +595,7 @@ function setDashboardStatus(
   if (
     !dashboardStatus
   ) {
+
     return;
   }
 
@@ -633,6 +616,7 @@ function setRefreshButtonLoading(
   if (
     !refreshDashboardBtn
   ) {
+
     return;
   }
 
@@ -641,11 +625,12 @@ function setRefreshButtonLoading(
     loading;
 
 
-  if (loading) {
+  if (
+    loading
+  ) {
 
     refreshDashboardBtn.dataset.originalText =
       refreshDashboardBtn.textContent;
-
 
     refreshDashboardBtn.textContent =
       "กำลังโหลด...";
@@ -721,7 +706,6 @@ function mergeDashboardStatus(
           status
         );
       }
-
     }
   );
 
@@ -773,7 +757,6 @@ function mergeDashboardStatus(
               return {
                 ...point
               };
-
             }
           );
 
@@ -785,7 +768,6 @@ function mergeDashboardStatus(
 
 
         return {
-
           ...zone,
 
           points:
@@ -793,21 +775,17 @@ function mergeDashboardStatus(
 
           summary:
             zoneSummary
-
         };
-
       }
     );
 
 
   return {
-
     ...dashboardData,
 
     summary,
 
     zones
-
   };
 }
 
@@ -823,22 +801,17 @@ function buildDashboardSummaryFromStatus(
   let total =
     statuses.length;
 
-
   let complete =
     0;
-
 
   let partial =
     0;
 
-
   let notStarted =
     0;
 
-
   let noSetting =
     0;
-
 
   let error =
     0;
@@ -857,29 +830,44 @@ function buildDashboardSummaryFromStatus(
       switch (value) {
 
         case "COMPLETE":
+
           complete++;
+
           break;
+
 
         case "PARTIAL":
+
           partial++;
+
           break;
+
 
         case "NOT_STARTED":
+
           notStarted++;
+
           break;
+
 
         case "NO_SETTING":
+
           noSetting++;
+
           break;
+
 
         case "ERROR":
+
           error++;
+
           break;
+
 
         default:
+
           break;
       }
-
     }
   );
 
@@ -914,7 +902,6 @@ function buildDashboardSummaryFromStatus(
     noSetting,
 
     error
-
   };
 }
 
@@ -938,7 +925,6 @@ function applyStatusToPoint(
 
   let fullname =
     "";
-
 
   let timestamp =
     "";
@@ -1005,7 +991,6 @@ function applyStatusToPoint(
       getDashboardStatusIcon(
         status.status
       )
-
   };
 }
 
@@ -1025,21 +1010,32 @@ function getDashboardStatusIcon(
   ) {
 
     case "COMPLETE":
+
       return "🟢";
 
+
     case "PARTIAL":
+
       return "🟡";
 
+
     case "NOT_STARTED":
+
       return "⚪";
 
+
     case "NO_SETTING":
+
       return "⚫";
 
+
     case "ERROR":
+
       return "🔴";
 
+
     default:
+
       return "⚪";
   }
 }
@@ -1056,22 +1052,17 @@ function updateZoneSummary(
   let total =
     points.length;
 
-
   let complete =
     0;
-
 
   let partial =
     0;
 
-
   let notStarted =
     0;
 
-
   let noSetting =
     0;
-
 
   let error =
     0;
@@ -1090,29 +1081,44 @@ function updateZoneSummary(
       switch (status) {
 
         case "COMPLETE":
+
           complete++;
+
           break;
+
 
         case "PARTIAL":
+
           partial++;
+
           break;
+
 
         case "NOT_STARTED":
+
           notStarted++;
+
           break;
+
 
         case "NO_SETTING":
+
           noSetting++;
+
           break;
+
 
         case "ERROR":
+
           error++;
+
           break;
+
 
         default:
+
           break;
       }
-
     }
   );
 
@@ -1139,7 +1145,6 @@ function updateZoneSummary(
       notStarted +
       noSetting +
       error
-
   };
 }
 
@@ -1155,6 +1160,7 @@ function renderSummary(
   if (
     !dashboardSummary
   ) {
+
     return;
   }
 
@@ -1164,7 +1170,6 @@ function renderSummary(
 
 
   dashboardSummary.innerHTML = `
-
     <div class="dashboard-summary-card">
 
       <div class="dashboard-summary-label">
@@ -1223,7 +1228,6 @@ function renderSummary(
       </div>
 
     </div>
-
   `;
 }
 
@@ -1239,6 +1243,7 @@ function renderZones(
   if (
     !dashboardZones
   ) {
+
     return;
   }
 
@@ -1249,11 +1254,9 @@ function renderZones(
   ) {
 
     dashboardZones.innerHTML = `
-
       <div class="dashboard-empty">
         ไม่พบข้อมูลจุด
       </div>
-
     `;
 
     return;
@@ -1287,7 +1290,6 @@ function renderZones(
 
 
           return `
-
             <section class="dashboard-zone">
 
               <div class="dashboard-zone-header">
@@ -1328,7 +1330,6 @@ function renderZones(
               </div>
 
             </section>
-
           `;
         }
       )
@@ -1398,21 +1399,17 @@ function createPointCard(
   ) {
 
     manpowerHtml = `
-
       <div class="dashboard-point-manpower">
         👥 ${checkedIn}/${required}
       </div>
-
     `;
 
   } else {
 
     manpowerHtml = `
-
       <div class="dashboard-point-manpower">
         👥 ไม่มีการตั้งกำลัง
       </div>
-
     `;
   }
 
@@ -1452,18 +1449,18 @@ function createPointCard(
 
 
             return `
-
               <div class="dashboard-point-person">
+
                 👤 ${escapeHtml(name)}
+
                 ${
                   time
                     ? ` · ${escapeHtml(time)}`
                     : ""
                 }
+
               </div>
-
             `;
-
           }
         )
         .join("");
@@ -1484,7 +1481,6 @@ function createPointCard(
 
 
     personsHtml = `
-
       <div class="dashboard-point-person">
 
         👤 ${escapeHtml(
@@ -1500,7 +1496,6 @@ function createPointCard(
         }
 
       </div>
-
     `;
   }
 
@@ -1511,21 +1506,20 @@ function createPointCard(
   ) {
 
     personsHtml = `
-
       <div class="dashboard-point-person">
+
         ${escapeHtml(
           formatDashboardTime(
             point.timestamp
           )
         )}
-      </div>
 
+      </div>
     `;
   }
 
 
   return `
-
     <div
       class="dashboard-point-card"
       data-point-id="${escapeHtml(
@@ -1539,32 +1533,37 @@ function createPointCard(
       <div class="dashboard-point-header">
 
         <div class="dashboard-point-id">
+
           ${icon}
+
           ${escapeHtml(
             pointId
           )}
+
         </div>
 
       </div>
 
 
       <div class="dashboard-point-location">
+
         ${escapeHtml(
           location
         )}
+
       </div>
 
 
       ${
         statusText
           ? `
-
             <div class="dashboard-point-status">
+
               ${escapeHtml(
                 statusText
               )}
-            </div>
 
+            </div>
           `
           : ""
       }
@@ -1576,17 +1575,16 @@ function createPointCard(
       ${
         personsHtml
           ? `
-
             <div class="dashboard-point-persons">
-              ${personsHtml}
-            </div>
 
+              ${personsHtml}
+
+            </div>
           `
           : ""
       }
 
     </div>
-
   `;
 }
 
@@ -1923,7 +1921,6 @@ function setupDashboardRefresh() {
 
 
       await loadDashboard();
-
     }
   );
 }
@@ -1965,9 +1962,7 @@ if (
       ) {
 
         initDashboard();
-
       }
-
     }
   );
 
@@ -1982,7 +1977,5 @@ if (
   ) {
 
     initDashboard();
-
   }
-
 }
