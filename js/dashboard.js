@@ -2,7 +2,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.3
+// Version 5.4
 //
 // หน้าที่:
 // - Dashboard
@@ -13,19 +13,22 @@
 // - Refresh
 // - Menu Navigation
 //
-// V5.3 CHANGE:
+// V5.4 CHANGE:
+// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก APP.JS
 // - Dashboard API + Status Dashboard API เรียกพร้อมกัน
 // - ใช้ Promise.all()
 // - ป้องกัน Browser Cache
 // - Cache Busting ด้วย timestamp
 // - แสดงเวลา API แยกรายตัว
 // - แสดงเวลารวมของ Dashboard
+// - ตรวจสอบ Response ก่อน JSON Parse
 //
 // IMPORTANT
 // - ไม่เปลี่ยน Backend
-// - ไม่เปลี่ยน API Payload
-// - ไม่เปลี่ยน UI Structure
+// - ไม่เปลี่ยน API
+// - ไม่เปลี่ยน Payload
 // - ไม่เปลี่ยน Status Logic
+// - ไม่เปลี่ยน UI Structure
 // ==================================================
 
 
@@ -61,7 +64,7 @@ const qrManagementMenuBtn =
 
 // ==================================================
 // LOAD DASHBOARD
-// V5.3
+// V5.4
 // ==================================================
 
 async function loadDashboard() {
@@ -71,6 +74,7 @@ async function loadDashboard() {
   // ------------------------------------------------
 
   if (dashboardLoading) {
+
     console.warn(
       "⚠️ Dashboard is already loading"
     );
@@ -82,7 +86,7 @@ async function loadDashboard() {
 
 
   // ------------------------------------------------
-  // Start timer
+  // TOTAL TIMER
   // ------------------------------------------------
 
   const totalStart =
@@ -103,61 +107,97 @@ async function loadDashboard() {
 
 
   // ------------------------------------------------
-  // Cache Bust
+  // CACHE BUST
   // ------------------------------------------------
 
   const cacheBust =
     Date.now();
 
 
+  // ==================================================
+  // IMPORTANT
+  //
+  // ใช้ URL ตัวจริงจาก APP.JS V4.2
+  //
+  // GOOGLE_APPS_SCRIPT_URL
+  // ==================================================
+
+  if (
+    typeof GOOGLE_APPS_SCRIPT_URL === "undefined" ||
+    !GOOGLE_APPS_SCRIPT_URL
+  ) {
+
+    const error =
+      new Error(
+        "ไม่พบ GOOGLE_APPS_SCRIPT_URL จาก app.js"
+      );
+
+    console.error(
+      "❌ Dashboard Configuration Error:",
+      error
+    );
+
+    setDashboardStatus(
+      "❌ ไม่พบ Google Apps Script URL"
+    );
+
+    setRefreshButtonLoading(
+      false
+    );
+
+    dashboardLoading =
+      false;
+
+    return;
+  }
+
+
   // ------------------------------------------------
   // API URL
   // ------------------------------------------------
 
-  const baseUrl =
-    typeof API_URL !== "undefined"
-      ? API_URL
-      : "";
-
-
   const dashboardUrl =
-    `${baseUrl}?action=dashboard&_ts=${cacheBust}`;
+    `${GOOGLE_APPS_SCRIPT_URL}` +
+    `?action=dashboard` +
+    `&_ts=${cacheBust}`;
+
 
   const statusDashboardUrl =
-    `${baseUrl}?action=statusdashboard&_ts=${cacheBust}`;
+    `${GOOGLE_APPS_SCRIPT_URL}` +
+    `?action=statusdashboard` +
+    `&_ts=${cacheBust}`;
 
 
-  // ------------------------------------------------
-  // Individual timers
-  // ------------------------------------------------
+  console.log(
+    "🚀 GGN Dashboard V5.4"
+  );
 
-  let dashboardStart =
+  console.log(
+    "📡 Dashboard URL:",
+    dashboardUrl
+  );
+
+  console.log(
+    "📡 Status Dashboard URL:",
+    statusDashboardUrl
+  );
+
+
+  // ==================================================
+  // API TIMERS
+  // ==================================================
+
+  const dashboardStart =
     performance.now();
 
-  let statusStart =
+  const statusStart =
     performance.now();
 
 
   try {
 
-    console.log(
-      "🚀 GGN Dashboard V5.3"
-    );
-
-    console.log(
-      "📡 Starting Dashboard API..."
-    );
-
-    console.log(
-      "📡 Starting Status Dashboard API..."
-    );
-
-
     // ==================================================
-    // IMPORTANT
-    // V5.3
-    //
-    // Run both APIs at the same time.
+    // DASHBOARD API
     // ==================================================
 
     const dashboardPromise =
@@ -165,97 +205,214 @@ async function loadDashboard() {
         dashboardUrl,
         {
           method: "GET",
+
           cache: "no-store",
+
           headers: {
             "Cache-Control":
               "no-cache, no-store, must-revalidate",
+
             "Pragma":
               "no-cache"
           }
         }
       )
-      .then(async response => {
+      .then(
+        async response => {
 
-        const elapsed =
-          performance.now() -
-          dashboardStart;
-
-        console.log(
-          `⏱️ Dashboard API response: ${Math.round(elapsed)} ms`
-        );
+          const elapsed =
+            Math.round(
+              performance.now() -
+              dashboardStart
+            );
 
 
-        if (!response.ok) {
-
-          throw new Error(
-            `Dashboard API HTTP ${response.status}`
+          console.log(
+            `⏱️ Dashboard API response: ${elapsed} ms`
           );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              `Dashboard API HTTP ${response.status}`
+            );
+          }
+
+
+          // ------------------------------------------------
+          // Read as text first
+          //
+          // ป้องกัน Unexpected token '<'
+          // และช่วยตรวจว่า Backend ส่งอะไรกลับมา
+          // ------------------------------------------------
+
+          const text =
+            await response.text();
+
+
+          const trimmed =
+            text.trim();
+
+
+          if (
+            !trimmed
+          ) {
+
+            throw new Error(
+              "Dashboard API returned empty response"
+            );
+          }
+
+
+          // ------------------------------------------------
+          // ตรวจ JSON
+          // ------------------------------------------------
+
+          let json;
+
+          try {
+
+            json =
+              JSON.parse(
+                trimmed
+              );
+
+          } catch (parseError) {
+
+            console.error(
+              "❌ Dashboard API returned non-JSON:",
+              trimmed.substring(
+                0,
+                500
+              )
+            );
+
+            throw new Error(
+              "Dashboard API ไม่ได้ส่ง JSON กลับมา"
+            );
+          }
+
+
+          console.log(
+            "GGN Dashboard API:",
+            json
+          );
+
+
+          return json;
         }
+      );
 
 
-        const json =
-          await response.json();
-
-
-        console.log(
-          "GGN Dashboard API:",
-          json
-        );
-
-
-        return json;
-      });
-
+    // ==================================================
+    // STATUS DASHBOARD API
+    // ==================================================
 
     const statusPromise =
       fetch(
         statusDashboardUrl,
         {
           method: "GET",
+
           cache: "no-store",
+
           headers: {
             "Cache-Control":
               "no-cache, no-store, must-revalidate",
+
             "Pragma":
               "no-cache"
           }
         }
       )
-      .then(async response => {
+      .then(
+        async response => {
 
-        const elapsed =
-          performance.now() -
-          statusStart;
-
-        console.log(
-          `⏱️ Status Dashboard API response: ${Math.round(elapsed)} ms`
-        );
+          const elapsed =
+            Math.round(
+              performance.now() -
+              statusStart
+            );
 
 
-        if (!response.ok) {
-
-          throw new Error(
-            `Status Dashboard API HTTP ${response.status}`
+          console.log(
+            `⏱️ Status Dashboard API response: ${elapsed} ms`
           );
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              `Status Dashboard API HTTP ${response.status}`
+            );
+          }
+
+
+          // ------------------------------------------------
+          // Read as text first
+          // ------------------------------------------------
+
+          const text =
+            await response.text();
+
+
+          const trimmed =
+            text.trim();
+
+
+          if (
+            !trimmed
+          ) {
+
+            throw new Error(
+              "Status Dashboard API returned empty response"
+            );
+          }
+
+
+          // ------------------------------------------------
+          // Parse JSON
+          // ------------------------------------------------
+
+          let json;
+
+          try {
+
+            json =
+              JSON.parse(
+                trimmed
+              );
+
+          } catch (parseError) {
+
+            console.error(
+              "❌ Status Dashboard API returned non-JSON:",
+              trimmed.substring(
+                0,
+                500
+              )
+            );
+
+            throw new Error(
+              "Status Dashboard API ไม่ได้ส่ง JSON กลับมา"
+            );
+          }
+
+
+          console.log(
+            "GGN Status Dashboard API:",
+            json
+          );
+
+
+          return json;
         }
-
-
-        const json =
-          await response.json();
-
-
-        console.log(
-          "GGN Status Dashboard API:",
-          json
-        );
-
-
-        return json;
-      });
+      );
 
 
     // ==================================================
-    // WAIT FOR BOTH
+    // RUN BOTH API AT THE SAME TIME
     // ==================================================
 
     const [
@@ -307,6 +464,7 @@ async function loadDashboard() {
     const dashboardData =
       dashboardResponse.data || {};
 
+
     const statusData =
       statusResponse.data || {};
 
@@ -345,12 +503,28 @@ async function loadDashboard() {
     // ==================================================
 
     const totalElapsed =
-      performance.now() -
-      totalStart;
+      Math.round(
+        performance.now() -
+        totalStart
+      );
+
+
+    const dashboardElapsed =
+      Math.round(
+        performance.now() -
+        dashboardStart
+      );
+
+
+    const statusElapsed =
+      Math.round(
+        performance.now() -
+        statusStart
+      );
 
 
     console.log(
-      `⚡ Dashboard loaded in ${Math.round(totalElapsed)} ms`
+      `⚡ Dashboard loaded in ${totalElapsed} ms`
     );
 
 
@@ -358,19 +532,13 @@ async function loadDashboard() {
       "📊 Dashboard timing:",
       {
         totalMs:
-          Math.round(totalElapsed),
+          totalElapsed,
 
         dashboardApiMs:
-          Math.round(
-            performance.now() -
-            dashboardStart
-          ),
+          dashboardElapsed,
 
         statusApiMs:
-          Math.round(
-            performance.now() -
-            statusStart
-          )
+          statusElapsed
       }
     );
 
@@ -402,7 +570,9 @@ async function loadDashboard() {
     ) {
 
       dashboardZones.innerHTML = `
+
         <div class="dashboard-error">
+
           <div class="dashboard-error-title">
             ⚠️ ไม่สามารถโหลดข้อมูลได้
           </div>
@@ -413,7 +583,9 @@ async function loadDashboard() {
               "เกิดข้อผิดพลาดในการเชื่อมต่อ"
             )}
           </div>
+
         </div>
+
       `;
     }
 
@@ -444,6 +616,7 @@ function setDashboardStatus(
     return;
   }
 
+
   dashboardStatus.textContent =
     message;
 }
@@ -473,6 +646,7 @@ function setRefreshButtonLoading(
     refreshDashboardBtn.dataset.originalText =
       refreshDashboardBtn.textContent;
 
+
     refreshDashboardBtn.textContent =
       "กำลังโหลด...";
 
@@ -495,7 +669,9 @@ function mergeDashboardStatus(
 ) {
 
   const statuses =
-    Array.isArray(statusData?.statuses)
+    Array.isArray(
+      statusData?.statuses
+    )
       ? statusData.statuses
       : [];
 
@@ -515,10 +691,16 @@ function mergeDashboardStatus(
   // ------------------------------------------------
 
   const baseZones =
-    Array.isArray(dashboardData?.zones)
+    Array.isArray(
+      dashboardData?.zones
+    )
       ? dashboardData.zones
       : [];
 
+
+  // ------------------------------------------------
+  // Status Map
+  // ------------------------------------------------
 
   const statusMap =
     new Map();
@@ -533,16 +715,19 @@ function mergeDashboardStatus(
       ) {
 
         statusMap.set(
-          String(status.pointId),
+          String(
+            status.pointId
+          ),
           status
         );
       }
+
     }
   );
 
 
   // ------------------------------------------------
-  // Merge points
+  // Merge Points
   // ------------------------------------------------
 
   const zones =
@@ -550,7 +735,9 @@ function mergeDashboardStatus(
       zone => {
 
         const points =
-          Array.isArray(zone.points)
+          Array.isArray(
+            zone.points
+          )
             ? zone.points
             : [];
 
@@ -586,6 +773,7 @@ function mergeDashboardStatus(
               return {
                 ...point
               };
+
             }
           );
 
@@ -597,6 +785,7 @@ function mergeDashboardStatus(
 
 
         return {
+
           ...zone,
 
           points:
@@ -604,7 +793,9 @@ function mergeDashboardStatus(
 
           summary:
             zoneSummary
+
         };
+
       }
     );
 
@@ -616,6 +807,7 @@ function mergeDashboardStatus(
     summary,
 
     zones
+
   };
 }
 
@@ -631,17 +823,22 @@ function buildDashboardSummaryFromStatus(
   let total =
     statuses.length;
 
+
   let complete =
     0;
+
 
   let partial =
     0;
 
+
   let notStarted =
     0;
 
+
   let noSetting =
     0;
+
 
   let error =
     0;
@@ -682,6 +879,7 @@ function buildDashboardSummaryFromStatus(
         default:
           break;
       }
+
     }
   );
 
@@ -716,6 +914,7 @@ function buildDashboardSummaryFromStatus(
     noSetting,
 
     error
+
   };
 }
 
@@ -730,7 +929,9 @@ function applyStatusToPoint(
 ) {
 
   const persons =
-    Array.isArray(status?.persons)
+    Array.isArray(
+      status?.persons
+    )
       ? status.persons
       : [];
 
@@ -804,6 +1005,7 @@ function applyStatusToPoint(
       getDashboardStatusIcon(
         status.status
       )
+
   };
 }
 
@@ -854,17 +1056,22 @@ function updateZoneSummary(
   let total =
     points.length;
 
+
   let complete =
     0;
+
 
   let partial =
     0;
 
+
   let notStarted =
     0;
 
+
   let noSetting =
     0;
+
 
   let error =
     0;
@@ -905,6 +1112,7 @@ function updateZoneSummary(
         default:
           break;
       }
+
     }
   );
 
@@ -931,6 +1139,7 @@ function updateZoneSummary(
       notStarted +
       noSetting +
       error
+
   };
 }
 
@@ -957,46 +1166,62 @@ function renderSummary(
   dashboardSummary.innerHTML = `
 
     <div class="dashboard-summary-card">
+
       <div class="dashboard-summary-label">
         จุดทั้งหมด
       </div>
 
       <div class="dashboard-summary-value">
-        ${Number(data.total || 0)}
+        ${Number(
+          data.total || 0
+        )}
       </div>
+
     </div>
 
 
     <div class="dashboard-summary-card">
+
       <div class="dashboard-summary-label">
         เข้างาน
       </div>
 
       <div class="dashboard-summary-value">
-        ${Number(data.checkIn || 0)}
+        ${Number(
+          data.checkIn || 0
+        )}
       </div>
+
     </div>
 
 
     <div class="dashboard-summary-card">
+
       <div class="dashboard-summary-label">
         ออกงาน
       </div>
 
       <div class="dashboard-summary-value">
-        ${Number(data.checkOut || 0)}
+        ${Number(
+          data.checkOut || 0
+        )}
       </div>
+
     </div>
 
 
     <div class="dashboard-summary-card">
+
       <div class="dashboard-summary-label">
         ไม่มีข้อมูล
       </div>
 
       <div class="dashboard-summary-value">
-        ${Number(data.noData || 0)}
+        ${Number(
+          data.noData || 0
+        )}
       </div>
+
     </div>
 
   `;
@@ -1024,9 +1249,11 @@ function renderZones(
   ) {
 
     dashboardZones.innerHTML = `
+
       <div class="dashboard-empty">
         ไม่พบข้อมูลจุด
       </div>
+
     `;
 
     return;
@@ -1045,7 +1272,9 @@ function renderZones(
 
 
           const points =
-            Array.isArray(zone.points)
+            Array.isArray(
+              zone.points
+            )
               ? zone.points
               : [];
 
@@ -1169,23 +1398,29 @@ function createPointCard(
   ) {
 
     manpowerHtml = `
+
       <div class="dashboard-point-manpower">
         👥 ${checkedIn}/${required}
       </div>
+
     `;
 
   } else {
 
     manpowerHtml = `
+
       <div class="dashboard-point-manpower">
         👥 ไม่มีการตั้งกำลัง
       </div>
+
     `;
   }
 
 
   const persons =
-    Array.isArray(point?.persons)
+    Array.isArray(
+      point?.persons
+    )
       ? point.persons
       : [];
 
@@ -1217,6 +1452,7 @@ function createPointCard(
 
 
             return `
+
               <div class="dashboard-point-person">
                 👤 ${escapeHtml(name)}
                 ${
@@ -1225,7 +1461,9 @@ function createPointCard(
                     : ""
                 }
               </div>
+
             `;
+
           }
         )
         .join("");
@@ -1237,21 +1475,32 @@ function createPointCard(
     point?.fullname
   ) {
 
+    const formattedTime =
+      point.timestamp
+        ? formatDashboardTime(
+            point.timestamp
+          )
+        : "";
+
+
     personsHtml = `
+
       <div class="dashboard-point-person">
+
         👤 ${escapeHtml(
           point.fullname
         )}
+
         ${
-          point.timestamp
+          formattedTime
             ? ` · ${escapeHtml(
-                formatDashboardTime(
-                  point.timestamp
-                )
+                formattedTime
               )}`
             : ""
         }
+
       </div>
+
     `;
   }
 
@@ -1262,6 +1511,7 @@ function createPointCard(
   ) {
 
     personsHtml = `
+
       <div class="dashboard-point-person">
         ${escapeHtml(
           formatDashboardTime(
@@ -1269,6 +1519,7 @@ function createPointCard(
           )
         )}
       </div>
+
     `;
   }
 
@@ -1289,23 +1540,31 @@ function createPointCard(
 
         <div class="dashboard-point-id">
           ${icon}
-          ${escapeHtml(pointId)}
+          ${escapeHtml(
+            pointId
+          )}
         </div>
 
       </div>
 
 
       <div class="dashboard-point-location">
-        ${escapeHtml(location)}
+        ${escapeHtml(
+          location
+        )}
       </div>
 
 
       ${
         statusText
           ? `
+
             <div class="dashboard-point-status">
-              ${escapeHtml(statusText)}
+              ${escapeHtml(
+                statusText
+              )}
             </div>
+
           `
           : ""
       }
@@ -1317,9 +1576,11 @@ function createPointCard(
       ${
         personsHtml
           ? `
+
             <div class="dashboard-point-persons">
               ${personsHtml}
             </div>
+
           `
           : ""
       }
@@ -1343,6 +1604,7 @@ function formatDashboardTime(
     value === undefined ||
     value === ""
   ) {
+
     return "";
   }
 
@@ -1362,12 +1624,15 @@ function formatDashboardTime(
 
 
   const text =
-    String(value).trim();
+    String(
+      value
+    ).trim();
 
 
   if (
     !text
   ) {
+
     return "";
   }
 
@@ -1389,19 +1654,28 @@ function formatDashboardTime(
     const hh =
       String(
         timeOnly[1]
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     const mm =
       String(
         timeOnly[2]
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     const ss =
       String(
         timeOnly[3] || "00"
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     return `${hh}:${mm}:${ss}`;
@@ -1409,11 +1683,13 @@ function formatDashboardTime(
 
 
   // ------------------------------------------------
-  // Try native Date
+  // Native Date
   // ------------------------------------------------
 
   const parsed =
-    new Date(text);
+    new Date(
+      text
+    );
 
 
   if (
@@ -1429,7 +1705,7 @@ function formatDashboardTime(
 
 
   // ------------------------------------------------
-  // Common DD/MM/YYYY HH:mm:ss
+  // DD/MM/YYYY HH:mm:ss
   // ------------------------------------------------
 
   const thaiDate =
@@ -1445,19 +1721,28 @@ function formatDashboardTime(
     const hh =
       String(
         thaiDate[4] || "00"
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     const mm =
       String(
         thaiDate[5] || "00"
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     const ss =
       String(
         thaiDate[6] || "00"
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     return `${hh}:${mm}:${ss}`;
@@ -1478,7 +1763,9 @@ function formatDateObjectTime(
 
   if (
     !(date instanceof Date) ||
-    isNaN(date.getTime())
+    isNaN(
+      date.getTime()
+    )
   ) {
 
     return "";
@@ -1488,19 +1775,28 @@ function formatDateObjectTime(
   const hh =
     String(
       date.getHours()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
 
   const mm =
     String(
       date.getMinutes()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
 
   const ss =
     String(
       date.getSeconds()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
 
   return `${hh}:${mm}:${ss}`;
@@ -1547,28 +1843,31 @@ function escapeHtml(
 
 function setupDashboardMenu() {
 
-  // ------------------------------------------------
-  // Dashboard
-  // ------------------------------------------------
-
   if (
     dashboardMenuBtn
   ) {
 
     dashboardMenuBtn.addEventListener(
       "click",
-      () => {
+      event => {
+
+        event.preventDefault();
+
+
+        if (
+          currentPage === "dashboard.html"
+        ) {
+
+          return;
+        }
+
 
         window.location.href =
-          "dashboard.html";
+          "./dashboard.html";
       }
     );
   }
 
-
-  // ------------------------------------------------
-  // QR Management
-  // ------------------------------------------------
 
   if (
     qrManagementMenuBtn
@@ -1576,10 +1875,21 @@ function setupDashboardMenu() {
 
     qrManagementMenuBtn.addEventListener(
       "click",
-      () => {
+      event => {
+
+        event.preventDefault();
+
+
+        if (
+          currentPage === "qr.html"
+        ) {
+
+          return;
+        }
+
 
         window.location.href =
-          "qr.html";
+          "./qr.html";
       }
     );
   }
@@ -1595,6 +1905,7 @@ function setupDashboardRefresh() {
   if (
     !refreshDashboardBtn
   ) {
+
     return;
   }
 
@@ -1606,11 +1917,13 @@ function setupDashboardRefresh() {
       if (
         dashboardLoading
       ) {
+
         return;
       }
 
 
       await loadDashboard();
+
     }
   );
 }
@@ -1646,11 +1959,15 @@ if (
       if (
         window.location.pathname
           .toLowerCase()
-          .includes("dashboard.html")
+          .includes(
+            "dashboard.html"
+          )
       ) {
 
         initDashboard();
+
       }
+
     }
   );
 
@@ -1659,9 +1976,13 @@ if (
   if (
     window.location.pathname
       .toLowerCase()
-      .includes("dashboard.html")
+      .includes(
+        "dashboard.html"
+      )
   ) {
 
     initDashboard();
+
   }
+
 }
