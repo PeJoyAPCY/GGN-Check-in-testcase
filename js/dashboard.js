@@ -1,260 +1,303 @@
+
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 6.0
+// Version 5.3
 //
 // หน้าที่:
-// - โหลด Dashboard จาก API
-// - โหลด Status Dashboard จาก API
-// - แสดง Summary
-// - แสดงทุกจุดตรวจ
-// - แบ่งกลุ่มตาม Zone
-// - แสดงสถานะของแต่ละจุด
-// - รองรับหลายคนต่อ 1 Point
-// - รองรับ DAY / NIGHT
-// - รองรับ NORMAL / SAT / SUN / SPECIAL
-// - รีเฟรชข้อมูล
-// - จัดการเมนู Dashboard / QR Management
+// - Dashboard
+// - Summary
+// - Zone
+// - Point Status
+// - Status Dashboard
+// - Refresh
+// - Menu Navigation
 //
-// V6.0:
-// - โหลด Dashboard + Status Dashboard พร้อมกัน
-// - ลดเวลา Wait ระหว่าง API
-// - Refresh ดึงข้อมูลใหม่ทุกครั้ง
-// - ป้องกันการกด Refresh ซ้ำระหว่างโหลด
-// - คง UI เดิม
-// - คง Card เดิม
-// - คง Summary เดิม
-// - คง Status Merge เดิม
+// V5.3 CHANGE:
+// - Dashboard API + Status Dashboard API เรียกพร้อมกัน
+// - ใช้ Promise.all()
+// - ป้องกัน Browser Cache
+// - Cache Busting ด้วย timestamp
+// - แสดงเวลา API แยกรายตัว
+// - แสดงเวลารวมของ Dashboard
 //
-// IMPORTANT:
-// - QR Management แยกไปอยู่ที่ qr.html + qr.js แล้ว
-// - ไม่จัดการ QR ภายในไฟล์นี้
-// - ไม่แก้ Backend
-// - ไม่แก้ฐานข้อมูล
-// - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
+// IMPORTANT
+// - ไม่เปลี่ยน Backend
+// - ไม่เปลี่ยน API Payload
+// - ไม่เปลี่ยน UI Structure
+// - ไม่เปลี่ยน Status Logic
 // ==================================================
 
 
 // ==================================================
-// DASHBOARD ELEMENTS
+// GLOBAL
+// ==================================================
+
+let dashboardLoading = false;
+
+
+// ==================================================
+// ELEMENTS
 // ==================================================
 
 const dashboardStatus =
-  getElement("dashboardStatus");
-
+  document.getElementById("dashboardStatus");
 
 const dashboardSummary =
-  getElement("dashboardSummary");
-
+  document.getElementById("dashboardSummary");
 
 const dashboardZones =
-  getElement("dashboardZones");
-
+  document.getElementById("dashboardZones");
 
 const refreshDashboardBtn =
-  getElement("refreshDashboardBtn");
-
-
-// ==================================================
-// MENU ELEMENTS
-// ==================================================
+  document.getElementById("refreshDashboardBtn");
 
 const dashboardMenuBtn =
-  getElement("dashboardMenuBtn");
-
+  document.getElementById("dashboardMenuBtn");
 
 const qrManagementMenuBtn =
-  getElement("qrManagementMenuBtn");
-
-
-// ==================================================
-// DASHBOARD LOAD STATE
-// ==================================================
-//
-// ใช้ป้องกัน:
-// - กด Refresh ซ้ำ
-// - Request ซ้อนกัน
-// - Render จาก Request เก่าหลัง Request ใหม่
-//
-// ==================================================
-
-let dashboardLoading =
-  false;
-
-
-let dashboardRequestId =
-  0;
+  document.getElementById("qrManagementMenuBtn");
 
 
 // ==================================================
 // LOAD DASHBOARD
-//
-// V6.0
-//
-// เดิม:
-//
-// 1. Dashboard
-// 2. รอ Dashboard
-// 3. Status Dashboard
-// 4. รอ Status
-//
-// ใหม่:
-//
-// Dashboard + Status
-// ทำงานพร้อมกัน
-//
+// V5.3
 // ==================================================
 
 async function loadDashboard() {
 
-  if (
-    !dashboardStatus
-  ) {
+  // ------------------------------------------------
+  // Prevent duplicate loading
+  // ------------------------------------------------
 
-    return;
-
-  }
-
-
-  // ==================================================
-  // PREVENT DUPLICATE REQUEST
-  // ==================================================
-
-  if (
-    dashboardLoading
-  ) {
-
-    console.log(
-      "⏳ Dashboard กำลังโหลดอยู่"
+  if (dashboardLoading) {
+    console.warn(
+      "⚠️ Dashboard is already loading"
     );
 
     return;
-
   }
 
-
-  dashboardLoading =
-    true;
+  dashboardLoading = true;
 
 
-  dashboardRequestId++;
+  // ------------------------------------------------
+  // Start timer
+  // ------------------------------------------------
+
+  const totalStart =
+    performance.now();
 
 
-  const currentRequestId =
-    dashboardRequestId;
+  // ------------------------------------------------
+  // UI
+  // ------------------------------------------------
 
+  setDashboardStatus(
+    "กำลังโหลดข้อมูล..."
+  );
 
-  // ==================================================
-  // LOCK REFRESH BUTTON
-  // ==================================================
-
-  setDashboardLoadingState(
+  setRefreshButtonLoading(
     true
   );
 
 
-  dashboardStatus.textContent =
-    "⏳ กำลังโหลดข้อมูล...";
+  // ------------------------------------------------
+  // Cache Bust
+  // ------------------------------------------------
+
+  const cacheBust =
+    Date.now();
 
 
-  const startTime =
+  // ------------------------------------------------
+  // API URL
+  // ------------------------------------------------
+
+  const baseUrl =
+    typeof API_URL !== "undefined"
+      ? API_URL
+      : "";
+
+
+  const dashboardUrl =
+    `${baseUrl}?action=dashboard&_ts=${cacheBust}`;
+
+  const statusDashboardUrl =
+    `${baseUrl}?action=statusdashboard&_ts=${cacheBust}`;
+
+
+  // ------------------------------------------------
+  // Individual timers
+  // ------------------------------------------------
+
+  let dashboardStart =
+    performance.now();
+
+  let statusStart =
     performance.now();
 
 
   try {
 
+    console.log(
+      "🚀 GGN Dashboard V5.3"
+    );
+
+    console.log(
+      "📡 Starting Dashboard API..."
+    );
+
+    console.log(
+      "📡 Starting Status Dashboard API..."
+    );
+
+
     // ==================================================
-    // LOAD DASHBOARD + STATUS DASHBOARD
+    // IMPORTANT
+    // V5.3
     //
-    // สำคัญ:
-    //
-    // เรียกพร้อมกัน
-    //
-    // ไม่รอ Dashboard ก่อน
+    // Run both APIs at the same time.
+    // ==================================================
+
+    const dashboardPromise =
+      fetch(
+        dashboardUrl,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            "Cache-Control":
+              "no-cache, no-store, must-revalidate",
+            "Pragma":
+              "no-cache"
+          }
+        }
+      )
+      .then(async response => {
+
+        const elapsed =
+          performance.now() -
+          dashboardStart;
+
+        console.log(
+          `⏱️ Dashboard API response: ${Math.round(elapsed)} ms`
+        );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            `Dashboard API HTTP ${response.status}`
+          );
+        }
+
+
+        const json =
+          await response.json();
+
+
+        console.log(
+          "GGN Dashboard API:",
+          json
+        );
+
+
+        return json;
+      });
+
+
+    const statusPromise =
+      fetch(
+        statusDashboardUrl,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            "Cache-Control":
+              "no-cache, no-store, must-revalidate",
+            "Pragma":
+              "no-cache"
+          }
+        }
+      )
+      .then(async response => {
+
+        const elapsed =
+          performance.now() -
+          statusStart;
+
+        console.log(
+          `⏱️ Status Dashboard API response: ${Math.round(elapsed)} ms`
+        );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            `Status Dashboard API HTTP ${response.status}`
+          );
+        }
+
+
+        const json =
+          await response.json();
+
+
+        console.log(
+          "GGN Status Dashboard API:",
+          json
+        );
+
+
+        return json;
+      });
+
+
+    // ==================================================
+    // WAIT FOR BOTH
     // ==================================================
 
     const [
-      dashboardResult,
-      statusResult
+      dashboardResponse,
+      statusResponse
     ] =
       await Promise.all([
-
-        fetchDashboardData(),
-
-        fetchStatusDashboardData()
-
+        dashboardPromise,
+        statusPromise
       ]);
 
 
     // ==================================================
-    // REQUEST VERSION CHECK
-    //
-    // ป้องกัน Request เก่า
-    // มาเขียนทับ Request ใหม่
+    // VALIDATE DASHBOARD RESPONSE
     // ==================================================
 
     if (
-      currentRequestId !==
-      dashboardRequestId
-    ) {
-
-      console.log(
-        "⚠️ Ignore old Dashboard request"
-      );
-
-      return;
-
-    }
-
-
-    // ==================================================
-    // VALIDATE DASHBOARD
-    // ==================================================
-
-    if (
-      !dashboardResult ||
-      dashboardResult.success !== true
+      !dashboardResponse ||
+      dashboardResponse.success !== true
     ) {
 
       throw new Error(
-        dashboardResult &&
-        dashboardResult.message
-          ? dashboardResult.message
-          : "ไม่สามารถโหลด Dashboard ได้"
+        dashboardResponse?.message ||
+        "Dashboard API failed"
       );
-
     }
 
 
     // ==================================================
-    // VALIDATE STATUS DASHBOARD
+    // VALIDATE STATUS RESPONSE
     // ==================================================
 
     if (
-      !statusResult ||
-      statusResult.success !== true
+      !statusResponse ||
+      statusResponse.success !== true
     ) {
 
       throw new Error(
-        statusResult &&
-        statusResult.message
-          ? statusResult.message
-          : "ไม่สามารถโหลด Status Dashboard ได้"
+        statusResponse?.message ||
+        "Status Dashboard API failed"
       );
-
     }
-
-
-    console.log(
-      "GGN Dashboard API:",
-      dashboardResult
-    );
-
-
-    console.log(
-      "GGN Status Dashboard API:",
-      statusResult
-    );
 
 
     // ==================================================
@@ -262,213 +305,162 @@ async function loadDashboard() {
     // ==================================================
 
     const dashboardData =
-      dashboardResult.data || {};
-
+      dashboardResponse.data || {};
 
     const statusData =
-      statusResult.data || {};
+      statusResponse.data || {};
 
 
     // ==================================================
-    // MERGE STATUS INTO DASHBOARD
+    // MERGE
     // ==================================================
 
     const mergedData =
       mergeDashboardStatus(
-
         dashboardData,
-
         statusData
-
       );
 
 
     // ==================================================
-    // RENDER
+    // RENDER SUMMARY
     // ==================================================
 
     renderSummary(
-      mergedData.summary || {}
+      mergedData.summary
     );
 
+
+    // ==================================================
+    // RENDER ZONES
+    // ==================================================
 
     renderZones(
-      mergedData.zones || []
+      mergedData.zones
     );
 
 
     // ==================================================
-    // LOAD TIME
+    // TOTAL TIME
     // ==================================================
 
-    const elapsed =
-      Math.round(
-        performance.now() -
-        startTime
-      );
-
-
-    dashboardStatus.textContent =
-      "✅ อัปเดตข้อมูลล่าสุดแล้ว";
+    const totalElapsed =
+      performance.now() -
+      totalStart;
 
 
     console.log(
-      `⚡ Dashboard loaded in ${elapsed} ms`
+      `⚡ Dashboard loaded in ${Math.round(totalElapsed)} ms`
+    );
+
+
+    console.log(
+      "📊 Dashboard timing:",
+      {
+        totalMs:
+          Math.round(totalElapsed),
+
+        dashboardApiMs:
+          Math.round(
+            performance.now() -
+            dashboardStart
+          ),
+
+        statusApiMs:
+          Math.round(
+            performance.now() -
+            statusStart
+          )
+      }
+    );
+
+
+    // ==================================================
+    // SUCCESS
+    // ==================================================
+
+    setDashboardStatus(
+      `อัปเดตล่าสุด ${formatDashboardTime(new Date())}`
     );
 
 
   } catch (error) {
 
     console.error(
-      "GGN Dashboard Error:",
+      "❌ Dashboard load error:",
       error
     );
 
 
-    dashboardStatus.textContent =
-      "❌ โหลดข้อมูลไม่สำเร็จ" +
-      (
-        error &&
-        error.message
-          ? `: ${error.message}`
-          : ""
-      );
+    setDashboardStatus(
+      "ไม่สามารถโหลดข้อมูล Dashboard ได้"
+    );
+
+
+    if (
+      dashboardZones
+    ) {
+
+      dashboardZones.innerHTML = `
+        <div class="dashboard-error">
+          <div class="dashboard-error-title">
+            ⚠️ ไม่สามารถโหลดข้อมูลได้
+          </div>
+
+          <div class="dashboard-error-message">
+            ${escapeHtml(
+              error?.message ||
+              "เกิดข้อผิดพลาดในการเชื่อมต่อ"
+            )}
+          </div>
+        </div>
+      `;
+    }
+
 
   } finally {
-
-    // ==================================================
-    // UNLOCK
-    // ==================================================
 
     dashboardLoading =
       false;
 
-
-    setDashboardLoadingState(
+    setRefreshButtonLoading(
       false
     );
-
   }
-
 }
 
 
 // ==================================================
-// FETCH DASHBOARD DATA
-//
-// V6.0
-//
-// ปัจจุบันยังเรียก action=dashboard
-// เพื่อรักษา compatibility กับ Backend
-//
-// เมื่อ Dashboard frontend ถูกแบ่ง Zone
-// สามารถเปลี่ยนเป็น dashboardbyzone
-// ได้โดยไม่ต้องแก้ส่วน Merge / Render
-//
+// SET DASHBOARD STATUS
 // ==================================================
 
-async function fetchDashboardData() {
-
-  const url =
-    `${GOOGLE_APPS_SCRIPT_URL}?action=dashboard`;
-
-
-  const response =
-    await fetch(
-      url,
-      {
-        method:
-          "GET",
-
-        cache:
-          "no-store"
-      }
-    );
-
+function setDashboardStatus(
+  message
+) {
 
   if (
-    !response.ok
+    !dashboardStatus
   ) {
-
-    throw new Error(
-      `Dashboard HTTP ${response.status}`
-    );
-
+    return;
   }
 
-
-  return response.json();
-
+  dashboardStatus.textContent =
+    message;
 }
 
 
 // ==================================================
-// FETCH STATUS DASHBOARD DATA
-//
-// V6.0
-//
-// ใช้ action=statusdashboard
-//
-// cache=no-store
-// เพื่อให้ Refresh ได้ข้อมูลใหม่ทันที
-//
+// REFRESH BUTTON STATE
 // ==================================================
 
-async function fetchStatusDashboardData() {
-
-  const url =
-    `${GOOGLE_APPS_SCRIPT_URL}?action=statusdashboard`;
-
-
-  const response =
-    await fetch(
-      url,
-      {
-        method:
-          "GET",
-
-        cache:
-          "no-store"
-      }
-    );
-
-
-  if (
-    !response.ok
-  ) {
-
-    throw new Error(
-      `Status Dashboard HTTP ${response.status}`
-    );
-
-  }
-
-
-  return response.json();
-
-}
-
-
-// ==================================================
-// SET DASHBOARD LOADING STATE
-//
-// หน้าที่:
-// - Lock / Unlock Refresh
-// - เปลี่ยนข้อความปุ่มถ้าทำได้
-//
-// ไม่บังคับว่าปุ่มต้องมี disabled
-// ==================================================
-
-function setDashboardLoadingState(
+function setRefreshButtonLoading(
   loading
 ) {
 
   if (
     !refreshDashboardBtn
   ) {
-
     return;
-
   }
 
 
@@ -476,40 +468,25 @@ function setDashboardLoadingState(
     loading;
 
 
-  refreshDashboardBtn.setAttribute(
-    "aria-busy",
-    loading
-      ? "true"
-      : "false"
-  );
+  if (loading) {
 
+    refreshDashboardBtn.dataset.originalText =
+      refreshDashboardBtn.textContent;
 
-  /*
-   * ไม่เปลี่ยน text ของปุ่ม
-   * เพื่อไม่กระทบ UI เดิม
-   */
+    refreshDashboardBtn.textContent =
+      "กำลังโหลด...";
 
+  } else {
+
+    refreshDashboardBtn.textContent =
+      refreshDashboardBtn.dataset.originalText ||
+      "รีเฟรช";
+  }
 }
 
 
 // ==================================================
-// MERGE DASHBOARD + STATUS DASHBOARD
-// ==================================================
-//
-// Dashboard API:
-// - zones
-// - points
-// - location
-//
-// Status Dashboard API:
-// - statuses
-// - summary
-//
-// จุดสำคัญ:
-//
-// statusData.statuses[pointId]
-// จะเป็นข้อมูลจาก Status Dashboard
-//
+// MERGE DASHBOARD + STATUS
 // ==================================================
 
 function mergeDashboardStatus(
@@ -517,20 +494,15 @@ function mergeDashboardStatus(
   statusData
 ) {
 
-  const baseData =
-    dashboardData || {};
-
-
   const statuses =
-    statusData &&
-    statusData.statuses
+    Array.isArray(statusData?.statuses)
       ? statusData.statuses
-      : {};
+      : [];
 
 
-  // ==================================================
-  // SUMMARY
-  // ==================================================
+  // ------------------------------------------------
+  // Summary
+  // ------------------------------------------------
 
   const summary =
     buildDashboardSummaryFromStatus(
@@ -538,291 +510,213 @@ function mergeDashboardStatus(
     );
 
 
-  // ==================================================
-  // ZONES
-  // ==================================================
+  // ------------------------------------------------
+  // Base Zones
+  // ------------------------------------------------
 
-  const zones =
-    Array.isArray(
-      baseData.zones
-    )
-      ? baseData.zones
+  const baseZones =
+    Array.isArray(dashboardData?.zones)
+      ? dashboardData.zones
       : [];
 
 
-  zones.forEach(
-    function(zone) {
+  const statusMap =
+    new Map();
+
+
+  statuses.forEach(
+    status => {
 
       if (
-        !zone
+        status &&
+        status.pointId
       ) {
 
-        return;
-
+        statusMap.set(
+          String(status.pointId),
+          status
+        );
       }
-
-
-      const points =
-        Array.isArray(
-          zone.points
-        )
-          ? zone.points
-          : [];
-
-
-      points.forEach(
-        function(point) {
-
-          if (
-            !point
-          ) {
-
-            return;
-
-          }
-
-
-          const pointId =
-            String(
-              point.pointId ||
-              ""
-            ).trim();
-
-
-          if (
-            !pointId
-          ) {
-
-            return;
-
-          }
-
-
-          const status =
-            statuses[
-              pointId
-            ];
-
-
-          if (
-            !status
-          ) {
-
-            /*
-             * ถ้าไม่พบ Status
-             * ให้ใช้สถานะเดิมของ Dashboard
-             * เพื่อไม่ให้ UI หาย
-             */
-
-            return;
-
-          }
-
-
-          applyStatusToPoint(
-            point,
-            status
-          );
-
-        }
-      );
-
-
-      /*
-       * Recalculate Zone Summary
-       */
-
-      updateZoneSummary(
-        zone,
-        statuses
-      );
-
     }
   );
 
 
+  // ------------------------------------------------
+  // Merge points
+  // ------------------------------------------------
+
+  const zones =
+    baseZones.map(
+      zone => {
+
+        const points =
+          Array.isArray(zone.points)
+            ? zone.points
+            : [];
+
+
+        const mergedPoints =
+          points.map(
+            point => {
+
+              const pointId =
+                String(
+                  point.pointId ||
+                  ""
+                );
+
+
+              const status =
+                statusMap.get(
+                  pointId
+                );
+
+
+              if (
+                status
+              ) {
+
+                return applyStatusToPoint(
+                  point,
+                  status
+                );
+              }
+
+
+              return {
+                ...point
+              };
+            }
+          );
+
+
+        const zoneSummary =
+          updateZoneSummary(
+            mergedPoints
+          );
+
+
+        return {
+          ...zone,
+
+          points:
+            mergedPoints,
+
+          summary:
+            zoneSummary
+        };
+      }
+    );
+
+
   return {
 
-    summary:
-      summary,
+    ...dashboardData,
 
-    zones:
-      zones
+    summary,
 
+    zones
   };
-
 }
 
 
 // ==================================================
-// BUILD SUMMARY FROM STATUS DASHBOARD
-// ==================================================
-//
-// Status:
-//
-// COMPLETE
-// PARTIAL
-// NOT_STARTED
-// NO_SETTING
-// ERROR
-//
-// Summary:
-//
-// total
-// complete
-// partial
-// notStarted
-// noSetting
-// error
-//
-// แต่ UI เดิมต้องการ:
-//
-// total
-// checkIn
-// checkOut
-// noData
-//
-// ดังนั้น map ให้ UI เดิมใช้งานได้
-//
-// checkIn:
-//   COMPLETE + PARTIAL
-//
-// noData:
-//   NOT_STARTED + NO_SETTING + ERROR
-//
-// checkOut:
-//   ใช้ 0 เพราะ Status Dashboard ใหม่
-//   ไม่ได้ใช้ Check-out เป็นสถานะของ Point
-//
+// BUILD SUMMARY FROM STATUS
 // ==================================================
 
 function buildDashboardSummaryFromStatus(
   statuses
 ) {
 
-  const summary = {
+  let total =
+    statuses.length;
 
-    total:
-      0,
+  let complete =
+    0;
 
-    checkIn:
-      0,
+  let partial =
+    0;
 
-    checkOut:
-      0,
+  let notStarted =
+    0;
 
-    noData:
-      0,
+  let noSetting =
+    0;
 
-    complete:
-      0,
-
-    partial:
-      0,
-
-    notStarted:
-      0,
-
-    noSetting:
-      0,
-
-    error:
-      0
-
-  };
+  let error =
+    0;
 
 
-  if (
-    !statuses ||
-    typeof statuses !== "object"
-  ) {
+  statuses.forEach(
+    status => {
 
-    return summary;
-
-  }
-
-
-  Object.keys(
-    statuses
-  ).forEach(
-    function(pointId) {
-
-      const status =
-        statuses[
-          pointId
-        ];
+      const value =
+        String(
+          status?.status ||
+          ""
+        ).toUpperCase();
 
 
-      if (
-        !status
-      ) {
-
-        return;
-
-      }
-
-
-      summary.total++;
-
-
-      switch (
-        status.status
-      ) {
+      switch (value) {
 
         case "COMPLETE":
-
-          summary.complete++;
-          summary.checkIn++;
-
+          complete++;
           break;
-
 
         case "PARTIAL":
-
-          summary.partial++;
-          summary.checkIn++;
-
+          partial++;
           break;
-
 
         case "NOT_STARTED":
-
-          summary.notStarted++;
-          summary.noData++;
-
+          notStarted++;
           break;
-
 
         case "NO_SETTING":
-
-          summary.noSetting++;
-          summary.noData++;
-
+          noSetting++;
           break;
-
 
         case "ERROR":
-
-          summary.error++;
-          summary.noData++;
-
+          error++;
           break;
-
 
         default:
-
-          summary.noData++;
-
           break;
-
       }
-
     }
   );
 
 
-  return summary;
+  const checkIn =
+    complete +
+    partial;
 
+
+  const noData =
+    notStarted +
+    noSetting +
+    error;
+
+
+  return {
+
+    total,
+
+    checkIn,
+
+    checkOut: 0,
+
+    noData,
+
+    complete,
+
+    partial,
+
+    notStarted,
+
+    noSetting,
+
+    error
+  };
 }
 
 
@@ -835,157 +729,82 @@ function applyStatusToPoint(
   status
 ) {
 
-  if (
-    !point ||
-    !status
-  ) {
-
-    return;
-
-  }
-
-
-  // ==================================================
-  // STATUS
-  // ==================================================
-
-  point.status =
-    status.status ||
-    "UNKNOWN";
-
-
-  point.statusText =
-    status.statusText ||
-    "ไม่ทราบสถานะ";
-
-
-  // ==================================================
-  // COUNTS
-  // ==================================================
-
-  point.requiredCount =
-    Number(
-      status.requiredCount ||
-      0
-    );
-
-
-  point.checkedInCount =
-    Number(
-      status.checkedInCount ||
-      0
-    );
-
-
-  point.remainingCount =
-    Number(
-      status.remainingCount ||
-      0
-    );
-
-
-  point.hasSetting =
-    status.hasSetting === true;
-
-
-  point.dayType =
-    status.dayType ||
-    "";
-
-
-  point.shift =
-    status.shift ||
-    "";
-
-
-  // ==================================================
-  // PERSONS
-  //
-  // รองรับหลายคน
-  // ==================================================
-
-  point.persons =
-    Array.isArray(
-      status.persons
-    )
+  const persons =
+    Array.isArray(status?.persons)
       ? status.persons
       : [];
 
 
-  // ==================================================
-  // STATUS ICON
-  // ==================================================
-
-  point.statusIcon =
-    getDashboardStatusIcon(
-      point.status
-    );
+  let fullname =
+    "";
 
 
-  // ==================================================
-  // PERSON DISPLAY
-  //
-  // เพื่อ compatibility กับ UI เดิม
-  //
-  // fullname:
-  // คนแรก / รวมหลายคน
-  //
-  // timestamp:
-  // เวลา Check-in คนแรก
-  //
-  // ==================================================
+  let timestamp =
+    "";
+
 
   if (
-    point.persons.length > 0
+    persons.length
   ) {
 
-    point.fullname =
-      point.persons
+    fullname =
+      persons
         .map(
-          function(person) {
-
-            return String(
-              person.fullname ||
-              ""
-            ).trim();
-
-          }
+          person =>
+            person.fullname ||
+            person.name ||
+            ""
         )
-        .filter(
-          function(name) {
-
-            return !!name;
-
-          }
-        )
-        .join(
-          ", "
-        );
+        .filter(Boolean)
+        .join(", ");
 
 
-    point.timestamp =
-      point.persons[0].timestamp ||
+    timestamp =
+      persons[0]?.timestamp ||
+      persons[0]?.time ||
       "";
-
-  } else {
-
-    point.fullname =
-      "";
-
-
-    point.timestamp =
-      "";
-
   }
 
 
-  /*
-   * jobType
-   *
-   * Status Dashboard ไม่มี jobType
-   * จึงไม่เขียนทับค่าที่มาจาก Dashboard เดิม
-   */
+  return {
 
+    ...point,
+
+    status:
+      status.status,
+
+    statusText:
+      status.statusText,
+
+    requiredCount:
+      status.requiredCount,
+
+    checkedInCount:
+      status.checkedInCount,
+
+    remainingCount:
+      status.remainingCount,
+
+    hasSetting:
+      status.hasSetting,
+
+    dayType:
+      status.dayType,
+
+    shift:
+      status.shift,
+
+    persons,
+
+    fullname,
+
+    timestamp,
+
+    statusIcon:
+      getDashboardStatusIcon(
+        status.status
+      )
+  };
 }
 
 
@@ -999,44 +818,28 @@ function getDashboardStatusIcon(
 
   switch (
     String(
-      status ||
-      ""
-    )
-      .trim()
-      .toUpperCase()
+      status || ""
+    ).toUpperCase()
   ) {
 
     case "COMPLETE":
-
       return "🟢";
 
-
     case "PARTIAL":
-
       return "🟡";
 
-
     case "NOT_STARTED":
-
       return "⚪";
-
 
     case "NO_SETTING":
-
       return "⚫";
 
-
     case "ERROR":
-
       return "🔴";
 
-
     default:
-
       return "⚪";
-
   }
-
 }
 
 
@@ -1045,187 +848,90 @@ function getDashboardStatusIcon(
 // ==================================================
 
 function updateZoneSummary(
-  zone,
-  statuses
+  points
 ) {
 
-  if (
-    !zone
-  ) {
-
-    return;
-
-  }
-
-
-  const points =
-    Array.isArray(
-      zone.points
-    )
-      ? zone.points
-      : [];
-
-
   let total =
-    0;
-
+    points.length;
 
   let complete =
     0;
 
-
   let partial =
     0;
-
 
   let notStarted =
     0;
 
-
   let noSetting =
     0;
-
 
   let error =
     0;
 
 
   points.forEach(
-    function(point) {
-
-      if (
-        !point
-      ) {
-
-        return;
-
-      }
-
-
-      const pointId =
-        String(
-          point.pointId ||
-          ""
-        ).trim();
-
-
-      if (
-        !pointId
-      ) {
-
-        return;
-
-      }
-
-
-      total++;
-
+    point => {
 
       const status =
-        statuses[
-          pointId
-        ];
+        String(
+          point?.status ||
+          ""
+        ).toUpperCase();
 
 
-      if (
-        !status
-      ) {
-
-        return;
-
-      }
-
-
-      switch (
-        status.status
-      ) {
+      switch (status) {
 
         case "COMPLETE":
-
           complete++;
-
           break;
-
 
         case "PARTIAL":
-
           partial++;
-
           break;
-
 
         case "NOT_STARTED":
-
           notStarted++;
-
           break;
-
 
         case "NO_SETTING":
-
           noSetting++;
-
           break;
-
 
         case "ERROR":
-
           error++;
-
           break;
 
+        default:
+          break;
       }
-
     }
   );
 
 
-  /*
-   * เก็บค่าใหม่
-   */
+  return {
 
-  zone.total =
-    total;
+    total,
 
+    complete,
 
-  zone.complete =
-    complete;
+    partial,
 
+    notStarted,
 
-  zone.partial =
-    partial;
+    noSetting,
 
+    error,
 
-  zone.notStarted =
-    notStarted;
+    checkIn:
+      complete +
+      partial,
 
-
-  zone.noSetting =
-    noSetting;
-
-
-  zone.error =
-    error;
-
-
-  /*
-   * Compatibility กับ UI เดิม
-   */
-
-  zone.checkIn =
-    complete +
-    partial;
-
-
-  zone.checkOut =
-    0;
-
-
-  zone.noData =
-    notStarted +
-    noSetting +
-    error;
-
+    noData:
+      notStarted +
+      noSetting +
+      error
+  };
 }
 
 
@@ -1233,128 +939,67 @@ function updateZoneSummary(
 // RENDER SUMMARY
 // ==================================================
 
-function renderSummary(summary) {
+function renderSummary(
+  summary
+) {
 
   if (
     !dashboardSummary
   ) {
-
     return;
-
   }
 
 
-  dashboardSummary.innerHTML =
-    "";
+  const data =
+    summary || {};
 
 
-  const items = [
+  dashboardSummary.innerHTML = `
 
-    {
+    <div class="dashboard-summary-card">
+      <div class="dashboard-summary-label">
+        จุดทั้งหมด
+      </div>
 
-      className:
-        "total",
-
-      icon:
-        "📍",
-
-      label:
-        "จุดทั้งหมด",
-
-      value:
-        summary.total || 0
-
-    },
+      <div class="dashboard-summary-value">
+        ${Number(data.total || 0)}
+      </div>
+    </div>
 
 
-    {
+    <div class="dashboard-summary-card">
+      <div class="dashboard-summary-label">
+        เข้างาน
+      </div>
 
-      className:
-        "checkin",
-
-      icon:
-        "🟢",
-
-      label:
-        "ครบ/เข้างานแล้ว",
-
-      value:
-        summary.checkIn || 0
-
-    },
+      <div class="dashboard-summary-value">
+        ${Number(data.checkIn || 0)}
+      </div>
+    </div>
 
 
-    {
+    <div class="dashboard-summary-card">
+      <div class="dashboard-summary-label">
+        ออกงาน
+      </div>
 
-      className:
-        "checkout",
-
-      icon:
-        "🔴",
-
-      label:
-        "ออกงานแล้ว",
-
-      value:
-        summary.checkOut || 0
-
-    },
+      <div class="dashboard-summary-value">
+        ${Number(data.checkOut || 0)}
+      </div>
+    </div>
 
 
-    {
+    <div class="dashboard-summary-card">
+      <div class="dashboard-summary-label">
+        ไม่มีข้อมูล
+      </div>
 
-      className:
-        "nodata",
+      <div class="dashboard-summary-value">
+        ${Number(data.noData || 0)}
+      </div>
+    </div>
 
-      icon:
-        "⚪",
-
-      label:
-        "ยังไม่มีข้อมูล",
-
-      value:
-        summary.noData || 0
-
-    }
-
-  ];
-
-
-  items.forEach(
-    item => {
-
-      const card =
-        document.createElement(
-          "div"
-        );
-
-
-      card.className =
-        `summary-card summary-${item.className}`;
-
-
-      card.innerHTML =
-
-        `<span class="summary-icon">
-          ${item.icon}
-        </span>
-
-        <span class="summary-value">
-          ${item.value}
-        </span>
-
-        <span class="summary-label">
-          ${item.label}
-        </span>`;
-
-
-      dashboardSummary.appendChild(
-        card
-      );
-
-    }
-  );
-
+  `;
 }
 
 
@@ -1362,810 +1007,626 @@ function renderSummary(summary) {
 // RENDER ZONES
 // ==================================================
 
-function renderZones(zones) {
+function renderZones(
+  zones
+) {
 
   if (
     !dashboardZones
   ) {
+    return;
+  }
+
+
+  if (
+    !Array.isArray(zones) ||
+    zones.length === 0
+  ) {
+
+    dashboardZones.innerHTML = `
+      <div class="dashboard-empty">
+        ไม่พบข้อมูลจุด
+      </div>
+    `;
 
     return;
-
   }
 
 
   dashboardZones.innerHTML =
-    "";
+    zones
+      .map(
+        zone => {
+
+          const zoneName =
+            zone.zone ||
+            zone.name ||
+            "ไม่ระบุเขต";
 
 
-  if (
-    !zones.length
-  ) {
-
-    dashboardZones.innerHTML =
-
-      `<div class="dashboard-empty">
-        ⚪ ไม่พบข้อมูลจุดตรวจ
-      </div>`;
-
-    return;
-
-  }
+          const points =
+            Array.isArray(zone.points)
+              ? zone.points
+              : [];
 
 
-  zones.forEach(
-    zone => {
-
-      const zoneSection =
-        document.createElement(
-          "section"
-        );
+          const summary =
+            zone.summary ||
+            updateZoneSummary(
+              points
+            );
 
 
-      zoneSection.className =
-        "dashboard-zone";
+          return `
+
+            <section class="dashboard-zone">
+
+              <div class="dashboard-zone-header">
+
+                <div class="dashboard-zone-title">
+                  ${escapeHtml(
+                    zoneName
+                  )}
+                </div>
+
+                <div class="dashboard-zone-summary">
+                  ${Number(
+                    summary.checkIn || 0
+                  )}/${Number(
+                    summary.total || 0
+                  )}
+                </div>
+
+              </div>
 
 
-      // ==================================================
-      // ZONE HEADER
-      // ==================================================
+              <div class="dashboard-points-grid">
 
-      const zoneHeader =
-        document.createElement(
-          "div"
-        );
+                ${
+                  points.length
+                    ? points
+                        .map(
+                          createPointCard
+                        )
+                        .join("")
+                    : `
+                      <div class="dashboard-empty">
+                        ไม่พบจุดในเขตนี้
+                      </div>
+                    `
+                }
 
+              </div>
 
-      zoneHeader.className =
-        "dashboard-zone-header";
+            </section>
 
-
-      const zoneTitle =
-        document.createElement(
-          "h3"
-        );
-
-
-      zoneTitle.className =
-        "dashboard-zone-title";
-
-
-      zoneTitle.textContent =
-        zone.zone ||
-        "-";
-
-
-      const zoneSummary =
-        document.createElement(
-          "div"
-        );
-
-
-      zoneSummary.className =
-        "dashboard-zone-summary";
-
-
-      zoneSummary.innerHTML =
-
-        `<span>
-          ทั้งหมด ${zone.total || 0} จุด
-        </span>
-
-        <span>
-          🟢 ${zone.complete || 0}
-        </span>
-
-        <span>
-          🟡 ${zone.partial || 0}
-        </span>
-
-        <span>
-          ⚪ ${zone.notStarted || 0}
-        </span>
-
-        <span>
-          ⚫ ${zone.noSetting || 0}
-        </span>`;
-
-
-      zoneHeader.appendChild(
-        zoneTitle
-      );
-
-
-      zoneHeader.appendChild(
-        zoneSummary
-      );
-
-
-      zoneSection.appendChild(
-        zoneHeader
-      );
-
-
-      // ==================================================
-      // POINT GRID
-      // ==================================================
-
-      const pointsGrid =
-        document.createElement(
-          "div"
-        );
-
-
-      pointsGrid.className =
-        "dashboard-points-grid";
-
-
-      (
-        zone.points ||
-        []
-      ).forEach(
-        point => {
-
-          pointsGrid.appendChild(
-            createPointCard(
-              point
-            )
-          );
-
+          `;
         }
-      );
-
-
-      zoneSection.appendChild(
-        pointsGrid
-      );
-
-
-      dashboardZones.appendChild(
-        zoneSection
-      );
-
-    }
-  );
-
+      )
+      .join("");
 }
 
 
 // ==================================================
 // CREATE POINT CARD
-//
-// V5.2 CARD FORMAT:
-//
-// 🟢 LP_027
-//
-// 129. บริษัท นิชิได(ประเทศไทย)จำกัด
-// ชื่อเดิมไทยซินเทอร์ดเมช
-//
-// ครบกำลังพล
-//
-// 👥 1/1
-//
-// 👤 จำนงค์วินันท์ · 06:53:23
-//
-// IMPORTANT:
-// - ไม่แสดงวันที่
-// - ไม่แสดง 📌 Job Type
-// - รองรับหลายคนต่อ Point
 // ==================================================
 
 function createPointCard(
   point
 ) {
 
-  const card =
-    document.createElement(
-      "article"
-    );
-
-
-  card.className =
-    "dashboard-point-card";
-
-
   const status =
-    point.status ||
-    "UNKNOWN";
+    String(
+      point?.status ||
+      ""
+    ).toUpperCase();
 
 
-  card.classList.add(
-    `point-status-${status.toLowerCase()}`
-  );
-
-
-  // ==================================================
-  // HEADER
-  // ==================================================
-
-  const header =
-    document.createElement(
-      "div"
-    );
-
-
-  header.className =
-    "point-card-header";
-
-
-  const statusIcon =
-    document.createElement(
-      "span"
-    );
-
-
-  statusIcon.className =
-    "point-status-icon";
-
-
-  statusIcon.textContent =
-    point.statusIcon ||
+  const icon =
+    point?.statusIcon ||
     getDashboardStatusIcon(
       status
     );
 
 
   const pointId =
-    document.createElement(
-      "span"
-    );
-
-
-  pointId.className =
-    "point-id";
-
-
-  pointId.textContent =
-    point.pointId ||
+    point?.pointId ||
     "-";
 
-
-  header.appendChild(
-    statusIcon
-  );
-
-
-  header.appendChild(
-    pointId
-  );
-
-
-  card.appendChild(
-    header
-  );
-
-
-  // ==================================================
-  // LOCATION
-  // ==================================================
 
   const location =
-    document.createElement(
-      "div"
-    );
-
-
-  location.className =
-    "point-location";
-
-
-  location.textContent =
-    point.location ||
+    point?.location ||
     "-";
 
 
-  card.appendChild(
-    location
-  );
-
-
-  // ==================================================
-  // STATUS TEXT
-  // ==================================================
-
   const statusText =
-    document.createElement(
-      "div"
+    point?.statusText ||
+    "";
+
+
+  const required =
+    Number(
+      point?.requiredCount || 0
     );
 
 
-  statusText.className =
-    "point-status-text";
-
-
-  statusText.textContent =
-    point.statusText ||
-    "ไม่ทราบสถานะ";
-
-
-  card.appendChild(
-    statusText
-  );
-
-
-  // ==================================================
-  // REQUIRED / CHECKED-IN
-  // ==================================================
-
-  const manpower =
-    document.createElement(
-      "div"
+  const checkedIn =
+    Number(
+      point?.checkedInCount || 0
     );
 
 
-  manpower.className =
-    "point-manpower";
+  const hasSetting =
+    point?.hasSetting !== false;
+
+
+  let manpowerHtml =
+    "";
 
 
   if (
-    point.hasSetting
+    hasSetting
   ) {
 
-    manpower.textContent =
-      `👥 ${point.checkedInCount || 0}/${point.requiredCount || 0}`;
+    manpowerHtml = `
+      <div class="dashboard-point-manpower">
+        👥 ${checkedIn}/${required}
+      </div>
+    `;
 
   } else {
 
-    manpower.textContent =
-      "👥 ไม่ได้ตั้งกำลังพล";
-
+    manpowerHtml = `
+      <div class="dashboard-point-manpower">
+        👥 ไม่มีการตั้งกำลัง
+      </div>
+    `;
   }
 
 
-  card.appendChild(
-    manpower
-  );
-
-
-  // ==================================================
-  // PERSONS
-  //
-  // รองรับหลายคนต่อ Point
-  //
-  // รูปแบบ:
-  // 👤 ชื่อ · HH:mm:ss
-  //
-  // ไม่แสดงวันที่
-  // ==================================================
-
   const persons =
-    Array.isArray(
-      point.persons
-    )
+    Array.isArray(point?.persons)
       ? point.persons
       : [];
 
 
-  const person =
-    document.createElement(
-      "div"
-    );
-
-
-  person.className =
-    "point-person";
+  let personsHtml =
+    "";
 
 
   if (
     persons.length
   ) {
 
-    person.innerHTML =
-      "";
+    personsHtml =
+      persons
+        .map(
+          person => {
+
+            const name =
+              person?.fullname ||
+              person?.name ||
+              "-";
 
 
-    persons.forEach(
-      function(personData, index) {
-
-        const personRow =
-          document.createElement(
-            "div"
-          );
+            const time =
+              formatDashboardTime(
+                person?.timestamp ||
+                person?.time
+              );
 
 
-        personRow.className =
-          "point-person-row";
-
-
-        const fullname =
-          String(
-            personData.fullname ||
-            ""
-          ).trim();
-
-
-        const timestamp =
-          formatDashboardTime(
-            personData.timestamp
-          );
-
-
-        personRow.textContent =
-          `👤 ${fullname || "—"}` +
-          (
-            timestamp
-              ? ` · ${timestamp}`
-              : ""
-          );
-
-
-        person.appendChild(
-          personRow
-        );
-
-      }
-    );
-
-  } else {
-
-    person.textContent =
-      "👤 —";
-
+            return `
+              <div class="dashboard-point-person">
+                👤 ${escapeHtml(name)}
+                ${
+                  time
+                    ? ` · ${escapeHtml(time)}`
+                    : ""
+                }
+              </div>
+            `;
+          }
+        )
+        .join("");
   }
 
-
-  card.appendChild(
-    person
-  );
-
-
-  // ==================================================
-  // TIMESTAMP FALLBACK
-  //
-  // กรณีไม่มี persons แต่ Dashboard เดิม
-  // มี timestamp ให้แสดงเวลา
-  //
-  // แสดงเฉพาะ HH:mm:ss
-  // ==================================================
 
   if (
-    !persons.length &&
-    point.timestamp
+    !personsHtml &&
+    point?.fullname
   ) {
 
-    const timestamp =
-      document.createElement(
-        "div"
-      );
-
-
-    timestamp.className =
-      "point-timestamp";
-
-
-    const formattedTime =
-      formatDashboardTime(
-        point.timestamp
-      );
-
-
-    if (
-      formattedTime
-    ) {
-
-      timestamp.textContent =
-        `🕐 ${formattedTime}`;
-
-      card.appendChild(
-        timestamp
-      );
-
-    }
-
+    personsHtml = `
+      <div class="dashboard-point-person">
+        👤 ${escapeHtml(
+          point.fullname
+        )}
+        ${
+          point.timestamp
+            ? ` · ${escapeHtml(
+                formatDashboardTime(
+                  point.timestamp
+                )
+              )}`
+            : ""
+        }
+      </div>
+    `;
   }
 
 
-  // ==================================================
-  // IMPORTANT
-  //
-  // V5.2 ไม่สร้าง Job Type
-  // และไม่แสดง 📌
-  //
-  // ==================================================
+  if (
+    !personsHtml &&
+    point?.timestamp
+  ) {
+
+    personsHtml = `
+      <div class="dashboard-point-person">
+        ${escapeHtml(
+          formatDashboardTime(
+            point.timestamp
+          )
+        )}
+      </div>
+    `;
+  }
 
 
-  // ==================================================
-  // RETURN
-  // ==================================================
+  return `
 
-  return card;
+    <div
+      class="dashboard-point-card"
+      data-point-id="${escapeHtml(
+        pointId
+      )}"
+      data-status="${escapeHtml(
+        status
+      )}"
+    >
 
+      <div class="dashboard-point-header">
+
+        <div class="dashboard-point-id">
+          ${icon}
+          ${escapeHtml(pointId)}
+        </div>
+
+      </div>
+
+
+      <div class="dashboard-point-location">
+        ${escapeHtml(location)}
+      </div>
+
+
+      ${
+        statusText
+          ? `
+            <div class="dashboard-point-status">
+              ${escapeHtml(statusText)}
+            </div>
+          `
+          : ""
+      }
+
+
+      ${manpowerHtml}
+
+
+      ${
+        personsHtml
+          ? `
+            <div class="dashboard-point-persons">
+              ${personsHtml}
+            </div>
+          `
+          : ""
+      }
+
+    </div>
+
+  `;
 }
 
 
 // ==================================================
-// FORMAT DASHBOARD TIME
-//
-// หน้าที่:
-// - รับ timestamp จาก API
-// - ตัดวันที่ออก
-// - คืนค่าเฉพาะเวลา HH:mm:ss
-//
-// รองรับตัวอย่าง:
-//
-// 03/09/2026 06:53:23
-// 2026-09-03 06:53:23
-// 2026-09-03T06:53:23
-// 06:53:23
-// 06:53
-//
+// FORMAT TIME
 // ==================================================
 
 function formatDashboardTime(
-  timestamp
+  value
 ) {
 
   if (
-    timestamp === null ||
-    timestamp === undefined
+    value === null ||
+    value === undefined ||
+    value === ""
   ) {
-
     return "";
-
   }
 
 
-  const value =
-    String(
-      timestamp
-    ).trim();
-
+  // ------------------------------------------------
+  // Date object
+  // ------------------------------------------------
 
   if (
-    !value
+    value instanceof Date
   ) {
 
-    return "";
-
-  }
-
-
-  // ==================================================
-  // HH:mm:ss
-  // ==================================================
-
-  let match =
-    value.match(
-      /(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/
-    );
-
-
-  if (
-    match
-  ) {
-
-    const hour =
-      String(
-        match[1]
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    const minute =
-      String(
-        match[2]
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    const second =
-      String(
-        match[3] || "00"
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    return (
-      `${hour}:${minute}:${second}`
-    );
-
-  }
-
-
-  // ==================================================
-  // ถ้าเป็น Date string ที่ Browser parse ได้
-  // ==================================================
-
-  const date =
-    new Date(
+    return formatDateObjectTime(
       value
     );
+  }
+
+
+  const text =
+    String(value).trim();
 
 
   if (
-    !Number.isNaN(
-      date.getTime()
+    !text
+  ) {
+    return "";
+  }
+
+
+  // ------------------------------------------------
+  // HH:mm:ss
+  // ------------------------------------------------
+
+  const timeOnly =
+    text.match(
+      /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+    );
+
+
+  if (
+    timeOnly
+  ) {
+
+    const hh =
+      String(
+        timeOnly[1]
+      ).padStart(2, "0");
+
+
+    const mm =
+      String(
+        timeOnly[2]
+      ).padStart(2, "0");
+
+
+    const ss =
+      String(
+        timeOnly[3] || "00"
+      ).padStart(2, "0");
+
+
+    return `${hh}:${mm}:${ss}`;
+  }
+
+
+  // ------------------------------------------------
+  // Try native Date
+  // ------------------------------------------------
+
+  const parsed =
+    new Date(text);
+
+
+  if (
+    !isNaN(
+      parsed.getTime()
     )
   ) {
 
-    const hour =
-      String(
-        date.getHours()
-      ).padStart(
-        2,
-        "0"
-      );
+    return formatDateObjectTime(
+      parsed
+    );
+  }
 
 
-    const minute =
-      String(
-        date.getMinutes()
-      ).padStart(
-        2,
-        "0"
-      );
+  // ------------------------------------------------
+  // Common DD/MM/YYYY HH:mm:ss
+  // ------------------------------------------------
 
-
-    const second =
-      String(
-        date.getSeconds()
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    return (
-      `${hour}:${minute}:${second}`
+  const thaiDate =
+    text.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
     );
 
-  }
-
-
-  // ==================================================
-  // ถ้าไม่สามารถ parse ได้
-  // คืนค่าเดิม
-  // ==================================================
-
-  return value;
-
-}
-
-
-// ==================================================
-// GO TO DASHBOARD
-// ==================================================
-
-function goToDashboard() {
-
-  /*
-   * ถ้าอยู่หน้า Dashboard อยู่แล้ว
-   * ไม่ต้องโหลดหน้าใหม่
-   */
 
   if (
-    currentPage === "dashboard.html"
+    thaiDate
   ) {
 
-    loadDashboard();
+    const hh =
+      String(
+        thaiDate[4] || "00"
+      ).padStart(2, "0");
 
-    return;
 
+    const mm =
+      String(
+        thaiDate[5] || "00"
+      ).padStart(2, "0");
+
+
+    const ss =
+      String(
+        thaiDate[6] || "00"
+      ).padStart(2, "0");
+
+
+    return `${hh}:${mm}:${ss}`;
   }
 
 
-  window.location.href =
-    "./dashboard.html";
-
+  return text;
 }
 
 
 // ==================================================
-// GO TO QR MANAGEMENT
+// DATE OBJECT → TIME
 // ==================================================
 
-function goToQRManagement() {
-
-  /*
-   * QR Management แยกเป็นหน้า qr.html
-   */
+function formatDateObjectTime(
+  date
+) {
 
   if (
-    currentPage === "qr.html"
+    !(date instanceof Date) ||
+    isNaN(date.getTime())
   ) {
 
-    return;
-
+    return "";
   }
 
 
-  window.location.href =
-    "./qr.html";
+  const hh =
+    String(
+      date.getHours()
+    ).padStart(2, "0");
 
+
+  const mm =
+    String(
+      date.getMinutes()
+    ).padStart(2, "0");
+
+
+  const ss =
+    String(
+      date.getSeconds()
+    ).padStart(2, "0");
+
+
+  return `${hh}:${mm}:${ss}`;
 }
 
 
 // ==================================================
-// UPDATE MENU ACTIVE STATE
+// ESCAPE HTML
 // ==================================================
 
-function updateDashboardMenu() {
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+}
+
+
+// ==================================================
+// MENU
+// ==================================================
+
+function setupDashboardMenu() {
+
+  // ------------------------------------------------
+  // Dashboard
+  // ------------------------------------------------
 
   if (
     dashboardMenuBtn
   ) {
 
-    dashboardMenuBtn.classList.toggle(
-      "dashboard-menu-active",
-      currentPage === "dashboard.html"
-    );
+    dashboardMenuBtn.addEventListener(
+      "click",
+      () => {
 
+        window.location.href =
+          "dashboard.html";
+      }
+    );
   }
 
+
+  // ------------------------------------------------
+  // QR Management
+  // ------------------------------------------------
 
   if (
     qrManagementMenuBtn
   ) {
 
-    qrManagementMenuBtn.classList.toggle(
-      "dashboard-menu-active",
-      currentPage === "qr.html"
+    qrManagementMenuBtn.addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          "qr.html";
+      }
     );
-
   }
-
 }
 
 
 // ==================================================
-// EVENTS
+// REFRESH BUTTON
 // ==================================================
 
+function setupDashboardRefresh() {
 
-// ==================================================
-// REFRESH DASHBOARD
-// ==================================================
+  if (
+    !refreshDashboardBtn
+  ) {
+    return;
+  }
 
-if (
-  refreshDashboardBtn
-) {
 
   refreshDashboardBtn.addEventListener(
     "click",
-    function() {
+    async () => {
 
-      loadDashboard();
+      if (
+        dashboardLoading
+      ) {
+        return;
+      }
 
+
+      await loadDashboard();
     }
   );
-
 }
 
 
 // ==================================================
-// DASHBOARD MENU
+// INITIALIZE
 // ==================================================
 
-if (
-  dashboardMenuBtn
-) {
+function initDashboard() {
 
-  dashboardMenuBtn.addEventListener(
-    "click",
-    goToDashboard
-  );
+  setupDashboardMenu();
 
-}
+  setupDashboardRefresh();
 
-
-// ==================================================
-// QR MANAGEMENT MENU
-// ==================================================
-
-if (
-  qrManagementMenuBtn
-) {
-
-  qrManagementMenuBtn.addEventListener(
-    "click",
-    goToQRManagement
-  );
-
+  loadDashboard();
 }
 
 
@@ -2173,13 +1634,34 @@ if (
 // START
 // ==================================================
 
-updateDashboardMenu();
-
-
 if (
-  currentPage === "dashboard.html"
+  document.readyState ===
+  "loading"
 ) {
 
-  loadDashboard();
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
+      if (
+        window.location.pathname
+          .toLowerCase()
+          .includes("dashboard.html")
+      ) {
+
+        initDashboard();
+      }
+    }
+  );
+
+} else {
+
+  if (
+    window.location.pathname
+      .toLowerCase()
+      .includes("dashboard.html")
+  ) {
+
+    initDashboard();
+  }
 }
