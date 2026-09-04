@@ -1146,6 +1146,7 @@ async function initializeCheckin() {
       sendBtn.classList.remove(
         "is-sending"
       );
+      
     }
 
   }

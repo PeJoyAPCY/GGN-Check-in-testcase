@@ -1,8 +1,7 @@
-
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.2
+// Version 6.0
 //
 // หน้าที่:
 // - โหลด Dashboard จาก API
@@ -17,22 +16,22 @@
 // - รีเฟรชข้อมูล
 // - จัดการเมนู Dashboard / QR Management
 //
+// V6.0:
+// - โหลด Dashboard + Status Dashboard พร้อมกัน
+// - ลดเวลา Wait ระหว่าง API
+// - Refresh ดึงข้อมูลใหม่ทุกครั้ง
+// - ป้องกันการกด Refresh ซ้ำระหว่างโหลด
+// - คง UI เดิม
+// - คง Card เดิม
+// - คง Summary เดิม
+// - คง Status Merge เดิม
+//
 // IMPORTANT:
 // - QR Management แยกไปอยู่ที่ qr.html + qr.js แล้ว
 // - ไม่จัดการ QR ภายในไฟล์นี้
 // - ไม่แก้ Backend
 // - ไม่แก้ฐานข้อมูล
 // - ใช้ GOOGLE_APPS_SCRIPT_URL จาก app.js
-//
-// V5.2:
-// - ใช้ action=statusdashboard เป็นแหล่งข้อมูล Status
-// - ไม่ใช้ status จาก action=dashboard เป็นตัวตัดสินสถานะ Point
-// - รองรับ persons[] หลายคนต่อ Point
-// - Summary ใช้ข้อมูลจาก Status Dashboard
-// - ปรับ Point Card ใหม่
-// - ตัด Job Type / 📌 ออกจาก Point Card
-// - ตัดวันที่ออกจากเวลา
-// - แสดงเวลาเฉพาะ HH:mm:ss
 // ==================================================
 
 
@@ -69,53 +68,148 @@ const qrManagementMenuBtn =
 
 
 // ==================================================
+// DASHBOARD LOAD STATE
+// ==================================================
+//
+// ใช้ป้องกัน:
+// - กด Refresh ซ้ำ
+// - Request ซ้อนกัน
+// - Render จาก Request เก่าหลัง Request ใหม่
+//
+// ==================================================
+
+let dashboardLoading =
+  false;
+
+
+let dashboardRequestId =
+  0;
+
+
+// ==================================================
 // LOAD DASHBOARD
 //
-// ขั้นตอน:
+// V6.0
 //
-// 1. โหลด Dashboard เดิม
-//    เพื่อใช้ข้อมูล Zone / Point / Location
+// เดิม:
 //
-// 2. โหลด Status Dashboard
-//    เพื่อใช้สถานะกำลังพล
+// 1. Dashboard
+// 2. รอ Dashboard
+// 3. Status Dashboard
+// 4. รอ Status
 //
-// 3. Merge ข้อมูลเข้าด้วยกัน
+// ใหม่:
+//
+// Dashboard + Status
+// ทำงานพร้อมกัน
+//
 // ==================================================
 
 async function loadDashboard() {
 
-  if (!dashboardStatus) {
+  if (
+    !dashboardStatus
+  ) {
 
     return;
 
   }
 
 
+  // ==================================================
+  // PREVENT DUPLICATE REQUEST
+  // ==================================================
+
+  if (
+    dashboardLoading
+  ) {
+
+    console.log(
+      "⏳ Dashboard กำลังโหลดอยู่"
+    );
+
+    return;
+
+  }
+
+
+  dashboardLoading =
+    true;
+
+
+  dashboardRequestId++;
+
+
+  const currentRequestId =
+    dashboardRequestId;
+
+
+  // ==================================================
+  // LOCK REFRESH BUTTON
+  // ==================================================
+
+  setDashboardLoadingState(
+    true
+  );
+
+
   dashboardStatus.textContent =
     "⏳ กำลังโหลดข้อมูล...";
+
+
+  const startTime =
+    performance.now();
 
 
   try {
 
     // ==================================================
-    // LOAD BASE DASHBOARD
+    // LOAD DASHBOARD + STATUS DASHBOARD
+    //
+    // สำคัญ:
+    //
+    // เรียกพร้อมกัน
+    //
+    // ไม่รอ Dashboard ก่อน
     // ==================================================
 
-    const dashboardResponse =
-      await fetch(
-        `${GOOGLE_APPS_SCRIPT_URL}?action=dashboard`
+    const [
+      dashboardResult,
+      statusResult
+    ] =
+      await Promise.all([
+
+        fetchDashboardData(),
+
+        fetchStatusDashboardData()
+
+      ]);
+
+
+    // ==================================================
+    // REQUEST VERSION CHECK
+    //
+    // ป้องกัน Request เก่า
+    // มาเขียนทับ Request ใหม่
+    // ==================================================
+
+    if (
+      currentRequestId !==
+      dashboardRequestId
+    ) {
+
+      console.log(
+        "⚠️ Ignore old Dashboard request"
       );
 
+      return;
 
-    const dashboardResult =
-      await dashboardResponse.json();
+    }
 
 
-    console.log(
-      "GGN Dashboard API:",
-      dashboardResult
-    );
-
+    // ==================================================
+    // VALIDATE DASHBOARD
+    // ==================================================
 
     if (
       !dashboardResult ||
@@ -132,31 +226,9 @@ async function loadDashboard() {
     }
 
 
-    const dashboardData =
-      dashboardResult.data || {};
-
-
     // ==================================================
-    // LOAD STATUS DASHBOARD
-    //
-    // ใช้ข้อมูลสถานะจริงของแต่ละ Point
+    // VALIDATE STATUS DASHBOARD
     // ==================================================
-
-    const statusResponse =
-      await fetch(
-        `${GOOGLE_APPS_SCRIPT_URL}?action=statusdashboard`
-      );
-
-
-    const statusResult =
-      await statusResponse.json();
-
-
-    console.log(
-      "GGN Status Dashboard API:",
-      statusResult
-    );
-
 
     if (
       !statusResult ||
@@ -171,6 +243,26 @@ async function loadDashboard() {
       );
 
     }
+
+
+    console.log(
+      "GGN Dashboard API:",
+      dashboardResult
+    );
+
+
+    console.log(
+      "GGN Status Dashboard API:",
+      statusResult
+    );
+
+
+    // ==================================================
+    // DATA
+    // ==================================================
+
+    const dashboardData =
+      dashboardResult.data || {};
 
 
     const statusData =
@@ -205,8 +297,24 @@ async function loadDashboard() {
     );
 
 
+    // ==================================================
+    // LOAD TIME
+    // ==================================================
+
+    const elapsed =
+      Math.round(
+        performance.now() -
+        startTime
+      );
+
+
     dashboardStatus.textContent =
       "✅ อัปเดตข้อมูลล่าสุดแล้ว";
+
+
+    console.log(
+      `⚡ Dashboard loaded in ${elapsed} ms`
+    );
 
 
   } catch (error) {
@@ -220,12 +328,166 @@ async function loadDashboard() {
     dashboardStatus.textContent =
       "❌ โหลดข้อมูลไม่สำเร็จ" +
       (
+        error &&
         error.message
           ? `: ${error.message}`
           : ""
       );
 
+  } finally {
+
+    // ==================================================
+    // UNLOCK
+    // ==================================================
+
+    dashboardLoading =
+      false;
+
+
+    setDashboardLoadingState(
+      false
+    );
+
   }
+
+}
+
+
+// ==================================================
+// FETCH DASHBOARD DATA
+//
+// V6.0
+//
+// ปัจจุบันยังเรียก action=dashboard
+// เพื่อรักษา compatibility กับ Backend
+//
+// เมื่อ Dashboard frontend ถูกแบ่ง Zone
+// สามารถเปลี่ยนเป็น dashboardbyzone
+// ได้โดยไม่ต้องแก้ส่วน Merge / Render
+//
+// ==================================================
+
+async function fetchDashboardData() {
+
+  const url =
+    `${GOOGLE_APPS_SCRIPT_URL}?action=dashboard`;
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        method:
+          "GET",
+
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      `Dashboard HTTP ${response.status}`
+    );
+
+  }
+
+
+  return response.json();
+
+}
+
+
+// ==================================================
+// FETCH STATUS DASHBOARD DATA
+//
+// V6.0
+//
+// ใช้ action=statusdashboard
+//
+// cache=no-store
+// เพื่อให้ Refresh ได้ข้อมูลใหม่ทันที
+//
+// ==================================================
+
+async function fetchStatusDashboardData() {
+
+  const url =
+    `${GOOGLE_APPS_SCRIPT_URL}?action=statusdashboard`;
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        method:
+          "GET",
+
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      `Status Dashboard HTTP ${response.status}`
+    );
+
+  }
+
+
+  return response.json();
+
+}
+
+
+// ==================================================
+// SET DASHBOARD LOADING STATE
+//
+// หน้าที่:
+// - Lock / Unlock Refresh
+// - เปลี่ยนข้อความปุ่มถ้าทำได้
+//
+// ไม่บังคับว่าปุ่มต้องมี disabled
+// ==================================================
+
+function setDashboardLoadingState(
+  loading
+) {
+
+  if (
+    !refreshDashboardBtn
+  ) {
+
+    return;
+
+  }
+
+
+  refreshDashboardBtn.disabled =
+    loading;
+
+
+  refreshDashboardBtn.setAttribute(
+    "aria-busy",
+    loading
+      ? "true"
+      : "false"
+  );
+
+
+  /*
+   * ไม่เปลี่ยน text ของปุ่ม
+   * เพื่อไม่กระทบ UI เดิม
+   */
 
 }
 
@@ -1865,7 +2127,11 @@ if (
 
   refreshDashboardBtn.addEventListener(
     "click",
-    loadDashboard
+    function() {
+
+      loadDashboard();
+
+    }
   );
 
 }
