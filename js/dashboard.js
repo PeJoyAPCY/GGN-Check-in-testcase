@@ -1,7 +1,7 @@
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.7
+// Version 5.8
 //
 // หน้าที่:
 // - Dashboard
@@ -13,32 +13,17 @@
 // - Menu Navigation
 // - Dashboard Base Cache
 //
-// V5.7 CHANGE:
-// - เพิ่ม Base Dashboard Cache
-// - Cache เฉพาะโครงสร้าง Zone / Point
-// - ไม่ Cache Status / Persons / Timestamp
-// - Status Dashboard ยังคงโหลดใหม่ทุก Refresh
-// - เปิด Dashboard ครั้งต่อไปสามารถแสดง Base จาก Cache ได้ทันที
-// - Background refresh Dashboard API เพื่ออัปเดต Base Cache
-// - ใช้ Status Dashboard เป็นข้อมูลสถานะหลัก
-// - รองรับ statuses ทั้ง Object และ Array
-// - Normalize pointId ก่อนจับคู่
-// - ป้องกันข้อมูลเก่าจาก Dashboard API ค้างบน Card
-// - แก้ Summary จาก Status จริง
-// - แก้ Zone Summary จาก Status จริง
-// - แก้ API timing ให้แยกรายตัวถูกต้อง
-// - เพิ่ม Merge / Render timing
-// - ลด Console dump ข้อมูลขนาดใหญ่
-// - รองรับ Dashboard API ช้าโดยไม่ทำให้ Base Cache ใช้งานไม่ได้
+// V5.8 CHANGE:
+// - แก้การแสดงเวลา person ที่เป็น Unix Timestamp milliseconds
+// - รองรับ timestamp เช่น 1789084720686
+// - แปลงเป็น HH:mm:ss ก่อนแสดงบน Card
 //
 // IMPORTANT
 // - ไม่เปลี่ยน Backend
 // - ไม่เปลี่ยน API
-// - ไม่เปลี่ยน Payload
 // - ไม่เปลี่ยน Status Logic
 // - ไม่เปลี่ยน UI Structure
 // - ไม่เปลี่ยน Card Design
-// - Status ต้องโหลดใหม่ทุก Refresh
 // ==================================================
 
 
@@ -140,7 +125,6 @@ function saveDashboardBaseCache(
       );
 
       return false;
-
     }
 
     const cachePayload = {
@@ -158,26 +142,33 @@ function saveDashboardBaseCache(
         // ------------------------------------------------
         // Base Cache ต้องไม่เก็บข้อมูล Status สด
         // ------------------------------------------------
+
         zones:
+
           Array.isArray(
             dashboardData.zones
           )
+
             ? dashboardData.zones.map(
                 zone => ({
 
                   ...zone,
 
                   points:
+
                     Array.isArray(
                       zone?.points
                     )
+
                       ? zone.points.map(
                           point => {
 
                             // --------------------------------
                             // เก็บเฉพาะ Base Point Data
                             // --------------------------------
+
                             const {
+
                               status,
                               statusText,
                               requiredCount,
@@ -190,7 +181,9 @@ function saveDashboardBaseCache(
                               fullname,
                               timestamp,
                               statusIcon,
+
                               ...basePoint
+
                             } = point || {};
 
                             return {
@@ -199,15 +192,18 @@ function saveDashboardBaseCache(
 
                           }
                         )
+
                       : []
 
                 })
               )
+
             : []
 
       }
 
     };
+
 
     localStorage.setItem(
       DASHBOARD_CACHE_KEY,
@@ -216,17 +212,22 @@ function saveDashboardBaseCache(
       )
     );
 
+
     console.log(
       "💾 Dashboard base cache saved:",
       {
+
         version:
           cachePayload.version,
+
         pointCount:
           getDashboardPointCount(
             cachePayload.data
           )
+
       }
     );
+
 
     return true;
 
@@ -257,20 +258,25 @@ function loadDashboardBaseCache() {
         DASHBOARD_CACHE_KEY
       );
 
+
     if (!raw) {
-
       return null;
-
     }
+
 
     const parsed =
       JSON.parse(raw);
 
-    if (!parsed || typeof parsed !== "object") {
+
+    if (
+      !parsed ||
+      typeof parsed !== "object"
+    ) {
 
       return null;
 
     }
+
 
     if (
       parsed.version !==
@@ -284,6 +290,7 @@ function loadDashboardBaseCache() {
       return null;
 
     }
+
 
     if (
       !parsed.data ||
@@ -300,20 +307,25 @@ function loadDashboardBaseCache() {
 
     }
 
+
     console.log(
       "⚡ Dashboard base cache hit:",
       {
+
         ageMs:
           Date.now() -
           Number(
             parsed.savedAt || 0
           ),
+
         pointCount:
           getDashboardPointCount(
             parsed.data
           )
+
       }
     );
+
 
     return parsed.data;
 
@@ -378,6 +390,7 @@ function getDashboardPointCount(
 
   }
 
+
   return dashboardData.zones.reduce(
     (
       total,
@@ -385,10 +398,12 @@ function getDashboardPointCount(
     ) => {
 
       return total +
+
         (
           Array.isArray(
             zone?.points
           )
+
             ? zone.points.length
             : 0
         );
@@ -498,6 +513,7 @@ async function loadDashboard() {
     `?action=dashboard` +
     `&_ts=${cacheBust}`;
 
+
   const statusDashboardUrl =
     `${GOOGLE_APPS_SCRIPT_URL}` +
     `?action=statusdashboard` +
@@ -545,6 +561,7 @@ async function loadDashboard() {
   const dashboardStart =
     performance.now();
 
+
   const dashboardPromise =
     fetch(
       dashboardUrl,
@@ -553,6 +570,7 @@ async function loadDashboard() {
         cache: "no-store"
       }
     )
+
     .then(
       async response => {
 
@@ -568,6 +586,7 @@ async function loadDashboard() {
         const text =
           await response.text();
 
+
         const trimmed =
           text.trim();
 
@@ -582,6 +601,7 @@ async function loadDashboard() {
 
 
         let json;
+
 
         try {
 
@@ -629,19 +649,24 @@ async function loadDashboard() {
               json.data
             );
 
+
           console.log(
             "📡 GGN Dashboard API:",
             {
+
               success:
                 true,
+
               zones:
                 Array.isArray(
                   json.data?.zones
                 )
                   ? json.data.zones.length
                   : 0,
+
               points:
                 pointCount
+
             }
           );
 
@@ -650,10 +675,13 @@ async function loadDashboard() {
           console.warn(
             "⚠️ Dashboard API:",
             {
+
               success:
                 json?.success,
+
               message:
                 json?.message
+
             }
           );
 
@@ -673,6 +701,7 @@ async function loadDashboard() {
   const statusStart =
     performance.now();
 
+
   const statusPromise =
     fetch(
       statusDashboardUrl,
@@ -681,6 +710,7 @@ async function loadDashboard() {
         cache: "no-store"
       }
     )
+
     .then(
       async response => {
 
@@ -696,6 +726,7 @@ async function loadDashboard() {
         const text =
           await response.text();
 
+
         const trimmed =
           text.trim();
 
@@ -710,6 +741,7 @@ async function loadDashboard() {
 
 
         let json;
+
 
         try {
 
@@ -755,28 +787,37 @@ async function loadDashboard() {
           console.log(
             "📡 GGN Status Dashboard API:",
             {
+
               success:
                 true,
+
               count:
                 Number(
                   json.data?.count ||
+
                   (
                     Array.isArray(
                       json.data?.statuses
                     )
+
                       ? json.data.statuses.length
+
                       : (
                           json.data?.statuses &&
                           typeof json.data.statuses === "object"
+
                             ? Object.keys(
                                 json.data.statuses
                               ).length
+
                             : 0
                         )
                   )
                 ),
+
               date:
                 json.data?.date || ""
+
             }
           );
 
@@ -785,10 +826,13 @@ async function loadDashboard() {
           console.warn(
             "⚠️ Status Dashboard API:",
             {
+
               success:
                 json?.success,
+
               message:
                 json?.message
+
             }
           );
 
@@ -836,9 +880,6 @@ async function loadDashboard() {
 
     // ==================================================
     // VALIDATE DASHBOARD RESPONSE
-    //
-    // Dashboard API สามารถช้าได้
-    // แต่ถ้าสำเร็จต้องอัปเดต Cache
     // ==================================================
 
     if (
@@ -911,14 +952,17 @@ async function loadDashboard() {
     console.log(
       "📦 Status Dashboard:",
       {
+
         date:
           statusData?.date ||
           "",
+
         count:
           Number(
             statusData?.count ||
             0
           )
+
       }
     );
 
@@ -1000,6 +1044,7 @@ async function loadDashboard() {
     console.log(
       "📊 Dashboard timing:",
       {
+
         totalMs:
           totalElapsed,
 
@@ -1027,6 +1072,7 @@ async function loadDashboard() {
           getDashboardPointCount(
             mergedData
           )
+
       }
     );
 
@@ -1055,7 +1101,6 @@ async function loadDashboard() {
 
     // ------------------------------------------------
     // ถ้ามี Cache ให้ลองแสดง Base
-    // แต่ Status API fail จะยังถือว่า Load ไม่สำเร็จ
     // ------------------------------------------------
 
     if (
@@ -1084,15 +1129,18 @@ async function loadDashboard() {
 
       dashboardZones.innerHTML = `
         <div class="dashboard-error">
+
           <div class="dashboard-error-title">
             ⚠️ ไม่สามารถโหลดข้อมูลได้
           </div>
+
           <div class="dashboard-error-message">
             ${escapeHtml(
               error?.message ||
               "เกิดข้อผิดพลาดในการเชื่อมต่อ"
             )}
           </div>
+
         </div>
       `;
 
@@ -1159,8 +1207,10 @@ function setRefreshButtonLoading(
 
     }
 
+
     refreshDashboardBtn.textContent =
       "กำลังโหลด...";
+
 
   } else {
 
@@ -1176,15 +1226,6 @@ function setRefreshButtonLoading(
 // ==================================================
 // NORMALIZE STATUS LIST
 // V5.7
-//
-// API จริง:
-//
-// statuses = {
-//   CM1_001: {...},
-//   CM1_002: {...}
-// }
-//
-// Frontend ภายในจะใช้ Array
 // ==================================================
 
 function normalizeStatusList(
@@ -1281,6 +1322,7 @@ function mergeDashboardStatus(
     Array.isArray(
       dashboardData?.zones
     )
+
       ? dashboardData.zones
       : [];
 
@@ -1334,6 +1376,7 @@ function mergeDashboardStatus(
           Array.isArray(
             zone?.points
           )
+
             ? zone.points
             : [];
 
@@ -1370,9 +1413,6 @@ function mergeDashboardStatus(
 
               // --------------------------------------
               // ไม่มี Status
-              //
-              // ห้ามเอา Status เก่าจาก Base
-              // มาปน
               // --------------------------------------
 
               return {
@@ -1416,13 +1456,16 @@ function mergeDashboardStatus(
         zone
       ) =>
         total +
+
         (
           Array.isArray(
             zone?.points
           )
+
             ? zone.points.length
             : 0
         ),
+
       0
     );
 
@@ -1430,6 +1473,7 @@ function mergeDashboardStatus(
   console.log(
     "🔗 Dashboard merge:",
     {
+
       statusCount:
         statuses.length,
 
@@ -1440,6 +1484,7 @@ function mergeDashboardStatus(
         baseZones.length,
 
       mergedPointCount
+
     }
   );
 
@@ -1508,42 +1553,26 @@ function buildDashboardSummaryFromStatus(
       switch (value) {
 
         case "COMPLETE":
-
           complete++;
-
           break;
-
 
         case "PARTIAL":
-
           partial++;
-
           break;
-
 
         case "NOT_STARTED":
-
           notStarted++;
-
           break;
-
 
         case "NO_SETTING":
-
           noSetting++;
-
           break;
-
 
         case "ERROR":
-
           error++;
-
           break;
 
-
         default:
-
           break;
 
       }
@@ -1702,32 +1731,21 @@ function getDashboardStatusIcon(
   ) {
 
     case "COMPLETE":
-
       return "🟢";
 
-
     case "PARTIAL":
-
       return "🟡";
 
-
     case "NOT_STARTED":
-
       return "⚪";
 
-
     case "NO_SETTING":
-
       return "⚫";
 
-
     case "ERROR":
-
       return "🔴";
 
-
     default:
-
       return "⚪";
 
   }
@@ -1786,42 +1804,26 @@ function updateZoneSummary(
       switch (status) {
 
         case "COMPLETE":
-
           complete++;
-
           break;
-
 
         case "PARTIAL":
-
           partial++;
-
           break;
-
 
         case "NOT_STARTED":
-
           notStarted++;
-
           break;
-
 
         case "NO_SETTING":
-
           noSetting++;
-
           break;
-
 
         case "ERROR":
-
           error++;
-
           break;
 
-
         default:
-
           break;
 
       }
@@ -1974,6 +1976,7 @@ function renderZones(
 
   dashboardZones.innerHTML =
     zones
+
       .map(
         zone => {
 
@@ -2005,11 +2008,9 @@ function renderZones(
               <div class="dashboard-zone-header">
 
                 <div class="dashboard-zone-title">
-
                   ${escapeHtml(
                     zoneName
                   )}
-
                 </div>
 
 
@@ -2054,6 +2055,7 @@ function renderZones(
 
         }
       )
+
       .join("");
 
 }
@@ -2163,6 +2165,7 @@ function createPointCard(
 
     personsHtml =
       persons
+
         .map(
           person => {
 
@@ -2189,9 +2192,11 @@ function createPointCard(
 
                 ${
                   time
+
                     ? ` · ${escapeHtml(
                         time
                       )}`
+
                     : ""
                 }
 
@@ -2201,6 +2206,7 @@ function createPointCard(
 
           }
         )
+
         .join("");
 
   }
@@ -2229,9 +2235,11 @@ function createPointCard(
 
         ${
           formattedTime
+
             ? ` · ${escapeHtml(
                 formattedTime
               )}`
+
             : ""
         }
 
@@ -2347,6 +2355,16 @@ function createPointCard(
 
 // ==================================================
 // FORMAT TIME
+// V5.8
+//
+// รองรับ:
+// - Date object
+// - Unix timestamp milliseconds
+// - Unix timestamp seconds
+// - HH:mm
+// - HH:mm:ss
+// - DD/MM/YYYY HH:mm:ss
+// - ISO Date
 // ==================================================
 
 function formatDashboardTime(
@@ -2379,6 +2397,27 @@ function formatDashboardTime(
   }
 
 
+  // ------------------------------------------------
+  // Numeric Unix Timestamp
+  //
+  // เช่น:
+  // 1789084720686
+  //
+  // milliseconds
+  // ------------------------------------------------
+
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+
+    return formatUnixTimestamp(
+      value
+    );
+
+  }
+
+
   const text =
     String(
       value
@@ -2387,6 +2426,45 @@ function formatDashboardTime(
 
   if (!text) {
     return "";
+  }
+
+
+  // ------------------------------------------------
+  // Numeric string Unix Timestamp
+  //
+  // เช่น:
+  // "1789084720686"
+  // ------------------------------------------------
+
+  if (
+    /^\d+$/.test(text)
+  ) {
+
+    const numericValue =
+      Number(text);
+
+
+    if (
+      Number.isFinite(
+        numericValue
+      )
+    ) {
+
+      // Unix timestamp ต้องมีขนาดสมเหตุสมผล
+      // รองรับทั้ง milliseconds และ seconds
+
+      if (
+        numericValue >= 1000000000
+      ) {
+
+        return formatUnixTimestamp(
+          numericValue
+        );
+
+      }
+
+    }
+
   }
 
 
@@ -2513,6 +2591,83 @@ function formatDashboardTime(
 
 
 // ==================================================
+// UNIX TIMESTAMP → TIME
+// V5.8
+// ==================================================
+
+function formatUnixTimestamp(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+
+    return "";
+
+  }
+
+
+  let milliseconds =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(
+      milliseconds
+    )
+  ) {
+
+    return "";
+
+  }
+
+
+  // ------------------------------------------------
+  // ถ้าเป็น Unix timestamp แบบ seconds
+  // ให้แปลงเป็น milliseconds
+  //
+  // 1789084720
+  // →
+  // 1789084720000
+  // ------------------------------------------------
+
+  if (
+    milliseconds < 100000000000
+  ) {
+
+    milliseconds *= 1000;
+
+  }
+
+
+  const date =
+    new Date(
+      milliseconds
+    );
+
+
+  if (
+    isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
+
+
+  return formatDateObjectTime(
+    date
+  );
+
+}
+
+
+// ==================================================
 // DATE OBJECT → TIME
 // ==================================================
 
@@ -2575,22 +2730,27 @@ function escapeHtml(
   return String(
     value ?? ""
   )
+
     .replace(
       /&/g,
       "&amp;"
     )
+
     .replace(
       /</g,
       "&lt;"
     )
+
     .replace(
       />/g,
       "&gt;"
     )
+
     .replace(
       /"/g,
       "&quot;"
     )
+
     .replace(
       /'/g,
       "&#039;"
