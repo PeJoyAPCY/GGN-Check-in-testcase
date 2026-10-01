@@ -1,7 +1,8 @@
+
 // ==================================================
 // GGN CHECK-IN
 // DASHBOARD.JS
-// Version 5.8
+// Version 5.9
 //
 // หน้าที่:
 // - Dashboard
@@ -13,6 +14,14 @@
 // - Menu Navigation
 // - Dashboard Base Cache
 //
+// V5.9 CHANGE:
+// - Dashboard API และ Status Dashboard API แยกการทำงานออกจากกัน
+// - Dashboard API ล้มเหลวไม่ทำให้ Status Dashboard หาย
+// - ถ้า Dashboard API 404 ให้ใช้ Base Cache
+// - ถ้า Status Dashboard สำเร็จ ให้ Merge Status สดกับ Base Cache
+// - แก้ Status Icon ให้ใช้ checkedInCount / requiredCount จริง
+// - รองรับ 0/0, 0/required, partial, complete, over manpower
+//
 // V5.8 CHANGE:
 // - แก้การแสดงเวลา person ที่เป็น Unix Timestamp milliseconds
 // - รองรับ timestamp เช่น 1789084720686
@@ -21,6 +30,7 @@
 // IMPORTANT
 // - ไม่เปลี่ยน Backend
 // - ไม่เปลี่ยน API
+// - ไม่เปลี่ยน Payload
 // - ไม่เปลี่ยน Status Logic
 // - ไม่เปลี่ยน UI Structure
 // - ไม่เปลี่ยน Card Design
@@ -417,7 +427,7 @@ function getDashboardPointCount(
 
 // ==================================================
 // LOAD DASHBOARD
-// V5.7
+// V5.9
 // ==================================================
 
 async function loadDashboard() {
@@ -521,7 +531,7 @@ async function loadDashboard() {
 
 
   console.log(
-    "🚀 GGN Dashboard V5.7"
+    "🚀 GGN Dashboard V5.9"
   );
 
   console.log(
@@ -691,6 +701,25 @@ async function loadDashboard() {
         return json;
 
       }
+    )
+
+    .catch(
+      error => {
+
+        dashboardApiMs =
+          Math.round(
+            performance.now() -
+            dashboardStart
+          );
+
+        console.error(
+          `❌ Dashboard API failed after ${dashboardApiMs} ms:`,
+          error
+        );
+
+        throw error;
+
+      }
     );
 
 
@@ -842,82 +871,137 @@ async function loadDashboard() {
         return json;
 
       }
+    )
+
+    .catch(
+      error => {
+
+        statusApiMs =
+          Math.round(
+            performance.now() -
+            statusStart
+          );
+
+        console.error(
+          `❌ Status Dashboard API failed after ${statusApiMs} ms:`,
+          error
+        );
+
+        throw error;
+
+      }
     );
 
 
   // ==================================================
   // RUN BOTH API AT THE SAME TIME
+  //
+  // IMPORTANT V5.9
+  //
+  // ห้ามใช้ Promise.all()
+  // เพราะถ้า Dashboard API 404
+  // จะทำให้ Status Dashboard ที่สำเร็จ
+  // ถูกทิ้งไปด้วย
   // ==================================================
 
   try {
 
     const [
-      dashboardResponse,
-      statusResponse
+      dashboardResult,
+      statusResult
     ] =
-      await Promise.all([
+      await Promise.allSettled([
         dashboardPromise,
         statusPromise
       ]);
 
 
     // ==================================================
-    // VALIDATE STATUS RESPONSE
+    // DASHBOARD API RESULT
     // ==================================================
 
+    let dashboardResponse =
+      null;
+
+    let dashboardApiSuccess =
+      false;
+
+
     if (
-      !statusResponse ||
-      statusResponse.success !== true
+      dashboardResult.status ===
+      "fulfilled"
     ) {
 
-      throw new Error(
-        statusResponse?.message ||
-        "Status Dashboard API failed"
+      dashboardResponse =
+        dashboardResult.value;
+
+      dashboardApiSuccess =
+        !!(
+          dashboardResponse &&
+          dashboardResponse.success === true
+        );
+
+    } else {
+
+      console.warn(
+        "⚠️ Dashboard API unavailable:",
+        dashboardResult.reason
       );
 
     }
 
 
     // ==================================================
-    // VALIDATE DASHBOARD RESPONSE
+    // STATUS API RESULT
     // ==================================================
 
+    let statusResponse =
+      null;
+
+    let statusApiSuccess =
+      false;
+
+
     if (
-      !dashboardResponse ||
-      dashboardResponse.success !== true
+      statusResult.status ===
+      "fulfilled"
     ) {
 
-      if (
-        cachedDashboardData
-      ) {
+      statusResponse =
+        statusResult.value;
 
-        console.warn(
-          "⚠️ Dashboard API failed, using cached base"
+      statusApiSuccess =
+        !!(
+          statusResponse &&
+          statusResponse.success === true
         );
 
-      } else {
+    } else {
 
-        throw new Error(
-          dashboardResponse?.message ||
-          "Dashboard API failed"
-        );
-
-      }
+      console.warn(
+        "⚠️ Status Dashboard API unavailable:",
+        statusResult.reason
+      );
 
     }
 
 
     // ==================================================
-    // DATA
+    // DETERMINE BASE DATA SOURCE
     // ==================================================
 
-    let dashboardData;
+    let dashboardData =
+      null;
 
+
+    // ------------------------------------------------
+    // Priority 1:
+    // Fresh Dashboard API
+    // ------------------------------------------------
 
     if (
-      dashboardResponse &&
-      dashboardResponse.success === true &&
-      dashboardResponse.data
+      dashboardApiSuccess &&
+      dashboardResponse?.data
     ) {
 
       dashboardData =
@@ -932,17 +1016,200 @@ async function loadDashboard() {
         dashboardData
       );
 
-    } else {
 
-      dashboardData =
-        cachedDashboardData ||
-        {};
+      console.log(
+        "🟢 Dashboard base source: API"
+      );
 
     }
 
 
-    const statusData =
-      statusResponse.data || {};
+    // ------------------------------------------------
+    // Priority 2:
+    // Cached Dashboard Base
+    // ------------------------------------------------
+
+    else if (
+      cachedDashboardData
+    ) {
+
+      dashboardData =
+        cachedDashboardData;
+
+
+      console.warn(
+        "🟡 Dashboard base source: CACHE"
+      );
+
+    }
+
+
+    // ------------------------------------------------
+    // No Base Data
+    // ------------------------------------------------
+
+    else {
+
+      console.error(
+        "❌ ไม่มี Dashboard Base Data ทั้ง API และ Cache"
+      );
+
+    }
+
+
+    // ==================================================
+    // STATUS DATA
+    // ==================================================
+
+    let statusData =
+      null;
+
+
+    if (
+      statusApiSuccess &&
+      statusResponse?.data
+    ) {
+
+      statusData =
+        statusResponse.data;
+
+    }
+
+
+    // ==================================================
+    // IMPORTANT:
+    // STATUS SUCCESS + BASE AVAILABLE
+    // ==================================================
+
+    if (
+      dashboardData &&
+      statusApiSuccess
+    ) {
+
+      console.log(
+        "🟢 Live Status + Base Data พร้อม Merge"
+      );
+
+    }
+
+
+    // ==================================================
+    // STATUS FAIL
+    // ==================================================
+
+    if (
+      !statusApiSuccess
+    ) {
+
+      console.warn(
+        "⚠️ Status Dashboard ไม่มีข้อมูลสดในรอบนี้"
+      );
+
+    }
+
+
+    // ==================================================
+    // NO BASE DATA
+    // ==================================================
+
+    if (
+      !dashboardData
+    ) {
+
+      const dashboardError =
+        dashboardResult.status ===
+        "rejected"
+
+          ? dashboardResult.reason
+
+          : new Error(
+              dashboardResponse?.message ||
+              "Dashboard API failed"
+            );
+
+
+      throw dashboardError;
+
+    }
+
+
+    // ==================================================
+    // IF STATUS API FAILED
+    //
+    // แสดง Base Data ได้
+    // แต่ไม่สร้าง Status ปลอม
+    // ==================================================
+
+    if (
+      !statusApiSuccess
+    ) {
+
+      const baseSummary =
+        dashboardData?.summary ||
+        buildDashboardSummaryFromStatus(
+          []
+        );
+
+
+      renderSummary(
+        baseSummary
+      );
+
+
+      renderZones(
+        dashboardData.zones
+      );
+
+
+      const totalElapsed =
+        Math.round(
+          performance.now() -
+          totalStart
+        );
+
+
+      console.warn(
+        "⚠️ Dashboard แสดง Base Cache/API โดยไม่มี Status สด:",
+        {
+          totalMs:
+            totalElapsed,
+
+          dashboardApiMs:
+            dashboardApiMs,
+
+          statusApiMs:
+            statusApiMs,
+
+          baseSource:
+            dashboardApiSuccess
+              ? "API"
+              : "CACHE",
+
+          pointCount:
+            getDashboardPointCount(
+              dashboardData
+            )
+
+        }
+      );
+
+
+      setDashboardStatus(
+        `ข้อมูลพื้นฐานอัปเดตล่าสุด ${formatDashboardTime(new Date())}`
+      );
+
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // STATUS DATA
+    // ==================================================
+
+    const safeStatusData =
+      statusData || {};
 
 
     // ==================================================
@@ -954,12 +1221,12 @@ async function loadDashboard() {
       {
 
         date:
-          statusData?.date ||
+          safeStatusData?.date ||
           "",
 
         count:
           Number(
-            statusData?.count ||
+            safeStatusData?.count ||
             0
           )
 
@@ -982,7 +1249,7 @@ async function loadDashboard() {
     const mergedData =
       mergeDashboardStatus(
         dashboardData,
-        statusData
+        safeStatusData
       );
 
 
@@ -1061,12 +1328,14 @@ async function loadDashboard() {
           renderMs,
 
         baseSource:
-          (
-            dashboardResponse &&
-            dashboardResponse.success === true
-          )
+          dashboardApiSuccess
             ? "API"
             : "CACHE",
+
+        statusSource:
+          statusApiSuccess
+            ? "LIVE"
+            : "NONE",
 
         pointCount:
           getDashboardPointCount(
@@ -1105,13 +1374,19 @@ async function loadDashboard() {
 
     if (
       cachedDashboardData &&
-      dashboardZones &&
-      !dashboardZones.innerHTML.trim()
+      dashboardZones
     ) {
 
+      console.warn(
+        "🟡 Fallback: render cached dashboard base"
+      );
+
+
       renderSummary(
+        cachedDashboardData.summary ||
         buildDashboardSummaryFromStatus([])
       );
+
 
       renderZones(
         cachedDashboardData.zones
@@ -1125,9 +1400,17 @@ async function loadDashboard() {
     );
 
 
-    if (dashboardZones) {
+    // ------------------------------------------------
+    // แสดง Error เฉพาะกรณีที่ไม่มีข้อมูลให้แสดง
+    // ------------------------------------------------
+
+    if (
+      dashboardZones &&
+      !cachedDashboardData
+    ) {
 
       dashboardZones.innerHTML = `
+
         <div class="dashboard-error">
 
           <div class="dashboard-error-title">
@@ -1142,10 +1425,10 @@ async function loadDashboard() {
           </div>
 
         </div>
+
       `;
 
     }
-
 
   } finally {
 
@@ -1620,6 +1903,7 @@ function buildDashboardSummaryFromStatus(
 
 // ==================================================
 // APPLY STATUS TO POINT
+// V5.9
 // ==================================================
 
 function applyStatusToPoint(
@@ -1666,6 +1950,29 @@ function applyStatusToPoint(
   }
 
 
+  const requiredCount =
+    Number(
+      status?.requiredCount ?? 0
+    );
+
+
+  const checkedInCount =
+    Number(
+      status?.checkedInCount ?? 0
+    );
+
+
+  const remainingCount =
+    Number(
+      status?.remainingCount ??
+      Math.max(
+        requiredCount -
+        checkedInCount,
+        0
+      )
+    );
+
+
   return {
 
     ...point,
@@ -1680,14 +1987,11 @@ function applyStatusToPoint(
     statusText:
       status?.statusText || "",
 
-    requiredCount:
-      status?.requiredCount ?? 0,
+    requiredCount,
 
-    checkedInCount:
-      status?.checkedInCount ?? 0,
+    checkedInCount,
 
-    remainingCount:
-      status?.remainingCount ?? 0,
+    remainingCount,
 
     hasSetting:
       status?.hasSetting,
@@ -1706,7 +2010,9 @@ function applyStatusToPoint(
 
     statusIcon:
       getDashboardStatusIcon(
-        status?.status
+        status?.status,
+        checkedInCount,
+        requiredCount
       )
 
   };
@@ -1721,26 +2027,33 @@ function applyStatusToPoint(
 // STATUS COLOR BY MANPOWER
 //
 // 0/0 → ⚪ ไม่มีกำลังพล
+// 0/1 → 🔴 ยังไม่เข้า
 // 0/2 → 🔴 ยังไม่เข้า
+// 1/1 → 🟢 ครบแล้ว
 // 1/2 → 🟡 ยังไม่ครบ
 // 2/2 → 🟢 ครบแล้ว
 // 3/2 → 🟣 เกินกำลังพล
 //
-// LOGIC:
-// - checkedIn = 0 และ required = 0
-//   → ⚪
+// GENERAL LOGIC:
 //
-// - checkedIn = 0 และ required > 0
-//   → 🔴
+// checkedIn = 0
+// required = 0
+// → ⚪
 //
-// - checkedIn > 0 และ checkedIn < required
-//   → 🟡
+// checkedIn = 0
+// required > 0
+// → 🔴
 //
-// - checkedIn = required และ required > 0
-//   → 🟢
+// checkedIn > 0
+// checkedIn < required
+// → 🟡
 //
-// - checkedIn > required
-//   → 🟣
+// checkedIn = required
+// required > 0
+// → 🟢
+//
+// checkedIn > required
+// → 🟣
 // ==================================================
 
 function getDashboardStatusIcon(
@@ -1759,72 +2072,86 @@ function getDashboardStatusIcon(
       requiredCount ?? 0
     );
 
+
+  // ------------------------------------------------
+  // OVER
+  // checkedIn > required
+  // ------------------------------------------------
+
+  if (
+    checkedIn > required &&
+    required >= 0
+  ) {
+
+    return "🟣";
+
+  }
+
+
   // ------------------------------------------------
   // 0/0
-  // ไม่มีกำลังพล
+  // ไม่มีการตั้งกำลัง / ไม่มีกำลังพล
   // ------------------------------------------------
+
   if (
     checkedIn === 0 &&
     required === 0
   ) {
+
     return "⚪";
+
   }
 
-  // ------------------------------------------------
-  // เกินกำลังพล
-  //
-  // เช่น 3/2
-  // ------------------------------------------------
-  if (
-    checkedIn > required
-  ) {
-    return "🟣";
-  }
 
   // ------------------------------------------------
+  // 0/required
   // ยังไม่เข้า
-  //
-  // เช่น 0/1
-  // เช่น 0/2
   // ------------------------------------------------
+
   if (
     checkedIn === 0 &&
     required > 0
   ) {
+
     return "🔴";
+
   }
 
+
   // ------------------------------------------------
+  // partial
   // ยังไม่ครบ
-  //
-  // เช่น 1/2
-  // เช่น 1/3
-  // เช่น 2/3
   // ------------------------------------------------
+
   if (
     checkedIn > 0 &&
     checkedIn < required
   ) {
+
     return "🟡";
+
   }
 
+
   // ------------------------------------------------
-  // ครบแล้ว
-  //
-  // เช่น 1/1
-  // เช่น 2/2
-  // เช่น 3/3
+  // complete
+  // ครบกำลังพล
   // ------------------------------------------------
+
   if (
     checkedIn === required &&
     required > 0
   ) {
+
     return "🟢";
+
   }
 
+
   // ------------------------------------------------
-  // FALLBACK
+  // Fallback จาก status
   // ------------------------------------------------
+
   switch (
     String(
       status || ""
@@ -1849,6 +2176,7 @@ function getDashboardStatusIcon(
       return "🔴";
 
     case "OVER":
+    case "EXCESS":
       return "🟣";
 
     case "RESET":
@@ -1856,8 +2184,11 @@ function getDashboardStatusIcon(
 
     default:
       return "⚪";
+
   }
+
 }
+
 
 // ==================================================
 // UPDATE ZONE SUMMARY
@@ -2169,6 +2500,7 @@ function renderZones(
 
 // ==================================================
 // CREATE POINT CARD
+// V5.9
 // ==================================================
 
 function createPointCard(
@@ -2184,10 +2516,24 @@ function createPointCard(
       .toUpperCase();
 
 
+  const required =
+    Number(
+      point?.requiredCount || 0
+    );
+
+
+  const checkedIn =
+    Number(
+      point?.checkedInCount || 0
+    );
+
+
   const icon =
     point?.statusIcon ||
     getDashboardStatusIcon(
-      status
+      status,
+      checkedIn,
+      required
     );
 
 
@@ -2204,18 +2550,6 @@ function createPointCard(
   const statusText =
     point?.statusText ||
     "";
-
-
-  const required =
-    Number(
-      point?.requiredCount || 0
-    );
-
-
-  const checkedIn =
-    Number(
-      point?.checkedInCount || 0
-    );
 
 
   const hasSetting =
@@ -2505,11 +2839,6 @@ function formatDashboardTime(
 
   // ------------------------------------------------
   // Numeric Unix Timestamp
-  //
-  // เช่น:
-  // 1789084720686
-  //
-  // milliseconds
   // ------------------------------------------------
 
   if (
@@ -2537,9 +2866,6 @@ function formatDashboardTime(
 
   // ------------------------------------------------
   // Numeric string Unix Timestamp
-  //
-  // เช่น:
-  // "1789084720686"
   // ------------------------------------------------
 
   if (
@@ -2555,9 +2881,6 @@ function formatDashboardTime(
         numericValue
       )
     ) {
-
-      // Unix timestamp ต้องมีขนาดสมเหตุสมผล
-      // รองรับทั้ง milliseconds และ seconds
 
       if (
         numericValue >= 1000000000
@@ -2621,8 +2944,6 @@ function formatDashboardTime(
 
   // ------------------------------------------------
   // DD/MM/YYYY HH:mm:ss
-  //
-  // ตรวจรูปแบบไทยก่อน Native Date
   // ------------------------------------------------
 
   const thaiDate =
@@ -2732,12 +3053,8 @@ function formatUnixTimestamp(
 
 
   // ------------------------------------------------
-  // ถ้าเป็น Unix timestamp แบบ seconds
-  // ให้แปลงเป็น milliseconds
-  //
-  // 1789084720
-  // →
-  // 1789084720000
+  // Unix timestamp seconds
+  // → milliseconds
   // ------------------------------------------------
 
   if (
